@@ -1,0 +1,37 @@
+services:  
+
+  zookeeper:  #Zookeeper, a distributed coordination service used by Kafka.
+    image: wurstmeister/zookeeper  # updated 5 years ago, but video said is stable version (consider bitnami)
+    container_name: zookeeper  # Sets a custom name for the Zookeeper container, making it easier to reference.
+    ports:
+      - "2181:2181"  # Exposes port 2181 on both the host and the container. Port 2181 is used by Zookeeper to handle client connections.
+
+  kafka: 
+    image: wurstmeister/kafka  
+    container_name: kafka  
+    ports:
+      - "9092:9092"  
+    environment:  # Defines environment variables that will be set inside the Kafka container.
+      KAFKA_ADVERTISED_HOST_NAME: localhost  # Sets the advertised hostname of the Kafka broker, here it's set to 'localhost', so Kafka can communicate on the local machine.
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
+
+  mongo:
+    image: mongo:6.0.5
+    container_name: mongo
+    ports:
+      - "35001:27017"  # Expose MongoDB on port 35001
+    depends_on:
+      - zookeeper
+      - kafka
+    restart: always
+    
+  text-scraper:
+    ports: 
+      - "5000:5000"
+    container_name: text-scraper
+    build:
+      context: code/text_scraper
+      dockerfile: ./Dockerfile
+    depends_on:
+      - kafka
+      - zookeeper

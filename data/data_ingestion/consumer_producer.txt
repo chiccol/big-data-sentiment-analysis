@@ -1,0 +1,28 @@
+> compose
+>> docker compose -f docker_compose.yml build
+>> docker compose -f docker_compose.yml up
+
+> execute container:
+>>docker exec -it <kafka_conatiner_id> /bin/sh
+>>> docker exec: opens a shell inside specified container
+>>> -it: two flags combined, -i is interactive thus keeps stdin open to interact with container and -t allocates a terminal to use commands interactively
+
+> go inside kafka installation folder:
+cd opt/kafka_<version>/bin
+
+> create Kafka topic
+>>kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic quickstart
+>>> kafka-topics.sh: Kafka shell script used to manage Kafka topics
+>>> --create: create new topic
+>>> --bootstrap-server: which Kafka broker to connect to
+>>> localhost:9092: Kafka broker running on your local machine at port 9092 (replace localhost if running elsewhere and the port accordingly) 
+>>> --replication-factor 1: how many copies (replicas) of the data should be maintained across Kafka brokers
+>>> --partitions 1: number of partitions for the topic
+
+> start Producer app (CLI)
+>> kafka-console-producer.sh --topic quickstart --bootstrap-server localhost:9092
+>>> --bootstrap-server: which Kafka broker to connect to
+
+> start consumer app (CLI) in another terminal
+>> kafka-console-consumer.sh --topic quickstart --bootstrap-server localhost:9092 --from-beginning
+>>> --from-beginning: read messages from the beginning of the topic

@@ -6,13 +6,34 @@ from datetime import datetime
 
 # Function to scrape Trustpilot reviews for a specific company
 def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999, language="en"):
-    
-    users = []
+    """
+    Scrape reviews from Trustpilot for a specific company within a specified date range.
+
+    This function retrieves reviews from Trustpilot's website for a given company, collecting user information,
+    ratings, locations, review dates, and review text. It continues scraping until it reaches either the specified 
+    number of pages or reviews older than a specified date.
+
+    Args:
+        company (str): The Trustpilot company identifier for which reviews are being scraped in the format company.com.
+        from_date (datetime): The minimum date for reviews to be collected. Reviews older than this date will 
+                              stop the scraping process.
+        date_format (str): The format in which the date of the last time scraping was performed is provided, used for 
+                           date comparison.
+        from_page (int, optional): The starting page number for scraping. Defaults to 1.
+        to_page (int, optional): The ending page number for scraping. Defaults to 999999 because main interest in scraping 
+                                 by date, not by page.
+        language (str, optional): The language in which the reviews should be scraped. Defaults to "en". 
+                                  If "en", it is converted to "www" for the URL.
+
+    Returns:
+        int: Returns 0 if an error occurs (e.g., a 404 error), 1 if scraping completes successfully, 
+             or returns 1 if no new reviews are found after the specified date.
+    """
+
     ratings = []
     locations = []
     dates = []
     text = []
-    
     language = "www" if language == "en" else language
 
     for num_page in range(from_page, to_page + 1):
@@ -29,10 +50,8 @@ def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999,
         
         soup = BeautifulSoup(result.content, 'html.parser')
 
-        users = soup.find_all('span', {'class': 'typography_heading-xxs__QKBS8 typography_appearance-default__AAY17'})
         locations = soup.find_all('div', {'class': 'typography_body-m__xgxZ_ typography_appearance-subtle__8_H2l styles_detailsIcon__Fo_ua'})
         ratings = soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'})
-
         dates_html = soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'})
         dates = [dates_html[i].find("time")["datetime"] for i in range(len(dates_html))]
 
@@ -45,12 +64,12 @@ def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999,
             review = title + " " + content
             text.append(review)
 
-        for num_review in range(len(users)):
+        for num_review in range(len(text)):
             full_review = dict()
-            full_review["Username"] = users[num_review].get_text()
             full_review["Location"] = locations[num_review].get_text()
             full_review["Rating"] = ratings[num_review]["data-service-review-rating"]
             full_review["Date"] = dates[num_review]
+            # check if the review is older than the specified date
             if datetime.strptime(full_review["Date"],date_format) < from_date:
                 print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
                 if num_review == 0 and num_page == 1:
@@ -60,7 +79,7 @@ def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999,
             full_review_serialized = json.dumps(full_review).encode('utf-8')
             print(full_review_serialized)
         
-        sleep(5)
+        sleep(10)
 
     print(f"All reviews of {company} from date {from_date_str} have been collected.")
     return 1
@@ -94,3 +113,7 @@ if __name__ == "__main__":
                 json.dump(company_date, file)
 
         sleep(30)  
+
+        with open(companies_from_date_path, 'r') as file:
+            company_date = json.load(file)
+            from_dates_str = list(company_date.values())

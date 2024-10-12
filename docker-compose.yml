@@ -25,13 +25,39 @@ services:
       - kafka
     restart: always
     
-  text-scraper:
+  youtube-producer:
     ports: 
-      - "5000:5000"
-    container_name: text-scraper
+      - '5000:5000'
+    container_name: youtube-producer
     build:
-      context: code/text_scraper
-      dockerfile: ./Dockerfile
+      context: data/data_source/youtube/
+      dockerfile: youtube.Dockerfile
     depends_on:
-      - kafka
       - zookeeper
+      - kafka
+      - mongo
+
+  trustpilot-producer:
+    ports: 
+      - '5001:5001'
+    container_name: trustpilot-producer
+    build:
+      context: data/data_source/trustpilot/
+      dockerfile: trustpilot.Dockerfile
+    depends_on:
+      - zookeeper
+      - kafka
+      - mongo
+
+  reddit-producer:
+    ports: 
+      - '5002:5002'
+    container_name: reddit-producer
+    build:
+      context: data/data_source/reddit/
+      dockerfile: reddit.Dockerfile
+    depends_on:
+      - zookeeper
+      - kafka
+      - mongo
+  

@@ -1,38 +1,37 @@
 from time import sleep
 import requests
-import pandas as pd
 from bs4 import BeautifulSoup
 import json
-
-# Helper function to scrape data and append to a list
-def soup2list(src, list_, attr=None):
-    if attr:
-        for val in src:
-            list_.append(val[attr])
-    else:
-        for val in src:
-            list_.append(val.get_text())
+from datetime import datetime
 
 # Function to scrape Trustpilot reviews for a specific company
-def scrape_reviews(company, from_page=1, to_page=2):
+def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999, language="en"):
+    
     users = []
     ratings = []
     locations = []
     dates = []
-    reviews = []
-    review_json = []
+    text = []
+    
+    language = "www" if language == "en" else language
 
-    for i in range(from_page, to_page + 1):
-        print(f"Scraping page {i} for {company}...")
+    for num_page in range(from_page, to_page + 1):
+        print(f"Scraping page {num_page} for {company}...")
 
-        # Construct the URL for the current company and page
-        result = requests.get(f"https://www.trustpilot.com/review/{company}?page={i}")
+        if num_page > 1:
+            result = requests.get(f"https://{language}.trustpilot.com/review/{company}?page={num_page}&sort=recency")
+        else:
+            result = requests.get(f"https://{language}.trustpilot.com/review/{company}?sort=recency")
+
+        if result.status_code != 200:
+            print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.")
+            return 0
+        
         soup = BeautifulSoup(result.content, 'html.parser')
 
-        # Scrape the relevant data
-        soup2list(soup.find_all('span', {'class': 'typography_heading-xxs__QKBS8 typography_appearance-default__AAY17'}), users)
-        soup2list(soup.find_all('div', {'class': 'typography_body-m__xgxZ_ typography_appearance-subtle__8_H2l styles_detailsIcon__Fo_ua'}), locations)
-        soup2list(soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'}), ratings, attr='data-service-review-rating')
+        users = soup.find_all('span', {'class': 'typography_heading-xxs__QKBS8 typography_appearance-default__AAY17'})
+        locations = soup.find_all('div', {'class': 'typography_body-m__xgxZ_ typography_appearance-subtle__8_H2l styles_detailsIcon__Fo_ua'})
+        ratings = soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'})
 
         dates_html = soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'})
         dates = [dates_html[i].find("time")["datetime"] for i in range(len(dates_html))]
@@ -44,39 +43,54 @@ def scrape_reviews(company, from_page=1, to_page=2):
             title = review.find('h2').get_text() if review.find('h2') else "No Title"
             content = review.find('p').get_text() if review.find('p') else "No Content"
             review = title + " " + content
-            reviews.append(review)
+            text.append(review)
 
+        for num_review in range(len(users)):
+            full_review = dict()
+            full_review["Username"] = users[num_review].get_text()
+            full_review["Location"] = locations[num_review].get_text()
+            full_review["Rating"] = ratings[num_review]["data-service-review-rating"]
+            full_review["Date"] = dates[num_review]
+            if datetime.strptime(full_review["Date"],date_format) < from_date:
+                print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
+                if num_review == 0 and num_page == 1:
+                    print(f"No new reviews found for {company} after date {from_date}.")
+                return 1
+            full_review["Review"] = text[num_review]
+            full_review_serialized = json.dumps(full_review).encode('utf-8')
+            print(full_review_serialized)
+        
         sleep(5)
 
-    # Convert the scraped data into a DataFrame
-    review_data = pd.DataFrame({
-        'Username': users,
-        'Location': locations,
-        'Date': dates,
-        'Review': reviews,  # Add contents separately
-        'Rating': ratings
-    })
-
-    # Return the DataFrame containing the reviews
-    return review_data
-
-# Main function to read company URLs from file and save each to a JSON file
-def scrape_and_save_reviews():
-    with open("urls-trustpilot.txt", 'r') as file:
-        companies = [line.strip() for line in file.readlines()]  # Read and strip newlines
-
-    for company in companies:
-        print(f"Scraping reviews for {company}...")
-
-        # Scrape reviews for the company
-        review_data = scrape_reviews(company)
-
-        # Save the scraped data to a JSON file
-        json_filename = f"{company.replace('.', '_')}_reviews.json"
-        review_data.to_json(json_filename, orient="records", indent=4)
-
-        print(f"Data saved to {json_filename}")
+    print(f"All reviews of {company} from date {from_date_str} have been collected.")
+    return 1
 
 # Run the scraping and saving process
 if __name__ == "__main__":
-    scrape_and_save_reviews()
+    
+    companies_from_date_path = "urls-trustpilot.json"
+    with open(companies_from_date_path, 'r') as file:
+        company_date = json.load(file)
+        companies, from_dates_str = list(company_date.keys()), list(company_date.values())
+
+    date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+                    
+    while True:
+        for company, from_date_str in zip(companies,from_dates_str):
+            
+            try:
+                from_date = datetime.strptime(from_date_str, date_format)
+            except:
+                raise AssertionError(f"The date '{from_date_str}' does NOT match the format '{date_format}'")
+            
+            scrape_reviews(company=company, 
+                           from_date = from_date,
+                           date_format = date_format,
+                           language="en")
+            
+            # update 
+            company_date[company] = datetime.now().strftime(date_format)
+            with open(companies_from_date_path, 'w') as file:
+                json.dump(company_date, file)
+
+        sleep(30)  

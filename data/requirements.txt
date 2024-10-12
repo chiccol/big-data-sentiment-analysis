@@ -1,4 +1,0 @@
-requests==2.25.1
-beautifulsoup4==4.12.3
-confluent_kafka==2.5.3
-google-api-python-client==2.146.0

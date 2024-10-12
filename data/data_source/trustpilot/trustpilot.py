@@ -80,40 +80,6 @@ def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999,
             print(full_review_serialized)
         
         sleep(10)
-
-    print(f"All reviews of {company} from date {from_date_str} have been collected.")
+        
+    print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")
     return 1
-
-# Run the scraping and saving process
-if __name__ == "__main__":
-    
-    companies_from_date_path = "urls-trustpilot.json"
-    with open(companies_from_date_path, 'r') as file:
-        company_date = json.load(file)
-        companies, from_dates_str = list(company_date.keys()), list(company_date.values())
-
-    date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-                    
-    while True:
-        for company, from_date_str in zip(companies,from_dates_str):
-            
-            try:
-                from_date = datetime.strptime(from_date_str, date_format)
-            except:
-                raise AssertionError(f"The date '{from_date_str}' does NOT match the format '{date_format}'")
-            
-            scrape_reviews(company=company, 
-                           from_date = from_date,
-                           date_format = date_format,
-                           language="en")
-            
-            # update 
-            company_date[company] = datetime.now().strftime(date_format)
-            with open(companies_from_date_path, 'w') as file:
-                json.dump(company_date, file)
-
-        sleep(30)  
-
-        with open(companies_from_date_path, 'r') as file:
-            company_date = json.load(file)
-            from_dates_str = list(company_date.values())

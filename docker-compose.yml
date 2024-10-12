@@ -16,6 +16,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
       KAFKA_CREATE_TOPICS: "apple:1:1,nvidia:1:1"  # Define the topics here topic: apple:replication-factor=1:number-of-partitions=1
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
       - zookeeper
 

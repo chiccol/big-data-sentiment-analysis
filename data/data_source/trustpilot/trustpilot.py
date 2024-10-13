@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 # Function to scrape Trustpilot reviews for a specific company
-def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999, language="en"):
+def scrape_and_send_reviews(company, from_date, date_format, producer, from_page=1, to_page=999999, language="en"):
     """
     Scrape reviews from Trustpilot for a specific company within a specified date range.
 
@@ -77,6 +77,7 @@ def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999,
                 return 1
             full_review["Review"] = text[num_review]
             full_review_serialized = json.dumps(full_review).encode('utf-8')
+            producer.produce(record = full_review_serialized, topic=company)
             print(full_review_serialized)
         
         sleep(10)

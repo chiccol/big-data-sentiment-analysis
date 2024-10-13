@@ -10,12 +10,13 @@ services:
     image: wurstmeister/kafka
     container_name: kafka  
     ports:
-      - "9092:9092"  
+      - "9092:9092"     # External port for communication with clients
+      - "29092:29092"   # Internal port for Kafka brokers
     environment:  # Defines environment variables that will be set inside the Kafka container.
-      KAFKA_ADVERTISED_HOST_NAME: kafka # Sets the advertised hostname of the Kafka broker, here it's set to 'localhost', so Kafka can communicate on the local machine.
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
       KAFKA_CREATE_TOPICS: "apple:1:1,nvidia:1:1"  # Define the topics here topic: apple:replication-factor=1:number-of-partitions=1
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT://0.0.0.0:29092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
       - zookeeper
@@ -47,8 +48,8 @@ services:
       - '5001:5001'
     container_name: trustpilot-producer
     build:
-      context: data/data_source/trustpilot/
-      dockerfile: trustpilot.Dockerfile
+      context: data/data_source/
+      dockerfile: trustpilot/trustpilot.Dockerfile
     depends_on:
       - zookeeper
       - kafka

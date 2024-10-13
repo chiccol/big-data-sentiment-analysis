@@ -1,12 +1,13 @@
 from time import sleep
 import json
 from datetime import datetime
-from trustpilot import scrape_reviews
-from data_source.kafka_producer import KafkaProducer
+from trustpilot import scrape_and_send_reviews
+from kafka_producer import KafkaProducer
 
 if __name__ == "__main__":
     
-    producer = KafkaProducer(bootstrap_servers="kafka", client_id = "trustpilot-producer")
+    # this doesn't work yet because I can't connect to the kafka container, probably because need external port
+    producer = KafkaProducer(bootstrap_servers="kafka:29092", client_id = "trustpilot-producer", source = "trustpilot")
 
     # Load companies and dates of the last scraping
     companies_from_date_path = "urls-trustpilot.json"
@@ -23,10 +24,11 @@ if __name__ == "__main__":
             except:
                 raise AssertionError(f"The date '{companies_date[company]}' does NOT match the format '{date_format}'")
             
-            scrape_reviews(company=company, 
-                           from_date = from_date,
-                           date_format = date_format,
-                           language="en")
+            scrape_and_send_reviews(company=company, 
+                                    from_date = from_date,
+                                    date_format = date_format,
+                                    producer = producer,
+                                    language="en")
             
             # Update the date of the last scraping
             companies_date[company] = datetime.now().strftime(date_format)

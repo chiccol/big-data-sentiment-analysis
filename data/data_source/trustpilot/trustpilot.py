@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 # Function to scrape Trustpilot reviews for a specific company
-def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999, language="en"):
+def scrape_and_send_reviews(company, from_date, date_format, producer, from_page=1, to_page=999999, language="en"):
     """
     Scrape reviews from Trustpilot for a specific company within a specified date range.
 
@@ -64,56 +64,29 @@ def scrape_reviews(company, from_date, date_format, from_page=1, to_page=999999,
             review = title + " " + content
             text.append(review)
 
-        for num_review in range(len(text)):
+        for num_review in range(len(text) - 1):
             full_review = dict()
-            full_review["Location"] = locations[num_review].get_text()
-            full_review["Rating"] = ratings[num_review]["data-service-review-rating"]
-            full_review["Date"] = dates[num_review]
-            # check if the review is older than the specified date
-            if datetime.strptime(full_review["Date"],date_format) < from_date:
-                print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
-                if num_review == 0 and num_page == 1:
-                    print(f"No new reviews found for {company} after date {from_date}.")
-                return 1
-            full_review["Review"] = text[num_review]
-            full_review_serialized = json.dumps(full_review).encode('utf-8')
-            print(full_review_serialized)
-        
-        sleep(10)
-
-    print(f"All reviews of {company} from date {from_date_str} have been collected.")
-    return 1
-
-# Run the scraping and saving process
-if __name__ == "__main__":
-    
-    companies_from_date_path = "urls-trustpilot.json"
-    with open(companies_from_date_path, 'r') as file:
-        company_date = json.load(file)
-        companies, from_dates_str = list(company_date.keys()), list(company_date.values())
-
-    date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-                    
-    while True:
-        for company, from_date_str in zip(companies,from_dates_str):
-            
             try:
-                from_date = datetime.strptime(from_date_str, date_format)
-            except:
-                raise AssertionError(f"The date '{from_date_str}' does NOT match the format '{date_format}'")
+                full_review["Location"] = locations[num_review].get_text()
+                full_review["Rating"] = ratings[num_review]["data-service-review-rating"]
+                full_review["Date"] = dates[num_review]
+                full_review["Review"] = text[num_review]
+                full_review["Source"] = "Trustpilot"
+                full_review["Company"] = company
+                # check if the review is older than the specified date
+                if datetime.strptime(full_review["Date"],date_format) < from_date:
+                    print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
+                    if num_review == 0 and num_page == 1:
+                        print(f"No new reviews found for {company} after date {from_date}.")
+                        return 1
+                    else:
+                        print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")
+                        return 1
+                full_review_serialized = json.dumps(full_review).encode('utf-8')
+                producer.produce(record = full_review_serialized, topic=company)
+                print(full_review_serialized)
+            except Exception as e:
+                print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")
+                print(f"Lenght location: {len(locations)}, num_review: {num_review}")
             
-            scrape_reviews(company=company, 
-                           from_date = from_date,
-                           date_format = date_format,
-                           language="en")
-            
-            # update 
-            company_date[company] = datetime.now().strftime(date_format)
-            with open(companies_from_date_path, 'w') as file:
-                json.dump(company_date, file)
-
-        sleep(30)  
-
-        with open(companies_from_date_path, 'r') as file:
-            company_date = json.load(file)
-            from_dates_str = list(company_date.values())
+        sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

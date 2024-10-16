@@ -55,8 +55,8 @@ services:
       - '5001:5001'
     container_name: trustpilot-producer
     build:
-      context: data/data_source/trustpilot/
-      dockerfile: trustpilot.Dockerfile
+      context: data/data_source/
+      dockerfile: trustpilot/trustpilot.Dockerfile
     depends_on:
       - mongo
 

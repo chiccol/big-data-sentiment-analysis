@@ -7,12 +7,19 @@ from kafka_producer import KafkaProducer
 if __name__ == "__main__":
     
     # this doesn't work yet because I can't connect to the kafka container, probably because need external port
-    producer = KafkaProducer(bootstrap_servers="kafka:29092", client_id = "trustpilot-producer", source = "trustpilot")
+    client_id = "trustpilot-producer"
+    bootstrap_servers = "kafka:9092"
+    source = "trustpilot"
+    producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id = client_id)
+    print(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}")
 
     # Load companies and dates of the last scraping
     companies_from_date_path = "urls-trustpilot.json"
     with open(companies_from_date_path, 'r') as file:
         companies_date = json.load(file)
+    print(f"Companies and dates of the last scraping loaded from {companies_from_date_path}")
+    for company in companies_date.keys():
+        print(f"Company: {company}, Last scraping: {companies_date[company]}")
 
     date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
                     

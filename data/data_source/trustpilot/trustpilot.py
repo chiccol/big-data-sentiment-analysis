@@ -72,7 +72,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 full_review["Date"] = dates[num_review]
                 full_review["Review"] = text[num_review]
                 full_review["Source"] = "Trustpilot"
-                full_review["Company"] = company
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["Date"],date_format) < from_date:
                     print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")

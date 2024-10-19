@@ -31,8 +31,6 @@ services:
     restart: always
   
   mongo-controller:
-    ports: 
-      - '5004:5004'
     container_name: mongo-controller
     build:
       context: consumers/mongodb/
@@ -41,18 +39,14 @@ services:
       - mongo
 
   youtube-producer:
-    ports: 
-      - '5000:5000'
     container_name: youtube-producer
     build:
-      context: data/data_source/youtube/
+      context: data/data_source/
       dockerfile: youtube.Dockerfile
     depends_on:
       - mongo
 
   trustpilot-producer:
-    ports: 
-      - '5001:5001'
     container_name: trustpilot-producer
     build:
       context: data/data_source/
@@ -61,12 +55,9 @@ services:
       - mongo
 
   reddit-producer:
-    ports: 
-      - '5002:5002'
     container_name: reddit-producer
     build:
-      context: data/data_source/reddit/
+      context: data/data_source/
       dockerfile: reddit.Dockerfile
     depends_on:
       - mongo
-  

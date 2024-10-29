@@ -5,7 +5,8 @@ FROM python:3.11.1-slim
 WORKDIR /app
 
 # Copy the folder containing the scraper's Python files into the container
-COPY . /app
+COPY reddit /app
+COPY kafka_producer.py /app
 
 # Install the Python dependencies from the requirements.txt file
 RUN pip install --no-cache-dir -r requirements.txt

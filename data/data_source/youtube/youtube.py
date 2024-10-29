@@ -139,7 +139,7 @@ def search_videos(query,
   while True:
     
     response_search_videos = request_search_videos.execute()
-    next_page_token_search = response_search_videos['nextPageToken']
+    next_page_token_search = response_search_videos.get('nextPageToken',None)
     regionCode = response_search_videos['regionCode']
     videoIds = [item["id"]["videoId"] for item in response_search_videos['items']]
     num_videos += len(videoIds)

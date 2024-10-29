@@ -31,7 +31,7 @@ if __name__ == "__main__":
     source = "youtube"
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id = client_id)
     print(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}")
-
+    
     # Load companies and dates of the last scraping
     companies_videos_path = "youtube_companies_videos.json"
     with open(companies_videos_path, 'r') as file:

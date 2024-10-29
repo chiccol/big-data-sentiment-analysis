@@ -29,23 +29,25 @@ services:
     depends_on:
       - kafka
     restart: always
-  
+
   mongo-controller:
     container_name: mongo-controller
     build:
-      context: consumers/mongodb/
-      dockerfile: mongo-controller.Dockerfile
+      context: consumers/
+      dockerfile: mongodb/mongo-controller.Dockerfile
     depends_on:
       - mongo
+      - kafka
 
   youtube-producer:
     container_name: youtube-producer
     build:
       context: data/data_source/
-      dockerfile: youtube.Dockerfile
+      dockerfile: youtube/youtube.Dockerfile
     depends_on:
       - mongo
-
+      - kafka
+  
   trustpilot-producer:
     container_name: trustpilot-producer
     build:
@@ -53,11 +55,13 @@ services:
       dockerfile: trustpilot/trustpilot.Dockerfile
     depends_on:
       - mongo
-
+      - kafka
+      
   reddit-producer:
     container_name: reddit-producer
     build:
       context: data/data_source/
-      dockerfile: reddit.Dockerfile
+      dockerfile: reddit/reddit.Dockerfile
     depends_on:
       - mongo
+      - kafka

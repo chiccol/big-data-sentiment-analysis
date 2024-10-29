@@ -1,8 +1,11 @@
 # Start from the official Python image
 FROM python:3.11.1-slim
 
+# Set the working directory in the container
+WORKDIR /app
 
-COPY . .
+# Copy the folder containing the scraper's Python files into the container
+COPY mongodb /app
 
 # Install the Python dependencies from the requirements.txt file
 RUN pip install -r ./requirements.txt

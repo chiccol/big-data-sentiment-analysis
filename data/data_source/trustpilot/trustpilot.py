@@ -11,7 +11,9 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
 
     This function retrieves reviews from Trustpilot's website for a given company, collecting user information,
     ratings, locations, review dates, and review text. It continues scraping until it reaches either the specified 
-    number of pages or reviews older than a specified date.
+    number of pages or reviews older than a specified date. 
+
+    Produces a list of byte encoded json. 
 
     Args:
         company (str): The Trustpilot company identifier for which reviews are being scraped in the format company.com.
@@ -35,7 +37,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     dates = []
     text = []
     language = "www" if language == "en" else language
-
+    review_list = []
     for num_page in range(from_page, to_page + 1):
         print(f"Scraping page {num_page} for {company}...")
 
@@ -81,11 +83,12 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                     else:
                         print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")
                         return 1
-                full_review_serialized = json.dumps(full_review).encode('utf-8')
-                producer.produce(record = full_review_serialized, topic=company)
-                print(full_review_serialized)
+                print(full_review)
+                review_list.append(full_review) 
             except Exception as e:
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")
-                print(f"Lenght location: {len(locations)}, num_review: {num_review}")
-            
+                print(f"Length location: {len(locations)}, num_review: {num_review}")
+        
+        review_list_serialized = json.dumps(review_list).encode('utf-8') 
+        producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

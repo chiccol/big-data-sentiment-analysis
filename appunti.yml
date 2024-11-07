@@ -1,0 +1,53 @@
+
+  youtube-producer:
+    container_name: youtube-producer
+    build:
+      context: data/data_source/
+      dockerfile: youtube/youtube.Dockerfile
+    depends_on:
+      - mongo
+      - kafka
+  reddit-producer:
+    container_name: reddit-producer
+    build:
+      context: data/data_source/
+      dockerfile: reddit/reddit.Dockerfile
+    depends_on:
+      - mongo
+      - kafka
+
+
+conf = { 'bootstrap.servers': 'kafka:9092', 'group.id': 'your_group', 'auto.offset.reset': 'earliest'}
+consumer = Consumer(conf)
+msg = consumer.poll(timeout=5.0)
+        # Print message details
+        print(f"Topic: {msg.topic()}")
+        print(f"Partition: {msg.partition()}")
+        print(f"Offset: {msg.offset()}")
+        print(f"Key: {msg.key().decode('utf-8') if msg.key() else None}")
+        print(f"Value: {msg.value().decode('utf-8')}")
+        print(f"Timestamp: {msg.timestamp()[1]}")
+
+-- Entrypoint in every container
+
+-- Consumer
+  1. Create mongodb connection
+  2. Create kafka connection
+  3. Read one message (a message is an object from which we can obtain the topic, thus the collection where we want to store it)
+  4. Write it on mongo based on the topic
+
+-- Oggettificare il DB manager, ha tanti metodi e cose utili a se stesse
+
+
+-- Parquet
+  1. Translation from json to pd.dataframe
+  2. Translation from pd.dataframe to pq.writetable
+  3. Send pq bytes over 
+  4. Correctly connect to kafka broker as mongo consumer
+  5. Convert parquet into dataframe, dataframe into parquet
+  6. Write many
+
+  Optional stuff>
+  look into ZSTD to optimize parquet compression
+  look into LZ4 to compress kafka messages
+

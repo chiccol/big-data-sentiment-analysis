@@ -37,18 +37,26 @@ def getcomments_reddit(
 
     if save_submission:
         # Fetch submission data
+        # submission_data = {
+        #     "type": "submission",
+        #     "source": "reddit",
+        #     "submissionId": submission_id,
+        #     "submissionTitle": submission.title,
+        #     "submissionText": submission.selftext,
+        #     "createdAt": datetime.fromtimestamp(submission.created_utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        #     "score": submission.score,
+        #     "numComments": submission.num_comments,
+        #     "url": submission.url,
+        #     "author": str(submission.author),
+        #     "subreddit": str(submission.subreddit)
+        # }
         submission_data = {
-            "type": "submission",
+            "id": submission_id,
             "source": "reddit",
-            "submissionId": submission_id,
-            "submissionTitle": submission.title,
-            "submissionText": submission.selftext,
-            "createdAt": datetime.fromtimestamp(submission.created_utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "score": submission.score,
-            "numComments": submission.num_comments,
-            "url": submission.url,
-            "author": str(submission.author),
-            "subreddit": str(submission.subreddit)
+            "text": submission.title + ": " + submission.selftext,
+            "date": datetime.fromtimestamp(submission.created_utc),
+            "re-vote": submission.score,
+            "re-reply-count": submission.num_comments
         }
 
         # Send submission data to Kafka
@@ -85,17 +93,16 @@ def getcomments_reddit(
             break
 
         extracted_comment = {
-            "type": "comment",
+            # "id": submission_id,
+            "id": comment.id,
             "source": "reddit",
-            "submissionId": submission_id,
-            "commentId": comment.id,
             "text": comment.body,
-            "score": comment.score,
-            "createdAt": comment_date_str,
-            "replyCount": len(comment.replies),
-            "author": str(comment.author),
-            "parentId": comment.parent_id,
-            "permalink": comment.permalink
+            "date": comment_datetime,
+            "re-vote": comment.score,
+            "re-reply-count": len(comment.replies)#,
+            # "author": str(comment.author),
+            # "parentId": comment.parent_id,
+            # "permalink": comment.permalink
         }
         comments_to_send.append(extracted_comment)
         num_comments += 1

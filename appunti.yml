@@ -17,6 +17,45 @@
       - kafka
 
 
+
+
+
+"""# Print message details
+print(f"Topic: {msg.topic()}")
+print(f"Partition: {msg.partition()}")
+print(f"Offset: {msg.offset()}")
+print(f"Key: {msg.key().decode('utf-8') if msg.key() else None}")
+print(f"Value: {msg.value().decode('utf-8')}")
+print(f"Timestamp: {msg.timestamp()[1]}")"""
+
+"""
+        Youtube
+        extracted_comment = {
+            "source": "youtube",
+            "text": comment.get("textOriginal", None),
+            "date": comment.get("publishedAt", None),
+            "yt-video-id": video,
+            "yt-likes": comment.get("likeCount", None),
+            "yt-reply-count": item["snippet"].get("totalReplyCount", 0)
+        }
+
+Trustpilot
+        full_review["source"] = "trustpilot"
+        full_review["text"] = text[num_review]
+        full_review["date"] = dates[num_review]
+        full_review["tp-stars"] = ratings[num_review]["data-service-review-rating"]
+        full_review["tp-Location"] = locations[num_review].get_text()
+
+Reddit
+
+        submission_data = {
+            'source': 'reddit'
+            'text': submission.selftext,
+            'date': datetime.fromtimestamp(submission.created_utc, tz=timezone.utc),
+            're-vote': submission.score,
+            're-reply-count': submission.num_comments,
+        }
+"""
 conf = { 'bootstrap.servers': 'kafka:9092', 'group.id': 'your_group', 'auto.offset.reset': 'earliest'}
 consumer = Consumer(conf)
 msg = consumer.poll(timeout=5.0)
@@ -30,14 +69,8 @@ msg = consumer.poll(timeout=5.0)
 
 -- Entrypoint in every container
 
--- Consumer
-  1. Create mongodb connection
-  2. Create kafka connection
-  3. Read one message (a message is an object from which we can obtain the topic, thus the collection where we want to store it)
-  4. Write it on mongo based on the topic
 
--- Oggettificare il DB manager, ha tanti metodi e cose utili a se stesse
-
+-- Create a loop that is not stupid, a while true can fuck up a container
 
 -- Parquet
   1. Translation from json to pd.dataframe

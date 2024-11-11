@@ -18,7 +18,7 @@ class MongoManager:
             "text": str,
             "date": datetime,
             "yt-video-id": str,
-            "yt-likes": int,
+            "yt-like-count": int,
             "yt-reply-count": int,
             "tp-stars": int,
             "tp-location": str,

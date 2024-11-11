@@ -1,9 +1,6 @@
 # Start from the official Python slim image
 FROM python:3.11.1-slim
 
-# Install bash
-RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -15,6 +12,9 @@ RUN pip install -r ./requirements.txt
 
 # Expose a port (if needed; adjust this to the appropriate port number)
 EXPOSE 5004
+
+# Install bash
+RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
 
 # Make the wait.sh script executable
 RUN chmod +x /app/wait.sh

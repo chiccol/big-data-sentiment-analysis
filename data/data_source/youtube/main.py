@@ -8,7 +8,6 @@ import os
 from youtube import search_videos, getcomments_video
 
 if __name__ == "__main__":
-    sleep(10)    
     # Load developer key for YouTube API and instantiate the scraper
     load_dotenv()
     print("Environment variables loaded")

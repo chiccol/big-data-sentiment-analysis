@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# Wait for 30 seconds
-echo "Waiting 20 seconds for Kafka to be ready..."
+echo "Waiting 25 seconds for Kafka to be ready..."
 
-sleep 20
+sleep 25
 
 echo "Starting main.py application..."
 exec python3 main.py

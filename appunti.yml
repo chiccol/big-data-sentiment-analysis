@@ -1,24 +1,8 @@
-
-  youtube-producer:
-    container_name: youtube-producer
-    build:
-      context: data/data_source/
-      dockerfile: youtube/youtube.Dockerfile
-    depends_on:
-      - mongo
-      - kafka
-  reddit-producer:
-    container_name: reddit-producer
-    build:
-      context: data/data_source/
-      dockerfile: reddit/reddit.Dockerfile
-    depends_on:
-      - mongo
-      - kafka
-
-
-
-
+    schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
+                                  ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/frame.py", line 886, in __init__
+    raise ValueError("DataFrame constructor not properly called!")
+ValueError: DataFrame constructor not properly called!
 
 """# Print message details
 print(f"Topic: {msg.topic()}")
@@ -67,10 +51,8 @@ msg = consumer.poll(timeout=5.0)
         print(f"Value: {msg.value().decode('utf-8')}")
         print(f"Timestamp: {msg.timestamp()[1]}")
 
--- Entrypoint in every container
 
-
--- Create a loop that is not stupid, a while true can fuck up a container
+1. Check for new topics, if there are, sub to them -> KafkaConsumer.get_topics()
 
 -- Parquet
   1. Translation from json to pd.dataframe

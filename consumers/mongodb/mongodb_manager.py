@@ -1,11 +1,10 @@
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-import confluent_kafka
 from datetime import datetime
 
 # Every function works, this connects correctly to Mongo
 
-class MongoManager:
+class MongoDB:
     def __init__(self, host='mongo', port=27017):
         self.client = MongoClient(f'mongodb://{host}:{port}')
         self.db_list = []

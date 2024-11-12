@@ -2,6 +2,12 @@ from confluent_kafka import Consumer, KafkaError, KafkaException
 from typing import List
 
 class KafkaConsumer:
+    """
+    Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrive topics, partitions and messages.
+    On instantiation, it will call the initialize_consumer() function in order to contact the kafka broker inside docker and
+    establish a connection. 
+    TODO pass bootstrap_servers, group_id, auto_offset_reset etc as environment parameters in the docker compose.
+    """
     def __init__(self,
                  bootstrap_servers: str = 'kafka:9092',
                  group_id: str = 'mongoconsumer',
@@ -18,6 +24,18 @@ class KafkaConsumer:
         self.initialize_consumer()
 
     def get_topics(self) -> List[str]:
+        """
+        Uses the kafka consumer to obtain metadata from the broker, then extracts the list of topics available, removes
+        "__consumer_offsets" and uses a set operation to check if there are any new topics, if there are, it subscribes to them.
+        This function is needed for the correct startup of the consumer.
+
+        Args:
+            self
+
+        Returns:
+            list of topics extracted from the broker
+
+        """
         metadata = self.consumer.list_topics(timeout=10.0)
         topics_dict = metadata.topics
         topics = list(topics_dict.keys())
@@ -25,7 +43,7 @@ class KafkaConsumer:
         # Remove internal Kafka topic if present
         if '__consumer_offsets' in topics:  # Note: double underscore
             topics.remove('__consumer_offsets')
-            
+             
         # Find new topics that aren't in our current list
         difference = list(set(topics) - set(self.current_topic_list))
         
@@ -48,7 +66,7 @@ class KafkaConsumer:
             print(f'Failed to initialize kafka consumer: {str(e)}')
             raise
 
-    def poll_message(self, timeout: float = 1.0):
+    def poll_message(self, timeout: float = 1.0): 
         """Poll Kafka for messages with a timeout."""
         try:
             msg = self.consumer.poll(timeout)
@@ -90,7 +108,7 @@ class KafkaConsumer:
         """
         print("\nInspecting Kafka broker...\n")
         
-        # Step 1: List all topics
+        # List all topics
         metadata = self.consumer.list_topics(timeout=10)
         topics = metadata.topics.keys()
         
@@ -100,7 +118,7 @@ class KafkaConsumer:
         
         print("Topics available in broker:", topics)
         
-        # Step 2: Inspect each topic's partitions and messages
+        # Inspect each topic's partitions and messages
         for topic in topics:
             if topic == '__consumer_offsets':  # Ignore internal Kafka topic
                 continue
@@ -109,7 +127,7 @@ class KafkaConsumer:
             partitions = metadata.topics[topic].partitions.keys()
             print(f"Partitions for {topic}: {partitions}")
             
-            # Step 3: Try to consume a few messages from each partition
+            # Try to consume a few messages from each partition
             for partition in partitions:
                 print(f"Reading up to {num_messages} messages from topic '{topic}', partition {partition}")
                 count = 0

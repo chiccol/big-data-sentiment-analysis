@@ -2,7 +2,7 @@
 
 echo "Waiting 40 seconds for Kafka to be ready..."
 
-sleep 40
+sleep 45
 
 echo "Starting main.py application..."
 exec python3 main.py

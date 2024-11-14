@@ -5,7 +5,11 @@ FROM python:3.11.1-slim
 WORKDIR /app
 
 # Copy the folder containing the scraper's Python files into the container
-COPY mongodb /app
+COPY mongodb/main.py /app
+COPY mongodb/mongodb_manager.py /app
+COPY mongodb/requirements.txt /app
+COPY mongodb/wait.sh /app
+COPY kafka_consumer.py /app
 
 # Install the Python dependencies from the requirements.txt file
 RUN pip install -r ./requirements.txt

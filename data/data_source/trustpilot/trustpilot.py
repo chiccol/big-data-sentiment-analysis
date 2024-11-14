@@ -83,6 +83,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
             content = review.find('p').get_text() if review.find('p') else "No Content"
             review = title + " " + content
             text.append(review)
+
         for num_review in range(len(text)):
             full_review = dict()
             try:

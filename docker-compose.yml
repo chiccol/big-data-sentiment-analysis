@@ -37,6 +37,10 @@ services:
     depends_on:
       - kafka
       - mongo
+    volumes: 
+      - ./consumers/mongodb/main.py:/app/main.py
+      - ./consumers/mongodb/mongodb_manager.py:/app/mongodb_manager.py
+      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
   
   youtube-producer:
     container_name: youtube-producer
@@ -65,3 +69,37 @@ services:
     depends_on:
       - mongo
       - kafka
+  # DOESN'T WORK YET
+  spark-master:
+    build:
+        context: consumers
+        dockerfile: spark/Dockerfile
+    command: /bin/bash -c "./run_spark_job.sh"
+    mem_limit: 1g
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - KAFKA_ADVERTISED_LISTENERS=kafka:9092
+      - NUM_RECORDS=50
+    ports:
+      - "7077:7077" # Master port
+      - "8080:8080" # Web UI
+    volumes: 
+      - ./consumers/spark/main.py:/app/main.py 
+      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
+
+  spark-worker-1:
+    build:
+        context: consumers/spark
+        dockerfile: spark/Dockerfile
+    mem_limit: 2g
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPAKR_WORKER_MEMORY=2g
+    depends_on:
+      - spark-master

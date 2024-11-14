@@ -1,22 +1,28 @@
+import pyarrow.parquet as pq
 from confluent_kafka import Consumer, KafkaError, KafkaException
+from mongodb_manager import MongoDB
+
+from io import BytesIO
 from typing import List
 
 class KafkaConsumer:
     """
-    Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrieve topics, partitions and messages.
+    Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrive topics, partitions and messages.
     On instantiation, it will call the initialize_consumer() function in order to contact the kafka broker inside docker and
     establish a connection. 
     TODO pass bootstrap_servers, group_id, auto_offset_reset etc as environment parameters in the docker compose.
     """
     def __init__(self,
                  bootstrap_servers: str = 'kafka:9092',
-                 group_id: str = 'mongoconsumer',
+                 group_id: str = 'mongo-group',
+                 client_id: str = 'mongo-consumer',
                  auto_offset_reset: str = 'earliest',): 
         
         self.config = {
             'bootstrap.servers': bootstrap_servers,
             'group.id': group_id,
-            'auto.offset.reset': auto_offset_reset
+            'auto.offset.reset': auto_offset_reset,
+            "client.id" : client_id
         } 
         self.current_topic_list = []
         self.msg = None
@@ -58,28 +64,16 @@ class KafkaConsumer:
         return topics
 
     def initialize_consumer(self) -> None:
-        """
-        Initizializes the consumer connecting to the broker using the attributes given to the class in input.
-        It subscribes to the currently available kafka topics using self.get_topics.
-        """
         try:
             self.consumer = Consumer(self.config)
             print('Kafka consumer initialized correctly\n')
-            self.topic = self.get_topics()  
+            self.topic = self.get_topics()  # Call get_topics with self
         except KafkaException as e:
             print(f'Failed to initialize kafka consumer: {str(e)}')
             raise
 
-    def poll_message(self, timeout: float = 100.0): 
-        """Poll Kafka for messages with a timeout in ms.
-        
-        Args:
-            time to wait between two separate polls 
-        
-        Returns:
-            kafka message object
-
-        """
+    def poll_message(self, timeout: float = 1.0): 
+        """Poll Kafka for messages with a timeout."""
         try:
             msg = self.consumer.poll(timeout)
             if msg is None:
@@ -100,8 +94,7 @@ class KafkaConsumer:
             raise
 
     def close(self):
-        """Closes the kafka consumer. It is used when there are no more messages to poll from the broker. Closing the consumer
-        is handled in the main.py script."""
+        """Properly close the Kafka consumer."""
         if self.consumer is not None:
             try:
                 self.consumer.close()
@@ -111,10 +104,6 @@ class KafkaConsumer:
                 raise
     
     def get_metadata(self, timeout = 10.0):
-        """
-        It returns a kafka object containing metadata.
-        The accessible attributes are: 'brokers', 'cluster_id', 'controller_id', 'orig_broker_id', 'orig_broker_name', 'topics'
-        """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
 
@@ -122,9 +111,7 @@ class KafkaConsumer:
         """
         Inspect the broker to see what topics, partitions, and messages are available.
         Attempts to consume a few messages from each topic partition.
-        Used for debugging, not needed in practice.
         """
-
         print("\nInspecting Kafka broker...\n")
         
         # List all topics
@@ -164,3 +151,63 @@ class KafkaConsumer:
                     print(f"No messages found in partition {partition}.")
             
         print("\nFinished inspecting broker.\n")
+
+    def consume_messages(self,consumer,timeout = 100.0):
+        print("Entered consume message function")
+        metadata = self.get_metadata(timeout=timeout)
+        topics = list(metadata.topics.keys())
+        spark_msgs = [] if consumer == "spark" else None
+
+        if not topics:
+            print("No topics found in Kafka broker.")
+            return
+        
+        print("Topics available in broker:", topics)
+
+        for topic in topics:
+            if topic == '__consumer_offsets':  # Ignore internal Kafka topic
+                continue
+            
+            print(f"\nRetrieving messages from {topic}")
+            partitions = metadata.topics[topic].partitions.keys()
+            print(partitions)
+            print(f"Partitions for {topic}: {partitions}")
+            for partition in partitions:
+                count = 0
+                print(f"Reading all messages from topic '{topic}', partition {partition}")
+                
+                # Use a while loop to continuously poll for messages
+                while True:
+                    msg = self.poll_message(timeout=timeout)
+                    
+                    if msg is None:
+                        print("No more messages available.")
+                        break
+                    elif msg.error():
+                        print(f"Error while polling message: {msg.error()}")
+                    else:
+                        count += 1
+                        print(f"The message is of type {type(msg.value())} and it is {msg.value()}")
+                        topic = str(msg.topic())
+                        msg = self.decode_parquet(msg.value())
+                        if isinstance(consumer, MongoDB):
+                            print(f"Attempting to write it on mongo on collection {topic}")
+                            consumer.write_on_mongo(msg, topic) # mongo should be moved
+                        elif consumer == "spark":
+                            print(f"Appending message to spark_msgs")
+                            spark_msgs.append(msg)
+                        else:
+                            print("Consumer not recognized")
+                            ValueError("Consumer not recognized. Consumer should be either MongoDB object or spark")
+
+    def decode_parquet(self, msg):
+        # Use BytesIO to read the binary Parquet data
+        buffer = BytesIO(msg)
+        
+        # Read the Parquet data back into an Arrow table
+        table = pq.read_table(buffer)
+        
+        # Convert the Arrow table to a pandas DataFrame for easier manipulation
+        decoded_msg = table.to_pylist()
+        print(f"Function decode_parquet worked, this is the output: {decoded_msg}")
+        return decoded_msg

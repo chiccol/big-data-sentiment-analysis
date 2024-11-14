@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
+import json 
 
 # Every function works, this connects correctly to Mongo
 
@@ -146,3 +147,22 @@ class MongoDB:
             print(f'{result}\n')
 
         return results
+    
+    def write_on_mongo(self, msg, topic):
+        try:
+            if topic not in self.collection_list:
+                # create_collection already switches to that collection
+                self.create_collection(topic)
+            # if the collection is not new, we switch to it to write correctly
+            self.change_collection(topic)
+            try:
+                # Converts the string output of msg.value().decode('utf-8')) into a list of dict
+                self.insert_list_dict(msg)
+            # aggiusta gli errori con parquet
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON message: {str(e)}")
+            except Exception as e:
+                print(f"Error processing message: {str(e)}")
+                
+        except Exception as e:
+            print(f"Error writing to MongoDB: {str(e)}")

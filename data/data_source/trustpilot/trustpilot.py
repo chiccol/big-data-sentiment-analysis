@@ -83,8 +83,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
             content = review.find('p').get_text() if review.find('p') else "No Content"
             review = title + " " + content
             text.append(review)
-
-        for num_review in range(len(text) - 1):
+        for num_review in range(len(text)):
             full_review = dict()
             try:
                 full_review["source"] = "Trustpilot"
@@ -107,6 +106,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")
                 print(f"Length location: {len(locations)}, num_review: {num_review}")
         
+        text.clear()
         review_list_serialized = encode_message_to_parquet(review_list)
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

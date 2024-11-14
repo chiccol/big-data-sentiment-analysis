@@ -3,7 +3,7 @@ from typing import List
 
 class KafkaConsumer:
     """
-    Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrive topics, partitions and messages.
+    Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrieve topics, partitions and messages.
     On instantiation, it will call the initialize_consumer() function in order to contact the kafka broker inside docker and
     establish a connection. 
     TODO pass bootstrap_servers, group_id, auto_offset_reset etc as environment parameters in the docker compose.
@@ -58,16 +58,28 @@ class KafkaConsumer:
         return topics
 
     def initialize_consumer(self) -> None:
+        """
+        Initizializes the consumer connecting to the broker using the attributes given to the class in input.
+        It subscribes to the currently available kafka topics using self.get_topics.
+        """
         try:
             self.consumer = Consumer(self.config)
             print('Kafka consumer initialized correctly\n')
-            self.topic = self.get_topics()  # Call get_topics with self
+            self.topic = self.get_topics()  
         except KafkaException as e:
             print(f'Failed to initialize kafka consumer: {str(e)}')
             raise
 
-    def poll_message(self, timeout: float = 1.0): 
-        """Poll Kafka for messages with a timeout."""
+    def poll_message(self, timeout: float = 100.0): 
+        """Poll Kafka for messages with a timeout in ms.
+        
+        Args:
+            time to wait between two separate polls 
+        
+        Returns:
+            kafka message object
+
+        """
         try:
             msg = self.consumer.poll(timeout)
             if msg is None:
@@ -88,7 +100,8 @@ class KafkaConsumer:
             raise
 
     def close(self):
-        """Properly close the Kafka consumer."""
+        """Closes the kafka consumer. It is used when there are no more messages to poll from the broker. Closing the consumer
+        is handled in the main.py script."""
         if self.consumer is not None:
             try:
                 self.consumer.close()
@@ -98,6 +111,10 @@ class KafkaConsumer:
                 raise
     
     def get_metadata(self, timeout = 10.0):
+        """
+        It returns a kafka object containing metadata.
+        The accessible attributes are: 'brokers', 'cluster_id', 'controller_id', 'orig_broker_id', 'orig_broker_name', 'topics'
+        """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
 
@@ -105,7 +122,9 @@ class KafkaConsumer:
         """
         Inspect the broker to see what topics, partitions, and messages are available.
         Attempts to consume a few messages from each topic partition.
+        Used for debugging, not needed in practice.
         """
+
         print("\nInspecting Kafka broker...\n")
         
         # List all topics

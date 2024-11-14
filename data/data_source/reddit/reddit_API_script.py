@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timezone
 import logging
 
+
 load_dotenv()
 
 MONGODB_HOST = os.getenv('MONGODB_HOST', 'localhost')

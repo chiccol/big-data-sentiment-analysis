@@ -13,7 +13,6 @@ services:
         - "29092:29092"   # Internal port for Kafka brokers
       environment:  # Defines environment variables that will be set inside the Kafka container.
         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
-        KAFKA_CREATE_TOPICS: "apple:1:1,nvidia:1:1"  # Define the topics here topic: apple:replication-factor=1:number-of-partitions=1 
         KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092, EXTERNAL://0.0.0.0:9092
         KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, EXTERNAL:PLAINTEXT
         KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
@@ -36,9 +35,9 @@ services:
       context: consumers/
       dockerfile: mongodb/mongo-controller.Dockerfile
     depends_on:
-      - mongo
       - kafka
-
+      - mongo
+  
   youtube-producer:
     container_name: youtube-producer
     build:
@@ -47,7 +46,8 @@ services:
     depends_on:
       - mongo
       - kafka
-  
+
+
   trustpilot-producer:
     container_name: trustpilot-producer
     build:

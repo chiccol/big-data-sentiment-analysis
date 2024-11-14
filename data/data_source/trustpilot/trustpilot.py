@@ -3,6 +3,24 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
+import pyarrow as pa
+import pyarrow.parquet as pq
+from io import BytesIO
+import pandas as pd
+
+def encode_message_to_parquet(data):
+    # Infer the schema from the data
+    schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
+
+    # Convert the data to an Arrow Table using the inferred schema
+    table = pa.Table.from_pandas(pd.DataFrame(data), schema=schema)
+
+    # Write the table to an in-memory bytes buffer as Parquet
+    buffer = BytesIO()
+    pq.write_table(table, buffer)
+
+    # Return the Parquet bytes for saving or sending
+    return buffer.getvalue()
 
 # Function to scrape Trustpilot reviews for a specific company
 def scrape_and_send_reviews(company, from_date, date_format, producer, from_page=1, to_page=999999, language="en"):
@@ -69,11 +87,11 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
         for num_review in range(len(text) - 1):
             full_review = dict()
             try:
-                full_review["Location"] = locations[num_review].get_text()
-                full_review["Rating"] = ratings[num_review]["data-service-review-rating"]
-                full_review["Date"] = dates[num_review]
-                full_review["Review"] = text[num_review]
-                full_review["Source"] = "Trustpilot"
+                full_review["source"] = "Trustpilot"
+                full_review["text"] = text[num_review]
+                full_review["date"] = dates[num_review]
+                full_review["tp-location"] = locations[num_review].get_text()
+                full_review["tp-stars"] = ratings[num_review]["data-service-review-rating"]
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["Date"],date_format) < from_date:
                     print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
@@ -89,6 +107,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")
                 print(f"Length location: {len(locations)}, num_review: {num_review}")
         
-        review_list_serialized = json.dumps(review_list).encode('utf-8') 
+        review_list_serialized = encode_message_to_parquet(review_list)
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

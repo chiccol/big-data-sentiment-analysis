@@ -1,7 +1,6 @@
 from time import sleep
 import requests
 from bs4 import BeautifulSoup
-import json
 from datetime import datetime
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -93,7 +92,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 full_review["tp-location"] = locations[num_review].get_text()
                 full_review["tp-stars"] = ratings[num_review]["data-service-review-rating"]
                 # check if the review is older than the specified date
-                if datetime.strptime(full_review["Date"],date_format) < from_date:
+                if datetime.strptime(full_review["date"],date_format) < from_date:
                     print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
                     if num_review == 0 and num_page == 1:
                         print(f"No new reviews found for {company} after date {from_date}.")

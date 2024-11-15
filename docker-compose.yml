@@ -6,19 +6,19 @@ services:
       - "2181:2181"  # Exposes port 2181 on both the host and the container. Port 2181 is used by Zookeeper to handle client connections.
 
   kafka: 
-      image: wurstmeister/kafka
-      container_name: kafka  
-      ports:
-        - "9092:9092"     # External port for communication with clients
-        - "29092:29092"   # Internal port for Kafka brokers
-      environment:  # Defines environment variables that will be set inside the Kafka container.
-        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
-        KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092, EXTERNAL://0.0.0.0:9092
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, EXTERNAL:PLAINTEXT
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
-        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      depends_on:
-        - zookeeper
+    image: wurstmeister/kafka
+    container_name: kafka  
+    ports:
+      - "9092:9092"     # External port for communication with clients
+      - "29092:29092"   # Internal port for Kafka brokers
+    environment:  # Defines environment variables that will be set inside the Kafka container.
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092, EXTERNAL://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
   
   mongo:
     image: mongo:6.0.5
@@ -69,7 +69,7 @@ services:
     depends_on:
       - mongo
       - kafka
-  # DOESN'T WORK YET
+  
   spark-master:
     build:
         context: consumers
@@ -88,11 +88,13 @@ services:
       - "8080:8080" # Web UI
     volumes: 
       - ./consumers/spark/main.py:/app/main.py 
-      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
+      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
+    depends_on:
+      - kafka
 
   spark-worker-1:
     build:
-        context: consumers/spark
+        context: consumers
         dockerfile: spark/Dockerfile
     mem_limit: 2g
     container_name: spark-worker-1

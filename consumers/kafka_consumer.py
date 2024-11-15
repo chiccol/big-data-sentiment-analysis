@@ -1,6 +1,5 @@
 import pyarrow.parquet as pq
 from confluent_kafka import Consumer, KafkaError, KafkaException
-from mongodb_manager import MongoDB
 
 from io import BytesIO
 from typing import List
@@ -152,8 +151,10 @@ class KafkaConsumer:
             
         print("\nFinished inspecting broker.\n")
 
-    def consume_messages(self,consumer,timeout = 100.0):
+    def consume_messages(self, consumer,mongo_manager = None, timeout = 100.0):
         print("Entered consume message function")
+        if consumer == "mongo" and mongo_manager is None:
+            ValueError("Consumer is set to mongo but no mongo_manager is provided")
         metadata = self.get_metadata(timeout=timeout)
         topics = list(metadata.topics.keys())
         spark_msgs = [] if consumer == "spark" else None
@@ -163,7 +164,7 @@ class KafkaConsumer:
             return
         
         print("Topics available in broker:", topics)
-
+        sources = set() # added to test spark messages
         for topic in topics:
             if topic == '__consumer_offsets':  # Ignore internal Kafka topic
                 continue
@@ -172,16 +173,17 @@ class KafkaConsumer:
             partitions = metadata.topics[topic].partitions.keys()
             print(partitions)
             print(f"Partitions for {topic}: {partitions}")
+            
             for partition in partitions:
                 count = 0
                 print(f"Reading all messages from topic '{topic}', partition {partition}")
-                
                 # Use a while loop to continuously poll for messages
                 while True:
                     msg = self.poll_message(timeout=timeout)
-                    
                     if msg is None:
                         print("No more messages available.")
+                        if consumer == "spark":
+                            return spark_msgs
                         break
                     elif msg.error():
                         print(f"Error while polling message: {msg.error()}")
@@ -190,12 +192,12 @@ class KafkaConsumer:
                         print(f"The message is of type {type(msg.value())} and it is {msg.value()}")
                         topic = str(msg.topic())
                         msg = self.decode_parquet(msg.value())
-                        if isinstance(consumer, MongoDB):
+                        if consumer == "mongo":
                             print(f"Attempting to write it on mongo on collection {topic}")
-                            consumer.write_on_mongo(msg, topic) # mongo should be moved
+                            mongo_manager.write_on_mongo(msg, topic) # mongo should be moved
                         elif consumer == "spark":
                             print(f"Appending message to spark_msgs")
-                            spark_msgs.append(msg)
+                            spark_msgs.extend(msg)
                         else:
                             print("Consumer not recognized")
                             ValueError("Consumer not recognized. Consumer should be either MongoDB object or spark")

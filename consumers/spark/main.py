@@ -29,27 +29,28 @@ except Exception as e:
 
 print("Getting data from Kafka...")
 
-data = consumer.poll_message()  
+data = consumer.consume_messages(consumer="spark")
 
 print(data)
 print("Data received.")
-exit()
 
 print("Initializing Spark session...")
 # Initialize Spark session
 # I could add a if len(data) > 0: to check if there is data to process
 spark = SparkSession.builder \
-       .master("spark://spark-master:7077") \
+       .master(f"spark://{spark_master}:{spark_port}") \
        .appName("Sentiment Analysis with DistilBERT") \
        .getOrCreate()
 
 schema = StructType([
     StructField("source", StringType(), nullable = False),
-    StructField("id", IntegerType(), nullable = False),
-    StructField("likeCount", IntegerType(), nullable = False),
-    StructField("totalReplyCount", IntegerType(), nullable = False),
-    StructField("text", StringType(), nullable = True),
-    StructField("publishedAt", StringType(), nullable = False)
+    StructField("text", StringType(), nullable = False),
+    StructField("date", StringType(), nullable = True),
+    StructField("tp-stars", StringType(), nullable = True),
+    StructField("tp-location", StringType(), nullable = True),
+    StructField("yt-videoid", StringType(), nullable = True),
+    StructField("yt-like-count", IntegerType(), nullable = True),
+    StructField("yt-reply-count", IntegerType(), nullable = True)
 ])
 
 model_path = r"/app/model/distilbert-base-uncased"
@@ -72,8 +73,7 @@ def sentiment_udf(text_series):
 
 print("processing data...")
 df = spark.createDataFrame(data, schema)
-df_with_sentiment = df.drop(*["source", "likeCount", "totalReplyCount", "publishedAt"])
-df_with_sentiment = df_with_sentiment.withColumn("sentiment_probabilities", sentiment_udf(col("text")))
+df_with_sentiment = df.withColumn("sentiment_probabilities", sentiment_udf(col("text")))
 
 df_with_sentiment_multi_columns = df_with_sentiment.withColumn("positive", df_with_sentiment["sentiment_probabilities"].getItem(0)) \
                                         .withColumn("neutral", df_with_sentiment["sentiment_probabilities"].getItem(1)) \
@@ -81,5 +81,6 @@ df_with_sentiment_multi_columns = df_with_sentiment.withColumn("positive", df_wi
                                         .drop("sentiment_probabilities")
 
 # Show results
-print(df_with_sentiment_multi_columns.take(num_records))
+print(df_with_sentiment_multi_columns.take(len(data)))
+print("num of reviews processed:",df_with_sentiment_multi_columns.count())
 print("Processing completed. Sleeping for 15 seconds...")

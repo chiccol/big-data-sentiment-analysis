@@ -5,7 +5,6 @@ from trustpilot import scrape_and_send_reviews
 from kafka_producer import KafkaProducer
 
 if __name__ == "__main__":
-    sleep(10)    
     # this doesn't work yet because I can't connect to the kafka container, probably because need external port
     client_id = "trustpilot-producer"
     bootstrap_servers = "kafka:9092"

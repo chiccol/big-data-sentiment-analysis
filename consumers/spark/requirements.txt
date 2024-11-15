@@ -1,0 +1,6 @@
+transformers 
+torch 
+pandas
+py4j
+pyarrow
+confluent-kafka==2.6.0

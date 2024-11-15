@@ -13,7 +13,6 @@ services:
         - "29092:29092"   # Internal port for Kafka brokers
       environment:  # Defines environment variables that will be set inside the Kafka container.
         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Specifies the address (host:port) of the Zookeeper service that Kafka will connect to. (it connects to the 'zookeeper' service running on port 2181 within the Docker Compose network)
-        KAFKA_CREATE_TOPICS: "apple:1:1,nvidia:1:1"  # Define the topics here topic: apple:replication-factor=1:number-of-partitions=1 
         KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092, EXTERNAL://0.0.0.0:9092
         KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, EXTERNAL:PLAINTEXT
         KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
@@ -36,9 +35,13 @@ services:
       context: consumers/
       dockerfile: mongodb/mongo-controller.Dockerfile
     depends_on:
-      - mongo
       - kafka
-
+      - mongo
+    volumes: 
+      - ./consumers/mongodb/main.py:/app/main.py
+      - ./consumers/mongodb/mongodb_manager.py:/app/mongodb_manager.py
+      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
+  
   youtube-producer:
     container_name: youtube-producer
     build:
@@ -47,7 +50,8 @@ services:
     depends_on:
       - mongo
       - kafka
-  
+
+
   trustpilot-producer:
     container_name: trustpilot-producer
     build:
@@ -65,3 +69,37 @@ services:
     depends_on:
       - mongo
       - kafka
+  # DOESN'T WORK YET
+  spark-master:
+    build:
+        context: consumers
+        dockerfile: spark/Dockerfile
+    command: /bin/bash -c "./run_spark_job.sh"
+    mem_limit: 1g
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - KAFKA_ADVERTISED_LISTENERS=kafka:9092
+      - NUM_RECORDS=50
+    ports:
+      - "7077:7077" # Master port
+      - "8080:8080" # Web UI
+    volumes: 
+      - ./consumers/spark/main.py:/app/main.py 
+      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
+
+  spark-worker-1:
+    build:
+        context: consumers/spark
+        dockerfile: spark/Dockerfile
+    mem_limit: 2g
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPAKR_WORKER_MEMORY=2g
+    depends_on:
+      - spark-master

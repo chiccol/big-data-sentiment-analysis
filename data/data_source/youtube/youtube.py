@@ -2,6 +2,24 @@ from time import sleep
 import json
 from datetime import datetime
 import re
+import pyarrow as pa
+import pyarrow.parquet as pq
+from io import BytesIO
+import pandas as pd
+
+def encode_message_to_parquet(data):
+    # Infer the schema from the data
+    schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
+
+    # Convert the data to an Arrow Table using the inferred schema
+    table = pa.Table.from_pandas(pd.DataFrame(data), schema=schema)
+
+    # Write the table to an in-memory bytes buffer as Parquet
+    buffer = BytesIO()
+    pq.write_table(table, buffer)
+
+    # Return the Parquet bytes for saving or sending
+    return buffer.getvalue()
 
 def iso8601_to_seconds(duration):
     # Define a regular expression to extract hours, minutes, and seconds
@@ -67,20 +85,20 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
                     return 
             extracted_comment = {
                 "source": "youtube",
-                "videoId": video,
-                "textOriginal": comment.get("textOriginal", None),
-                "likeCount": comment.get("likeCount", None),
-                "publishedAt": comment.get("publishedAt", None),
-                "totalReplyCount": item["snippet"].get("totalReplyCount", 0)
+                "text": comment.get("textOriginal", None),
+                "date": comment.get("publishedAt", None),
+                "yt-videoid": video,
+                "yt-like-count": comment.get("likeCount", None),
+                "yt-reply-count": item["snippet"].get("totalReplyCount", 0)
             }
             comments.append(extracted_comment)
             flag_pinned_comment = False
 
-        comments = json.dumps(comments).encode('utf-8')
         num_comments += len(comments)
         print(comments)
-        producer.produce(record = comments, topic=company)
-
+        encoded_comments = encode_message_to_parquet(comments)
+        producer.produce(record = encoded_comments, topic=company)
+        print(encoded_comments)
         # Stop if no more pages or enough comments have been retrieved
         next_page_token = response.get('nextPageToken',None)
         if num_comments >= max_num_comments: 

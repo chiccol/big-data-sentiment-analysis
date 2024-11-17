@@ -85,7 +85,7 @@ services:
       #- SPARK_DYNAMIC_ALLOCATION_ENABLED=true
       - SPARK_MASTER_PORT=7077
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
-      - BATCH_SIZE=16 # with the current memory limit, 16 is the maximum batch size
+      - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it 
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI

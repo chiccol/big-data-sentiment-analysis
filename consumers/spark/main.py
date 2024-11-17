@@ -43,10 +43,6 @@ spark = SparkSession.builder \
 model_path = r"/app/model/distilbert-base-uncased"
 tokenizer_path = r"/app/model/tokenizer-distilbert-base-uncased"
 
-# Load DistilBERT tokenizer and model
-tokenizer = DistilBertTokenizer.from_pretrained(tokenizer_path)
-model = DistilBertForSequenceClassification.from_pretrained(model_path)  
-
 schema = StructType([
         StructField("source", StringType(), nullable = False),
         StructField("text", StringType(), nullable = False),
@@ -67,6 +63,11 @@ output_schema = StructType([
 @pandas_udf(output_schema)
 def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
     results = []
+
+    # Load DistilBERT tokenizer and model
+    # This makes each worker load the model and tokenizer, limiting memory usage but increasing latency
+    tokenizer = DistilBertTokenizer.from_pretrained(tokenizer_path)
+    model = DistilBertForSequenceClassification.from_pretrained(model_path)  
 
     model.eval()
     with torch.no_grad():

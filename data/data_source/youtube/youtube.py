@@ -82,14 +82,14 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
                     continue # Skip the pinned comment
                 else:
                     print(f"Comment is older than {from_date}")
-                    return 
+                    return None, num_comments
             extracted_comment = {
                 "source": "youtube",
                 "text": comment.get("textOriginal", None),
                 "date": comment.get("publishedAt", None),
                 "yt-videoid": video,
-                "yt-like-count": comment.get("likeCount", None),
-                "yt-reply-count": item["snippet"].get("totalReplyCount", 0)
+                "yt-like-count": int(comment.get("likeCount", None)),
+                "yt-reply-count": int(item["snippet"].get("totalReplyCount", 0))
             }
             comments.append(extracted_comment)
             flag_pinned_comment = False
@@ -103,10 +103,10 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
         next_page_token = response.get('nextPageToken',None)
         if num_comments >= max_num_comments: 
             print(f"Reached {max_num_comments} comments for video {video} of company {company}")
-            return next_page_token
+            return next_page_token, num_comments
         if not next_page_token: 
             print(f"No more comments to fetch for video {video} of company {company}") 
-            return None
+            return None, num_comments
 
         request = youtube_scraper.commentThreads().list(
             part="snippet", 

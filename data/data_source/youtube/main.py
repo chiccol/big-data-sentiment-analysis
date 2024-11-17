@@ -42,7 +42,7 @@ if __name__ == "__main__":
     date_format = "%Y-%m-%dT%H:%M:%SZ"
     
     while True:
-        
+        total_comments_scraped = 0
         for company in companies_videos.keys():
             
             print(f"Searching for new videos for {company}")
@@ -62,13 +62,15 @@ if __name__ == "__main__":
                         companies_videos[company]["videos"][video].get("next_page_token", None) != None):
                     print(companies_videos[company]["videos"][video])
 
-                    next_page_token = getcomments_video(video = video,
-                                                        youtube_scraper = youtube_scraper,
-                                                        company = company,
-                                                        producer = producer,
-                                                        max_num_comments = companies_videos[company]["max_num_comments_per_scraping"],
-                                                        next_page_token = companies_videos[company]["videos"][video]["next_page_token"],
-                                                        from_date = companies_videos[company]["videos"][video]["date_last_scrape"])
+                    next_page_token, num_comments = getcomments_video(video = video,
+                                                                      youtube_scraper = youtube_scraper,
+                                                                      company = company,
+                                                                      producer = producer,
+                                                                      max_num_comments = companies_videos[company]["max_num_comments_per_scraping"],
+                                                                      next_page_token = companies_videos[company]["videos"][video]["next_page_token"],
+                                                                      from_date = companies_videos[company]["videos"][video]["date_last_scrape"])
+                    print(f"Collected {num_comments} comments from video {video}")
+                    total_comments_scraped += num_comments
                     if not next_page_token:
                         # Update the date of the last scraping because all comments have been collected
                         print(f"All comments have been collected for video {video}. Updating the date of the last scraping.")
@@ -77,6 +79,7 @@ if __name__ == "__main__":
                     with open(companies_videos_path, 'w') as file:
                         json.dump(companies_videos, file, indent=4)
 
+        print(f"Total comments scraped: {total_comments_scraped}")
         print("Sleeping for 5 minutes...")
         sleep(300)  
         print("Waking up!")

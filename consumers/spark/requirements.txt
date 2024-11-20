@@ -1,6 +1,4 @@
-transformers 
-torch 
-pandas
-py4j
-pyarrow
+pandas==2.2.3
+py4j==0.10.9.7
+pyarrow==18.0.0
 confluent-kafka==2.6.0

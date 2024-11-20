@@ -17,6 +17,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, EXTERNAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
     depends_on:
       - zookeeper
   
@@ -50,6 +51,7 @@ services:
     depends_on:
       - mongo
       - kafka
+      - postgres
     volumes: 
       - ./data/data_source/youtube/main.py:/app/main.py 
       - ./data/data_source/youtube/youtube.py:/app/youtube.py
@@ -62,6 +64,7 @@ services:
     depends_on:
       - mongo
       - kafka
+      - postgres
       
   reddit-producer:
     container_name: reddit-producer
@@ -71,6 +74,7 @@ services:
     depends_on:
       - mongo
       - kafka
+      - postgres
   
   spark-master:
     build:
@@ -85,6 +89,8 @@ services:
       #- SPARK_DYNAMIC_ALLOCATION_ENABLED=true
       - SPARK_MASTER_PORT=7077
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
+      - CLIENT_ID=spark_consumer
+      - GROUP_ID=spark_group
       - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it 
     ports:
       - "7077:7077" # Master port
@@ -94,18 +100,32 @@ services:
       - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
     depends_on:
       - kafka
+      - postgres
+      - mongo
 
   spark-worker-1:
     build:
         context: consumers
         dockerfile: spark/Dockerfile
-    mem_limit: 2g
+    mem_limit: 3g
     container_name: spark-worker-1
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       #- SPARK_DYNAMIC_ALLOCATION_ENABLED=true # controls how many executors to request but operates within the worker resource limits
-      - SPARK_WORKER_CORES=2
-      - SPAKR_WORKER_MEMORY=2g # resource limit per worker
+      - SPARK_WORKER_CORES=2 
+      - SPARK_WORKER_MEMORY=3g # resource limit per worker
     depends_on:
       - spark-master
+
+  postgres:
+    image: postgres:17.0  
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=warehouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql

@@ -2,128 +2,95 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import when, col, pandas_udf
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType
 import pandas as pd
-import torch
-
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
-
 from kafka_consumer import KafkaConsumer
-
 import os
 
-spark_master = os.getenv("SPARK_MASTER_HOST")
-spark_port = os.getenv("SPARK_MASTER_PORT")
-batch_size = int(os.getenv("BATCH_SIZE")) 
-print(f"Processing data using batch size: {batch_size}")
-kafka_adv_external_listener = os.getenv("KAFKA_ADVERTISED_LISTENERS")
+def init_kafka(kafka_adv_external_listener, client_id, group_id):
+    print("Initializing Kafka consumer...")
+    try:
+        consumer = KafkaConsumer(bootstrap_servers=kafka_adv_external_listener, 
+                                 client_id=client_id, 
+                                 group_id=group_id)
+    except Exception as e:
+        print(f"Error initializing Kafka consumer: {e}")
+        exit(1)
 
-print("Initializing Kafka consumer...")
-try:
-    consumer = KafkaConsumer(bootstrap_servers=kafka_adv_external_listener, 
-                             client_id="spark-consumer", 
-                             group_id="spark-group")
-except Exception as e:
-    print(f"Error initializing Kafka consumer: {e}")
-    exit(1)
+    print("Getting data from Kafka...")
 
-print("Getting data from Kafka...")
+    return consumer
 
-data = consumer.consume_messages(consumer="spark")
+def init_spark(spark_master, spark_port):
+    spark = SparkSession.builder \
+        .master(f"spark://{spark_master}:{spark_port}") \
+        .appName("Writer") \
+        .getOrCreate()
+    return spark
 
-print(data)
-print("Data received.")
+def write_mongo(topic_messages, spark):
+    print(topic_messages)
+    for collection, messages in topic_messages.items():
+        if messages:  # Check if there are messages for the topic
+            # Create DataFrame for the topic
+            df = spark.createDataFrame(messages)
+            
+            # Write to MongoDB. db "reviews" is hard coded since it's the only DB we are using.
+            df.write \
+                .format("mongo") \
+                .mode("append") \
+                .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{collection}") \
+                .save()
+            
+            print(f"Wrote {df.count()} messages from topic {collection} to MongoDB")
 
-print("Initializing Spark session...")
-
-spark = SparkSession.builder \
-       .master(f"spark://{spark_master}:{spark_port}") \
-       .appName("Sentiment Analysis with DistilBERT") \
-       .getOrCreate()
-
-# These paths should be replaced in the future with online registry paths
-model_path = r"/app/model/distilbert-base-uncased"
-tokenizer_path = r"/app/model/tokenizer-distilbert-base-uncased"
-
-schema = StructType([
-        StructField("source", StringType(), nullable = False),
-        StructField("text", StringType(), nullable = False),
-        StructField("date", StringType(), nullable = True),
-        StructField("tp-stars", IntegerType(), nullable = True),
-        StructField("tp-location", StringType(), nullable = True),
-        StructField("yt-videoid", StringType(), nullable = True),
-        StructField("yt-like-count", IntegerType(), nullable = True),
-        StructField("yt-reply-count", IntegerType(), nullable = True),
-    ])
-
-output_schema = StructType([
-        StructField("probabilities", ArrayType(DoubleType()), True),
-        StructField("sentiment", StringType(), True)
-        ])
-
-# Define a UDF for sentiment analysis
-@pandas_udf(output_schema)
-def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
-    results = []
-
-    # Load DistilBERT tokenizer and model
-    # This makes each worker load the model and tokenizer, limiting memory usage but increasing latency
-    tokenizer = DistilBertTokenizer.from_pretrained(tokenizer_path)
-    model = DistilBertForSequenceClassification.from_pretrained(model_path)  
-
-    model.eval()
-    with torch.no_grad():
-        for i in range(0, len(text_series), batch_size):
-            batch = list(text_series[i:i + batch_size])
-            inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True)
-                
-            outputs = model(**inputs)
-            probabilities = torch.softmax(outputs.logits, dim=1)  # Keep as tensor
-                
-            # Directly compute sentiment labels
-            sentiment_labels = ["negative", "neutral", "positive"]
-            sentiment_indices = torch.argmax(probabilities, dim=1).tolist()
-            sentiments = [sentiment_labels[idx] for idx in sentiment_indices]
-
-            results.extend([{"probabilities": prob.tolist(), "sentiment": label} 
-                                for prob, label in zip(probabilities, sentiments)])
-        
-    return pd.DataFrame(results)
-
-if data:
+def write_postgres(all_messages, spark):
+    # Do NLP part. Note that in the init.sql file we have to create a correct table, here we need to define messages correctly. 
+    # For now it's just writing random stuff to make sure it works.
+    df_all = spark.createDataFrame(all_messages)
+    # Show the DataFrame (optional)
     
-    print("processing data...")
-    df = spark.createDataFrame(data, schema)
-    # Perform sentiment analysis only for sources without natural labels
-    df_with_sentiment = df.withColumn(
-        "sentiment_analysis", 
-        when(col("source") != "Trustpilot", get_sentiment_udf(col("text"))).otherwise(None)
-    )
+    print("Writing on postgres")
+    url = "jdbc:postgresql://postgres:5432/warehouse"
 
-    # Create separate columns for sentiment probabilities and labels
-    # If the source is Trustpilot, use the star rating to determine sentiment
-    df_with_sentiment = df_with_sentiment \
-        .withColumn("sentiment_probabilities", col("sentiment_analysis.probabilities")) \
-        .withColumn("sentiment", 
-                    when(col("source") != "Trustpilot", col("sentiment_analysis.sentiment"))
-                    .otherwise(
-                        when(col("tp-stars") > 3, "positive")
-                        .when(col("tp-stars") == 3, "neutral")
-                        .otherwise("negative")
-                    )
-        ) \
-        .drop("sentiment_analysis")
+    properties = {
+        "user": "admin",
+        "password": "password",
+        "driver": "org.postgresql.Driver"
+    }
 
-    df_with_sentiment_multi_columns = df_with_sentiment.withColumn("negative_probability", df_with_sentiment["sentiment_probabilities"].getItem(0)) \
-                                            .withColumn("neutral_probability", df_with_sentiment["sentiment_probabilities"].getItem(1)) \
-                                            .withColumn("positive_probability", df_with_sentiment["sentiment_probabilities"].getItem(2)) \
-                                            .drop("sentiment_probabilities")
+    table_name = "predictions"
+    # jdbc is the thing we installed to write directly from the dataframe
+    df_all.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
 
-    # Show results
-    print(df_with_sentiment_multi_columns.show(len(data)))
 
-    # Count the number of reviews processed for each source
-    df_count_by_source = df.groupBy("source").count()
-    print("num of reviews processed:",df_count_by_source.show())
-    print("Processing completed. Sleeping for 15 seconds...")
-else:
-    print("No data was consumed")
-    print("Sleeping for 15 seconds...")
+def main():
+    # Get venv variables 
+
+    spark_master = os.getenv("SPARK_MASTER_HOST")
+    spark_port = os.getenv("SPARK_MASTER_PORT")
+    batch_size = int(os.getenv("BATCH_SIZE")) 
+    print(f"Processing data using batch size: {batch_size}")
+    kafka_adv_external_listener = os.getenv("KAFKA_ADVERTISED_LISTENERS")
+    client_id = os.getenv("CLIENT_ID")
+    group_id = os.getenv("GROUP_ID")
+
+    consumer = init_kafka(kafka_adv_external_listener, client_id, group_id)
+
+    all_messages, topic_messages = consumer.consume_messages_spark()
+
+    print("Data received.")
+
+    print("Initializing Spark session...")
+    
+    spark = init_spark(spark_master, spark_port)
+
+    if all_messages:
+        write_mongo(topic_messages, spark)
+    if topic_messages: 
+        write_postgres(all_messages, spark)
+
+    else:
+        print("No data was consumed")
+        print("Sleeping for 15 seconds...")
+
+if __name__ == "__main__":
+    main()

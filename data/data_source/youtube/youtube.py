@@ -95,10 +95,8 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             flag_pinned_comment = False
 
         num_comments += len(comments)
-        print(comments)
         encoded_comments = encode_message_to_parquet(comments)
         producer.produce(record = encoded_comments, topic=company)
-        print(encoded_comments)
         # Stop if no more pages or enough comments have been retrieved
         next_page_token = response.get('nextPageToken',None)
         if num_comments >= max_num_comments: 

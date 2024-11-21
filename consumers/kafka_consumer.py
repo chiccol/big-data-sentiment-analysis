@@ -111,78 +111,97 @@ class KafkaConsumer:
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
 
-    def consume_messages_spark(self, timeout=100.0):
+    def consume_messages_spark(self, timeout=100.0, ignore_topics=None):
         """
-        Consumes messages from Kafka for Spark processing and writing. This function makes Spark write the messages.
-
+        Consumes messages from Kafka for Spark processing and writing.
+        
         Args:
-            timeout: seconds to wait between polls.
-
+            timeout (float): Seconds to wait between polls.
+            ignore_topics (list, optional): List of topics to ignore. 
+                                            Defaults to ['__consumer_offsets'].
+        
         Returns:
             tuple: (
                 all_messages: list of all messages regardless of topic,
                 topic_messages: dict with topic as key and list of messages as value
             )
         """
-        print("Entered consume messages for Spark")
-        metadata = self.get_metadata()
-        topics = list(metadata.topics.keys())
-        # Initialize data structures
-        all_messages = []  # List for all messages
-        topic_messages = {}  # Dictionary for topic-specific messages
+        # Default topics to ignore
+        if ignore_topics is None:
+            ignore_topics = ['__consumer_offsets']
         
+        # Get metadata and available topics
+        metadata = self.get_metadata()
+        topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
+        
+        # Initialize data structures
+        all_messages = []
+        topic_messages = {topic: [] for topic in topics}
+        
+        # Validation checks
         if not topics:
-            print("No topics found in Kafka broker.")
-            return None, None
-            
-        print("Topics available in broker:", topics)
-        for topic in topics:
-            if topic == '__consumer_offsets':  # Ignore internal Kafka topic
-                continue
-            
-            # Initialize empty list for this topic
-            topic_messages[topic] = []
-            
-            print(f"\nRetrieving messages from {topic}")
-            partitions = metadata.topics[topic].partitions.keys()
-            print(f"Partitions for {topic}: {partitions}")
-            
-            for partition in partitions:
-                print(f"Reading messages from topic '{topic}', partition {partition}")
-                
-                while True:
-                    msg = self.poll_message(timeout=timeout)
-                    
-                    if msg is None:
-                        print(f"No more messages available for topic {topic}, partition {partition}")
-                        break
+            print("No topics found in Kafka broker to consume.")
+            return [], {}
+        
+        print(f"Consuming messages from topics: {topics}")
+        
+        # Tracking variables
+        total_messages_consumed = 0
+        topics_with_messages = set()
+        
+        try:
+            # Consume messages from each topic
+            while topics:
+                for topic in list(topics):  # Create a copy to allow modification during iteration
+                    try:
+                        # Poll for a message
+                        msg = self.poll_message(timeout=timeout)
                         
-                    elif msg.error():
-                        print(f"Error while polling message: {msg.error()}")
-                        continue
+                        # No more messages
+                        if msg is None:
+                            topics.remove(topic)
+                            continue
                         
-                    else:
-                        print(f"Message received of type {type(msg.value())}")
+                        # Validate and process message
                         current_topic = str(msg.topic())
-                        msg_data = self.decode_parquet(msg.value())
                         
-                        # Add topic information to each message
+                        # Decode message 
+                        try:
+                            msg_data = self.decode_parquet(msg.value())
+                        except Exception as decode_error:
+                            print(f"Error decoding message from topic {current_topic}: {decode_error}")
+                            continue
+                        
+                        # Enrich message with topic information
                         for record in msg_data:
                             record['kafka_topic'] = current_topic
-                            
-                        # Initialize topic list if it doesn't exist
-                        if current_topic not in topic_messages:
-                            topic_messages[current_topic] = []
                         
-                        # Add messages to both data structures
-                        all_messages.extend(msg_data)
+                        # Update tracking and storage
                         topic_messages[current_topic].extend(msg_data)
+                        all_messages.extend(msg_data)
                         
-                        print(f"Added {len(msg_data)} messages from topic {current_topic}")
+                        # Update tracking variables
+                        total_messages_consumed += len(msg_data)
+                        topics_with_messages.add(current_topic)
+                        
+                    except Exception as topic_error:
+                        print(f"Error processing topic {topic}: {topic_error}")
+                        topics.remove(topic)
         
-        # Remove any topics that ended up with no messages
-        topic_messages = {k: v for k, v in topic_messages.items() if v}
-        print(topic_messages)
+        except Exception as e:
+            print(f"Unexpected error during Kafka message consumption: {e}")
+        
+        finally:
+            # Logging summary
+            print("\n--- Kafka Message Consumption Summary ---")
+            print(f"Total messages consumed: {total_messages_consumed}")
+            print(f"Topics with messages: {topics_with_messages}")
+            print("Detailed message count per topic:")
+            for topic, messages in topic_messages.items():
+                print(f"{topic}: {len(messages)} messages")
+            
+            # Remove empty topic lists
+            topic_messages = {k: v for k, v in topic_messages.items() if v}
         
         return all_messages, topic_messages
 

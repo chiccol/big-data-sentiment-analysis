@@ -27,11 +27,12 @@ def init_spark(spark_master, spark_port):
     return spark
 
 def write_mongo(topic_messages, spark):
-    print(topic_messages)
+    print(topic_messages.keys())
     for collection, messages in topic_messages.items():
         if messages:  # Check if there are messages for the topic
             # Create DataFrame for the topic
             df = spark.createDataFrame(messages)
+            print(f"Collection is {collection}")
             
             # Write to MongoDB. db "reviews" is hard coded since it's the only DB we are using.
             df.write \
@@ -73,19 +74,19 @@ def main():
     client_id = os.getenv("CLIENT_ID")
     group_id = os.getenv("GROUP_ID")
 
-    consumer = init_kafka(kafka_adv_external_listener, client_id, group_id)
-
-    all_messages, topic_messages = consumer.consume_messages_spark()
-
-    print("Data received.")
-
-    print("Initializing Spark session...")
     
     spark = init_spark(spark_master, spark_port)
 
-    if all_messages:
-        write_mongo(topic_messages, spark)
+    consumer = init_kafka(kafka_adv_external_listener, client_id, group_id)
+
+    all_messages, topic_messages = consumer.consume_messages_spark()
+   # print("Printing all messages:\n", all_messages, "*"*50 +" \n")
+    
+   # print("Printing topic messages:\n", topic_messages)
+    
     if topic_messages: 
+        write_mongo(topic_messages, spark)
+    if all_messages:
         write_postgres(all_messages, spark)
 
     else:

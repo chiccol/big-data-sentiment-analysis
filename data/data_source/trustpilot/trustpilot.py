@@ -100,7 +100,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                     else:
                         print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")
                         return 1
-                print(full_review)
                 review_list.append(full_review) 
             except Exception as e:
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")

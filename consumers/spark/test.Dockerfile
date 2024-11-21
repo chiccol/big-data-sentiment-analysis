@@ -9,9 +9,7 @@ WORKDIR /app
 
 # Copy the folder containing the scraper's Python files into the container
 COPY spark/main.py /app
-COPY spark/requirements.txt /app
-COPY spark/model /app/model
-COPY spark/utils.py /app
+COPY spark/requirements_test.txt /app
 COPY kafka_consumer.py /app
 
 COPY spark/run_spark_job.sh /app
@@ -19,7 +17,7 @@ USER root
 RUN chmod +x /app/run_spark_job.sh
 
 # Install transformers and torch
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_test.txt
 
 # Install wget to download the connectors 
 RUN apt-get update && apt-get install -y wget

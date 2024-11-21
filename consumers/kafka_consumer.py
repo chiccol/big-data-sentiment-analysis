@@ -111,7 +111,7 @@ class KafkaConsumer:
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
 
-    def consume_messages_spark(self, timeout=100.0, ignore_topics=None):
+    def consume_messages_spark(self, timeout=100.0):
         """
         Consumes messages from Kafka for Spark processing and writing.
         
@@ -126,11 +126,9 @@ class KafkaConsumer:
                 topic_messages: dict with topic as key and list of messages as value
             )
         """
-        # Default topics to ignore
-        if ignore_topics is None:
-            ignore_topics = ['__consumer_offsets']
+        ignore_topics = ['__consumer_offsets']
         
-        # Get metadata and available topics
+        # Get metadata and create a list of topics to explore
         metadata = self.get_metadata()
         topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
         
@@ -152,12 +150,10 @@ class KafkaConsumer:
         try:
             # Consume messages from each topic
             while topics:
-                for topic in list(topics):  # Create a copy to allow modification during iteration
+                for topic in list(topics):  # creating a copy to delete stuff from it later
                     try:
-                        # Poll for a message
                         msg = self.poll_message(timeout=timeout)
                         
-                        # No more messages
                         if msg is None:
                             topics.remove(topic)
                             continue
@@ -172,15 +168,14 @@ class KafkaConsumer:
                             print(f"Error decoding message from topic {current_topic}: {decode_error}")
                             continue
                         
-                        # Enrich message with topic information
                         for record in msg_data:
                             record['kafka_topic'] = current_topic
                         
-                        # Update tracking and storage
+                        # update tracking and storage
                         topic_messages[current_topic].extend(msg_data)
                         all_messages.extend(msg_data)
                         
-                        # Update tracking variables
+                        # update tracking variables
                         total_messages_consumed += len(msg_data)
                         topics_with_messages.add(current_topic)
                         

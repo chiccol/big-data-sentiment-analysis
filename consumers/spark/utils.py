@@ -14,6 +14,7 @@ output_schema = StructType([
 schema = StructType([
         StructField("source", StringType(), nullable = False),
         StructField("text", StringType(), nullable = False),
+        StructField("kafka_topic", StringType(), nullable = False),
         StructField("date", StringType(), nullable = True),
         StructField("tp_stars", IntegerType(), nullable = True),
         StructField("tp_location", StringType(), nullable = True),
@@ -33,12 +34,17 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
     # Load DistilBERT tokenizer and model
     # This makes each worker load the model and tokenizer, limiting memory usage but increasing latency
     tokenizer = DistilBertTokenizer.from_pretrained(tokenizer_path)
-    model = DistilBertForSequenceClassification.from_pretrained(model_path)  
-    batch_size = int(os.getenv("BATCH_SIZE")) 
-    print(f"Processing data using batch size: {batch_size}")
+    model = DistilBertForSequenceClassification.from_pretrained(model_path)
+    try:
+        batch_size = int(os.getenv("BATCH_SIZE"))
+    except:
+        print("BATCH_SIZE not set, using default value 32", flush=True)
+        batch_size = 32
+    print(f"Processing data using batch size: {batch_size}", flush=True)
 
     model.eval()
     with torch.no_grad():
+        print(f"Processing {len(text_series)} messages", flush=True)
         for i in range(0, len(text_series), batch_size):
             batch = list(text_series[i:i + batch_size])
             inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True)
@@ -89,10 +95,11 @@ def process_data(df):
 def write_postgres(all_messages, spark):
     # Do NLP part. Note that in the init.sql file we have to create a correct table, here we need to define messages correctly. 
     # For now it's just writing random stuff to make sure it works.
-    df = spark.createDataFrame(all_messages)
+    df = spark.createDataFrame(all_messages, schema)
+    print("Successfully created DataFrame", flush=True)
     # Show the DataFrame (optional)
     df_with_sentiment = process_data(df)
-    print("Writing on postgres")
+    print("Writing on postgres", flush=True)
     url = "jdbc:postgresql://postgres:5432/warehouse"
 
     properties = {
@@ -106,12 +113,12 @@ def write_postgres(all_messages, spark):
     df_with_sentiment.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
 
 def write_mongo(topic_messages, spark):
-    print(topic_messages.keys())
+    print(topic_messages.keys(), flush=True)
     for collection, messages in topic_messages.items():
         if messages:  # Check if there are messages for the topic
             # Create DataFrame for the topic
             df = spark.createDataFrame(messages)
-            print(f"Collection is {collection}")
+            print(f"Collection is {collection}", flush=True)
 
             df = df.select(["source", "date", "text", "kafka_topic"])
             
@@ -122,4 +129,4 @@ def write_mongo(topic_messages, spark):
                 .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{collection}") \
                 .save()
             
-            print(f"Wrote {df.count()} messages from topic {collection} to MongoDB")
+            print(f"Wrote {df.count()} messages from topic {collection} to MongoDB", flush=True)

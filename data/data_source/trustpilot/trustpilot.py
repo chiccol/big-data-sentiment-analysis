@@ -56,7 +56,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     language = "www" if language == "en" else language
     review_list = []
     for num_page in range(from_page, to_page + 1):
-        print(f"Scraping page {num_page} for {company}...")
+        print(f"Scraping page {num_page} for {company}...", flush=True)
 
         if num_page > 1:
             result = requests.get(f"https://{language}.trustpilot.com/review/{company}?page={num_page}&sort=recency")
@@ -64,7 +64,8 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
             result = requests.get(f"https://{language}.trustpilot.com/review/{company}?sort=recency")
 
         if result.status_code != 200:
-            print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.")
+            print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.", 
+                  flush=True)
             return 0
         
         soup = BeautifulSoup(result.content, 'html.parser')
@@ -93,17 +94,17 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 full_review["tp_stars"] = int(ratings[num_review]["data-service-review-rating"])
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["date"],date_format) < from_date:
-                    print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
+                    print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.", flush=True)
                     if num_review == 0 and num_page == 1:
-                        print(f"No new reviews found for {company} after date {from_date}.")
+                        print(f"No new reviews found for {company} after date {from_date}.", flush=True)
                         return 1
                     else:
-                        print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")
+                        print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.", flush=True)
                         return 1
                 review_list.append(full_review) 
             except Exception as e:
-                print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")
-                print(f"Length location: {len(locations)}, num_review: {num_review}")
+                print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}", flush=True)
+                print(f"Length location: {len(locations)}, num_review: {num_review}", flush=True)
         
         text.clear()
         review_list_serialized = encode_message_to_parquet(review_list)

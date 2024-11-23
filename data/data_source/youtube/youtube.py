@@ -63,7 +63,7 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
     num_comments = 0
 
     while True:
-        print(f"Fetching comments for video {video} of company {company}")
+        print(f"Fetching comments for video {video} of company {company}", flush=True)
         # Handle disabled comment sections or failed requests
         try:
             response = request.execute()
@@ -77,11 +77,11 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             comment = item['snippet']['topLevelComment']['snippet']
             if datetime.strptime(comment.get("publishedAt", None), date_format) < datetime.strptime(from_date, date_format):
                 if flag_pinned_comment:
-                    print(f"Pinned comment is older than {from_date}")
+                    print(f"Pinned comment is older than {from_date}", flush=True)
                     flag_pinned_comment = False
                     continue # Skip the pinned comment
                 else:
-                    print(f"Comment is older than {from_date}")
+                    print(f"Comment is older than {from_date}", flush=True)
                     return None, num_comments
             extracted_comment = {
                 "source": "youtube",
@@ -95,15 +95,16 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             flag_pinned_comment = False
 
         num_comments += len(comments)
+        print("Sending encoded comments to Kafka...", comments, flush=True)
         encoded_comments = encode_message_to_parquet(comments)
         producer.produce(record = encoded_comments, topic=company)
         # Stop if no more pages or enough comments have been retrieved
         next_page_token = response.get('nextPageToken',None)
         if num_comments >= max_num_comments: 
-            print(f"Reached {max_num_comments} comments for video {video} of company {company}")
+            print(f"Reached {max_num_comments} comments for video {video} of company {company}", flush=True)
             return next_page_token, num_comments
         if not next_page_token: 
-            print(f"No more comments to fetch for video {video} of company {company}") 
+            print(f"No more comments to fetch for video {video} of company {company}", flush=True) 
             return None, num_comments
 
         request = youtube_scraper.commentThreads().list(
@@ -166,18 +167,18 @@ def search_videos(query,
 
     for videoId in videoIds:
             if videoId not in youtube_comapanies_videos[company]["videos"]:
-                print(f"Checking video {videoId}")
+                print(f"Checking video {videoId}", flush=True)
                 video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
                 duration = iso8601_to_seconds(video_info['items'][0]['contentDetails']['duration'])
                 view_count = int(video_info['items'][0]["statistics"]["viewCount"])
                 comment_count = int(video_info['items'][0]["statistics"]["commentCount"])
                 if duration < min_duration:
                     youtube_comapanies_videos[company]["videos"][videoId] = "too_short"
-                    print(f"Video {videoId} is too short")
+                    print(f"Video {videoId} is too short", flush=True)
                     continue
                 if comment_count < min_comment or view_count < min_view:
                     youtube_comapanies_videos[company]["videos"][videoId] = "currently_irrelevant"
-                    print(f"Video {videoId} is currently irrelevant")
+                    print(f"Video {videoId} is currently irrelevant", flush=True)
                     continue
                 
                 youtube_comapanies_videos[company]["videos"][videoId] = {
@@ -185,20 +186,20 @@ def search_videos(query,
                     "next_page_token" : "None", 
                     "region_code" : regionCode
                 }
-                print(f"Added video {videoId} to {company}")
+                print(f"Added video {videoId} to {company}", flush=True)
                 new_videos.append(videoId)
     
     youtube_comapanies_videos[company]["search_from_date"] = datetime.now().strftime(date_format)
 
-    print("Saving file...")
+    print("Saving file...", flush=True)
     with open(youtube_comapanies_videos_path, 'w') as file:
         json.dump(youtube_comapanies_videos, file, indent=4)
 
     if not next_page_token_search or num_videos >= max_videos:
-        print("No more videos to fetch")
+        print("No more videos to fetch", flush=True)
         break
     else:
-        print(f"Fetching next batch of videos")
+        print(f"Fetching next batch of videos", flush=True)
         max_batch_videos = max_videos - num_videos if max_videos - num_videos < 100 else 100
         request_search_videos = youtube_scraper.search().list(
             part="snippet",

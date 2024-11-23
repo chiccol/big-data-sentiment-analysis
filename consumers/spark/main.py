@@ -18,16 +18,16 @@ def main():
         .appName("Writer-Sentiment-Analysis") \
         .getOrCreate()
 
-    print("Initializing Kafka consumer...")
+    print("Initializing Kafka consumer...", flush=True)
     try:
         consumer = KafkaConsumer(bootstrap_servers=kafka_adv_external_listener, 
                                  client_id=client_id, 
                                  group_id=group_id)
     except Exception as e:
-        print(f"Error initializing Kafka consumer: {e}")
+        print(f"Error initializing Kafka consumer: {e}", flush=True)
         exit(1)
 
-    print("Getting data from Kafka...")
+    print("Getting data from Kafka...", flush=True)
 
     all_messages, topic_messages = consumer.consume_messages_spark()
    # print("Printing all messages:\n", all_messages, "*"*50 +" \n")
@@ -35,13 +35,13 @@ def main():
    # print("Printing topic messages:\n", topic_messages)
     
     if topic_messages: 
-        write_mongo(topic_messages, batch_size, spark)
+        write_mongo(topic_messages, spark)
     if all_messages:
         write_postgres(all_messages, spark)
 
     else:
-        print("No data was consumed")
-        print("Sleeping for 15 seconds...")
+        print("No data was consumed", flush=True)
+        print("Sleeping for 15 seconds...", flush=True)
 
 if __name__ == "__main__":
     main()

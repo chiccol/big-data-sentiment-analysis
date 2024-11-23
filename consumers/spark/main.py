@@ -26,7 +26,7 @@ def main():
     except Exception as e:
         print(f"Error initializing Kafka consumer: {e}", flush=True)
         exit(1)
-
+    # WHILE TRUE LOOP
     print("Getting data from Kafka...", flush=True)
 
     all_messages, topic_messages = consumer.consume_messages_spark()

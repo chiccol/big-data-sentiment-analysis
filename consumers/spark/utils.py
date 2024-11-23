@@ -84,11 +84,15 @@ def process_data(df):
                     )
         ) \
         .drop("sentiment_analysis")
-
+    # CHANGED DROP TO DROP(*["sentiment_analysis", "text"]) MAYBE IT WILL WORK
     df_with_sentiment_multi_columns = df_with_sentiment.withColumn("negative_probability", df_with_sentiment["sentiment_probabilities"].getItem(0)) \
                                             .withColumn("neutral_probability", df_with_sentiment["sentiment_probabilities"].getItem(1)) \
                                             .withColumn("positive_probability", df_with_sentiment["sentiment_probabilities"].getItem(2)) \
-                                            .drop(["sentiment_probabilities", "text"])
+                                            .drop(*["sentiment_probabilities", "text"])
+
+    # using df_with_sentiment_multi_columns:
+    # df_mongo: select what you need
+    # df_postgres: drop "text"
     
     return df_with_sentiment_multi_columns
 

@@ -42,9 +42,10 @@ if __name__ == "__main__":
     date_format = "%Y-%m-%dT%H:%M:%SZ"
     
     while True:
+        company_msg = dict()
         total_comments_scraped = 0
         for company in companies_videos.keys():
-            
+            company_msg[company] = 0
             print(f"Searching for new videos for {company}", flush=True)
             new_videos, companies_videos = search_videos(query = companies_videos[company]["query"],
                                                          publishedAfter = companies_videos[company]["search_from_date"],
@@ -70,6 +71,7 @@ if __name__ == "__main__":
                                                                       next_page_token = companies_videos[company]["videos"][video]["next_page_token"],
                                                                       from_date = companies_videos[company]["videos"][video]["date_last_scrape"])
                     print(f"Collected {num_comments} comments from video {video}", flush=True)
+                    company_msg[company] += num_comments
                     total_comments_scraped += num_comments
                     if not next_page_token:
                         # Update the date of the last scraping because all comments have been collected
@@ -80,8 +82,12 @@ if __name__ == "__main__":
                         json.dump(companies_videos, file, indent=4)
 
         print(f"Total comments scraped: {total_comments_scraped}", flush=True)
+        print("Scraped report", flush=True)
+        print("Company | Comments Count")
+        for company in company_msg.keys():
+            print(f"{company}: {company_msg[company]}")
         print("Sleeping for 5 minutes...", flush=True)
-        sleep(300)  
+        sleep(10)  
         print("Waking up!", flush=True)
         with open(companies_videos_path, 'r') as file:
             companies_videos = json.load(file)

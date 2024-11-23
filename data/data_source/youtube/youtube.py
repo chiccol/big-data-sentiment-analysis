@@ -95,7 +95,7 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             flag_pinned_comment = False
 
         num_comments += len(comments)
-        print("Sending encoded comments to Kafka...", comments, flush=True)
+        # print("Sending encoded comments to Kafka...", comments, flush=True)
         encoded_comments = encode_message_to_parquet(comments)
         producer.produce(record = encoded_comments, topic=company)
         # Stop if no more pages or enough comments have been retrieved

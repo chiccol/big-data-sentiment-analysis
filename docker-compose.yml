@@ -65,6 +65,9 @@ services:
       - mongo
       - kafka
       - postgres
+    volumes: 
+      - ./data/data_source/trustpilot/main.py:/app/main.py 
+      - ./data/data_source/trustpilot/trustpilot.py:/app/trustpilot.py 
       
   reddit-producer:
     container_name: reddit-producer

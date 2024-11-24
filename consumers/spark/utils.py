@@ -121,7 +121,7 @@ def write_mongo(topic_messages, spark):
     for collection, messages in topic_messages.items():
         if messages:  # Check if there are messages for the topic
             # Create DataFrame for the topic
-            df = spark.createDataFrame(messages)
+            df = spark.createDataFrame(messages, schema)
             print(f"Collection is {collection}", flush=True)
 
             df = df.select(["source", "date", "text", "kafka_topic"])
@@ -130,7 +130,8 @@ def write_mongo(topic_messages, spark):
             df.write \
                 .format("mongo") \
                 .mode("append") \
-                .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{collection}") \
+                .option("database", "reviews") \
+                .option("collection",f"{collection}") \
                 .save()
             
             print(f"Wrote {df.count()} messages from topic {collection} to MongoDB", flush=True)

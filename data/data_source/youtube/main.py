@@ -86,8 +86,8 @@ if __name__ == "__main__":
         print("Company | Comments Count")
         for company in company_msg.keys():
             print(f"{company}: {company_msg[company]}")
-        print("Sleeping for 5 minutes...", flush=True)
-        sleep(10)  
+        print("Sleeping for 10 minutes...", flush=True)
+        sleep(600)  
         print("Waking up!", flush=True)
         with open(companies_videos_path, 'r') as file:
             companies_videos = json.load(file)

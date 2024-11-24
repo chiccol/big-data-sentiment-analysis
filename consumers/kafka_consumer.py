@@ -2,6 +2,7 @@ import pyarrow.parquet as pq
 from confluent_kafka import Consumer, KafkaError, KafkaException
 from io import BytesIO
 from typing import List
+import time
 
 class KafkaConsumer:
     """
@@ -110,8 +111,8 @@ class KafkaConsumer:
         """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
-
-    def consume_messages_spark(self, timeout=100.0):
+    # VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
+    def consume_messages_spark(self, timeout=15.0):
         """
         Consumes messages from Kafka for Spark processing and writing.
         
@@ -151,10 +152,12 @@ class KafkaConsumer:
             # Consume messages from each topic
             while topics:
                 for topic in list(topics):  # creating a copy to delete stuff from it later
+                    print(f"Current topic in Kafka Consumer is: {topic}", flush=True)
                     try:
                         msg = self.poll_message(timeout=timeout)
                         
                         if msg is None:
+                            print("Message is None", flush=True)
                             topics.remove(topic)
                             continue
                         
@@ -188,7 +191,7 @@ class KafkaConsumer:
         
         finally:
             # Logging summary
-            print("\n--- Kafka Message Consumption Summary ---", flush=True)
+            print(f"Time:{time.localtime()}\n--- Kafka Message Consumption Summary ---", flush=True)
             print(f"Total messages consumed: {total_messages_consumed}", flush=True)
             print(f"Topics with messages: {topics_with_messages}", flush=True)
             print("Detailed message count per topic:", flush=True)

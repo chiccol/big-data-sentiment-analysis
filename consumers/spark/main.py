@@ -15,6 +15,7 @@ def main():
 
     spark = SparkSession.builder \
         .master(f"spark://{spark_master}:{spark_port}") \
+        .config("spark.mongodb.output.uri", f"mongodb://mongo:27017/") \
         .appName("Writer-Sentiment-Analysis") \
         .getOrCreate()
 
@@ -26,10 +27,11 @@ def main():
     except Exception as e:
         print(f"Error initializing Kafka consumer: {e}", flush=True)
         exit(1)
-    # WHILE TRUE LOOP
+
     print("Getting data from Kafka...", flush=True)
 
     all_messages, topic_messages = consumer.consume_messages_spark()
+    print("Messages consumed with Spark", flush=True)
    # print("Printing all messages:\n", all_messages, "*"*50 +" \n")
     
    # print("Printing topic messages:\n", topic_messages)

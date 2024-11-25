@@ -55,13 +55,14 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     text = []
     language = "www" if language == "en" else language
     review_list = []
+    url = f"https://{language}.trustpilot.com/review/{company}"
     for num_page in range(from_page, to_page + 1):
         print(f"Scraping page {num_page} for {company}...")
-
+    
         if num_page > 1:
-            result = requests.get(f"https://{language}.trustpilot.com/review/{company}?page={num_page}&sort=recency")
+            result = requests.get(url + f"?page={num_page}&sort=recency")
         else:
-            result = requests.get(f"https://{language}.trustpilot.com/review/{company}?sort=recency")
+            result = requests.get(url + "?sort=recency")
 
         if result.status_code != 200:
             print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.")
@@ -108,5 +109,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
         
         text.clear()
         review_list_serialized = encode_message_to_parquet(review_list)
+        review_list.clear()
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

@@ -95,6 +95,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 full_review["text"] = text[num_review]
                 full_review["tp_stars"] = int(ratings[num_review]["data-service-review-rating"])
                 full_review["date"] = dates[num_review]
+                full_review["company"] = company
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["date"],date_format) < from_date:
                     print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.", flush=True)
@@ -108,7 +109,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
             except Exception as e:
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}", flush=True)
                 print(f"Length location: {len(locations)}, num_review: {num_review}", flush=True)
-        print(review_list) 
         text.clear()
         review_list_serialized = encode_message_to_parquet(review_list)
         producer.produce(record = review_list_serialized, topic=company)

@@ -1,7 +1,33 @@
 from pyspark.sql import SparkSession
 from kafka_consumer import KafkaConsumer
-from utils import write_mongo, write_postgres
+from utils import get_sentiment_udf, process_data 
 import os
+
+def write_mongo(df_mongo, topics):
+    for topic in topics:
+        filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
+        filtered_df_mongo.write \
+            .format("mongo") \
+            .mode("append") \
+            .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{topic}") \
+            .save()
+        
+        print(f"Wrote {filtered_df_mongo.count()} messages from topic {topic} to MongoDB", flush=True)
+
+def write_postgres(df_postgres):
+
+    print("Writing on postgres", flush=True)
+    url = "jdbc:postgresql://postgres:5432/warehouse"
+
+    properties = {
+        "user": "admin",
+        "password": "password",
+        "driver": "org.postgresql.Driver"
+    }
+
+    table_name = "predictions"
+    # jdbc is the thing we installed to write directly from the dataframe
+    df_postgres.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
 
 def main():
     # Get venv variables 
@@ -27,22 +53,22 @@ def main():
         print(f"Error initializing Kafka consumer: {e}", flush=True)
         exit(1)
 
-    print("Getting data from Kafka...", flush=True)
-
-    all_messages, topic_messages = consumer.consume_messages_spark()
-    print("Messages consumed with Spark", flush=True)
-   # print("Printing all messages:\n", all_messages, "*"*50 +" \n")
-    
-   # print("Printing topic messages:\n", topic_messages)
-    
-    if topic_messages: 
-        write_mongo(topic_messages, spark)
-    if all_messages:
-        write_postgres(all_messages, spark)
-
-    else:
-        print("No data was consumed", flush=True)
-        print("Sleeping for 15 seconds...", flush=True)
+    while True:
+        print("Getting data from Kafka...", flush=True)
+        all_messages, topics = consumer.consume_messages_spark()
+        print("We obtained", topics) 
+        print("Messages consumed with Spark", flush=True)
+        df = process_data(all_messages, spark)
+        df.show(5)
+        if df:
+            df_mongo = df.select(["source", "date", "text", "company"])
+            df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", "neutral_probability", "positive_probability"])
+            write_mongo(df_mongo, topics)
+            write_postgres(df_postgres)
+            
+        else:
+            print("No data was consumed", flush=True)
+            print("Sleeping for 15 seconds...", flush=True)
 
 if __name__ == "__main__":
     main()

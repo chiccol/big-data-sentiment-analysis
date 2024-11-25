@@ -4,7 +4,7 @@ from utils import write_mongo, write_postgres, spark_process
 import os
 
 def write_mongo(df_mongo, topics):
-    for topic in topics:
+    for topic, _ in topics.items():
         filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
         filtered_df_mongo.write \
             .format("mongo") \
@@ -28,7 +28,7 @@ def write_postgres(df_postgres):
     table_name = "predictions"
     # jdbc is the thing we installed to write directly from the dataframe
     df_postgres.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
-    
+    print(f"Wrote {df_postgres.count()} messages to Postgres", flush=True)
 
 def main():
     # Get venv variables 
@@ -53,22 +53,19 @@ def main():
     except Exception as e:
         print(f"Error initializing Kafka consumer: {e}", flush=True)
         exit(1)
-    # WHILE TRUE LOOP
-    # it has to call a process function that works like this. 
-    print("Getting data from Kafka...", flush=True)
     
-    # get a list of dictionaries of all messages + a list of the topics we polled the messages from
-    all_messages, topics = consumer.consume_messages_spark()
-    df = spark_process(all_messages, spark)
-    df.show(5)
-    df_mongo = df.select(["source", "date", "text", "company"])
-    df_postgres = df.select(["source", "date", "text", "company"])
-    write_mongo(df_mongo, topics)
-    write_postgres(df_postgres)
-
-    
-   # print(all_messages, "\n")
-   # print(topic_messages, "\n")
+    while True:
+        # it has to call a process function that works like this. 
+        print("Getting data from Kafka...", flush=True)
+        
+        # get a list of dictionaries of all messages + a list of the topics we polled the messages from
+        all_messages, topics = consumer.consume_messages_spark()
+        df = spark_process(all_messages, spark)
+        df.show(5)
+        df_mongo = df.select(["source", "date", "text", "company"])
+        df_postgres = df.select(["source", "date", "text", "company"])
+        write_mongo(df_mongo, topics)
+        write_postgres(df_postgres)
 
 if __name__ == "__main__":
     main()

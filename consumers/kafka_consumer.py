@@ -119,8 +119,6 @@ class KafkaConsumer:
         
         Args:
             timeout (float): Seconds to wait between polls.
-            ignore_topics (list, optional): List of topics to ignore. 
-                                            Defaults to ['__consumer_offsets'].
         
         Returns:
             tuple: (
@@ -133,10 +131,11 @@ class KafkaConsumer:
         # Get metadata and create a list of topics to explore
         metadata = self.get_metadata()
         topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
-        
+        print(f"Topics in the kafka class are: {topics}")        
         # Initialize data structures
         all_messages = []
-        topic_messages_count = {} 
+        topic_messages = {}  # Changed to store messages per topic
+        
         # Validation checks
         if not topics:
             print("No topics found in Kafka broker to consume.", flush=True)
@@ -150,42 +149,39 @@ class KafkaConsumer:
         
         try:
             # Consume messages from each topic
-            while topics:
-                for topic in list(topics):  # creating a copy to delete stuff from it later
-                    print(f"Current topic in Kafka Consumer is: {topic}", flush=True)
+            for topic in topics:
+                topic_messages[topic] = 0
+                print(f"Current topic in Kafka Consumer is: {topic}", flush=True)
+                try:
+                    # Polling for messages from the specific topic
+                    msg = self.poll_message(timeout=timeout)
+                    print(f"The message object is {msg} and its dirs are {dir(msg)}")
+                    
+                    # Validate and process message
+                    current_topic = str(msg.topic())
+                    print(f"Current topic is {current_topic}")
+                    
+                    # Decode message 
                     try:
-                        msg = self.poll_message(timeout=timeout)
-                        
-                        if msg is None:
-                            print("Message is None", flush=True)
-                            topics.remove(topic)
-                            continue
-                        
-                        # Validate and process message
-                        current_topic = str(msg.topic())
-                        topic_messages_count[current_topic] = 0 
-                        
-                        # Decode message 
-                        try:
-                            msg_data = self.decode_parquet(msg.value())
-                        except Exception as decode_error:
-                            print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
-                            continue
-                        
-                        # update tracking and storage
-                        # modify topic_messages in un dizionario che conta il n di messaggi per topic, ritorno quello e 
-                        # dalle chiavi ottengo la lista che mi serve
-                        # atm conta le singole reviews, non i messaggi "veri", se servono i messaggi veri usare += 1
-                        topic_messages_count[current_topic] += len(msg_data)
-                        all_messages.extend(msg_data)
-                        
-                        # update tracking variables
-                        total_messages_consumed += len(msg_data)
+                        msg_data = self.decode_parquet(msg.value())
+                    except Exception as decode_error:
+                        print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
+                        continue
+                    
+                    # Store messages by topic and in all_messages
+                    if current_topic not in topic_messages:
+                        topic_messages[current_topic] = 0
+                    topic_messages[current_topic] += len(msg_data)
+                    all_messages.extend(msg_data)
+
+                    
+                    # Update tracking variables
+                    total_messages_consumed += len(msg_data)
+                    if topic_messages[current_topic] > 0:
                         topics_with_messages.add(current_topic)
-                        
-                    except Exception as topic_error:
-                        print(f"Error processing topic {topic}: {topic_error}", flush=True)
-                        topics.remove(topic)
+                    
+                except Exception as topic_error:
+                    print(f"Error processing topic {topic}: {topic_error}", flush=True)
         
         except Exception as e:
             print(f"Unexpected error during Kafka message consumption: {e}", flush=True)
@@ -196,15 +192,11 @@ class KafkaConsumer:
             print(f"Total messages consumed: {total_messages_consumed}", flush=True)
             print(f"Topics with messages: {topics_with_messages}", flush=True)
             print("Detailed message count per topic:", flush=True)
-            topics = []
-            for topic, messages in topic_messages_count.items():
+            for topic, messages in topic_messages.items():
                 print(f"{topic}: {messages} messages", flush=True)
-                if messages > 0:
-                    topics.append(topic) 
         
-        print(topic_messages_count)
-
-        return all_messages, topics
+        print(f"Finally this is the dictionary of topic messages: {topic_messages}", flush = True)
+        return all_messages, topic_messages
 
     def decode_parquet(self, msg):
         """

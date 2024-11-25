@@ -146,7 +146,7 @@ def search_posts(
     - reddit_companies_posts: updated posts data
     """
     num_posts = 0
-    reddit_companies_posts_path = "reddit/reddit_companies.json"
+    reddit_companies_posts_path = "reddit_companies.json"
     date_format = "%Y-%m-%dT%H:%M:%SZ"
     new_posts = []
 

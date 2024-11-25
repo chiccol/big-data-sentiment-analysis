@@ -1,19 +1,26 @@
-# main.py
-
+import sys
 import os
+
+# go to parent dir to import kaka_producer 
+# naive solution by now but Im not managing to import it in a better way :( will check for it
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+from kafka_producer import KafkaProducer
+# back to reddit dir
+sys.path.remove(parent_dir)
 import json
 from time import sleep
 from datetime import datetime
 from dotenv import load_dotenv
-from ..kafka_producer import KafkaProducer
 import praw
 from reddit import getcomments_reddit, search_posts
 
 if __name__ == "__main__":
     
     sleep(10)
-    load_dotenv(dotenv_path=os.path.join(os.getcwd(), "reddit/reddit.env"))
-
+    load_dotenv(dotenv_path=os.path.join(os.getcwd(), "reddit.env"))
+    print("current dir: ", os.getcwd())
     reddit_client_id = os.getenv("REDDIT_CLIENT_ID")
     reddit_client_secret = os.getenv("REDDIT_CLIENT_SECRET")
     reddit_username = os.getenv("REDDIT_USERNAME")
@@ -46,7 +53,7 @@ if __name__ == "__main__":
         exit(1)
     
     # Load companies and scraping info
-    companies_path = "reddit/reddit_companies.json"
+    companies_path = "reddit_companies.json"
     try:
         with open(companies_path, 'r') as file:
             companies = json.load(file)

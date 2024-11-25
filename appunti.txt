@@ -10,13 +10,41 @@ RUN wget https://repo1.maven.org/maven2/org/mongodb/spark/mongo-spark-connector_
     wget https://repo1.maven.org/maven2/org/mongodb/bson/4.0.5/bson-4.0.5.jar -P /opt/bitnami/spark/jars/
 wget https://jdbc.postgresql.org/download/postgresql-42.5.6.jar
 
-GIUSEPPE:
-Spark worker prova a connettersi diverse volte prima di farcela, mettere uno sleep nell'.sh?
-
-
 COSE DA FARE:
+field: company scritto su yt e trustpilot.
 
-infine fai quei piccoli edit buoni per migliorare il codice overall
+2. Da getting data from kafka dobbiamo mettere il while True
+3. all_messages, topic_message = ... -> la funzione deve cambiare: basically tutta la parte di scrittura deve andare via, lasciamo solo consumer e processing messages, levare la parte di scrittura
+4. dentro al consume messages mettiamo il while true facendo polling e processing -> quindi nelle utils di spark:
+
+Process data che crea il df con il sentiment,
+sent probabilities e text droppato il text ci serve, prob si può droppare: in mongo l'attuale select rinominado kafka cazzi + sentiment
+: in postgres, tutto meno che prob e text
+
+select per mongo e per postgres droppo text, poi li scrivo.
+
+a sto punto ci manca il modo per scrivere in collections separate, prendo dataframe mongo e aggrego per topic (for loop? c'è qualche metodo? rows?) 
+
+
+
+Funzione gigante di processamento:
+In main.py:
+Istanziare kafka consumer, istanziare spark session
+While true
+	usare metodo di kafka consumer process data per recuperare i messaggi da kafka -> list dict
+	usare metodo di kafka consumer per runnare NLP e ottenere il dataframe finale con tutto
+		
+
+while True:
+	messages, topics = kafka_consumer.get_allmessages()
+	/ se è un cesso tirare fuori i topics qui, possiamo fare select distinct collect (vedi messaggio pinnato giuse)
+	df = spark-process(messages)
+	df_mongo = df.select()
+	df_postgres = df.select()
+	/ questi select posso metterli dentro
+	write_mongo(df_mongo, topics) -> come mappo i topic alle row giuste da scrivere?
+	/ for loop e per ogni row checko facendo il filter e scrivo
+	write_postgres(df_postgres)
 
 
 

@@ -87,6 +87,7 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
                 "source": "youtube",
                 "text": comment.get("textOriginal", None),
                 "date": comment.get("publishedAt", None),
+                "company": company,
                 "yt_videoid": video,
                 "yt_like_count": int(comment.get("likeCount", None)),
                 "yt_reply_count": int(item["snippet"].get("totalReplyCount", 0))

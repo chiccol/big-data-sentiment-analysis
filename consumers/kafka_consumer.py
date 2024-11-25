@@ -111,7 +111,8 @@ class KafkaConsumer:
         """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
-    # VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
+    
+# VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
     def consume_messages_spark(self, timeout=15.0):
         """
         Consumes messages from Kafka for Spark processing and writing.
@@ -135,8 +136,7 @@ class KafkaConsumer:
         
         # Initialize data structures
         all_messages = []
-        topic_messages = {topic: [] for topic in topics}
-        
+        topic_messages_count = {} 
         # Validation checks
         if not topics:
             print("No topics found in Kafka broker to consume.", flush=True)
@@ -163,6 +163,7 @@ class KafkaConsumer:
                         
                         # Validate and process message
                         current_topic = str(msg.topic())
+                        topic_messages_count[current_topic] = 0 
                         
                         # Decode message 
                         try:
@@ -171,11 +172,11 @@ class KafkaConsumer:
                             print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
                             continue
                         
-                        for record in msg_data:
-                            record['kafka_topic'] = current_topic
-                        
                         # update tracking and storage
-                        topic_messages[current_topic].extend(msg_data)
+                        # modify topic_messages in un dizionario che conta il n di messaggi per topic, ritorno quello e 
+                        # dalle chiavi ottengo la lista che mi serve
+                        # atm conta le singole reviews, non i messaggi "veri", se servono i messaggi veri usare += 1
+                        topic_messages_count[current_topic] += len(msg_data)
                         all_messages.extend(msg_data)
                         
                         # update tracking variables
@@ -195,71 +196,15 @@ class KafkaConsumer:
             print(f"Total messages consumed: {total_messages_consumed}", flush=True)
             print(f"Topics with messages: {topics_with_messages}", flush=True)
             print("Detailed message count per topic:", flush=True)
-            for topic, messages in topic_messages.items():
-                print(f"{topic}: {len(messages)} messages", flush=True)
-            
-            # Remove empty topic lists
-            topic_messages = {k: v for k, v in topic_messages.items() if v}
+            topics = []
+            for topic, messages in topic_messages_count.items():
+                print(f"{topic}: {messages} messages", flush=True)
+                if messages > 0:
+                    topics.append(topic) 
         
-        return all_messages, topic_messages
+        print(topic_messages_count)
 
-    def consume_messages_mongo(self, mongo_manager, timeout=100.0):
-        """
-        Consumes messages from Kafka and writes directly to MongoDB.
-        Requires a mongo_manager instance for writing operations, mongo handles the writing.
-        Currently not used as Spark handles all the writing.
-        """
-        print("Entered consume messages for MongoDB", flush=True)
-        if mongo_manager is None:
-            raise ValueError("mongo_manager is required for MongoDB consumer")
-
-        metadata = self.get_metadata(timeout=timeout)
-        topics = list(metadata.topics.keys())
-
-        if not topics:
-            print("No topics found in Kafka broker.", flush=True)
-            return
-
-        print("Topics available in broker:", topics, flush=True)
-        
-        for topic in topics:
-            if topic == '__consumer_offsets':  # Ignore internal Kafka topic
-                continue
-            
-            print(f"\nRetrieving messages from {topic}", flush=True)
-            partitions = metadata.topics[topic].partitions.keys()
-            print(f"Partitions for {topic}: {partitions}", flush=True)
-            
-            for partition in partitions:
-                print(f"Reading messages from topic '{topic}', partition {partition}", flush=True)
-                messages_processed = 0
-                
-                while True:
-                    msg = self.poll_message(timeout=timeout)
-                    
-                    if msg is None:
-                        print(f"No more messages available for topic {topic}, partition {partition}", flush=True)
-                        print(f"Processed {messages_processed} messages for this partition", flush=True)
-                        break
-                        
-                    elif msg.error():
-                        print(f"Error while polling message: {msg.error()}", flush=True)
-                        continue
-                        
-                    else:
-                        current_topic = str(msg.topic())
-                        msg_data = self.decode_parquet(msg.value())
-                        
-                        try:
-                            print(f"Writing messages to MongoDB collection {current_topic}", flush=True)
-                            mongo_manager.write_on_mongo(msg_data, current_topic)
-                            messages_processed += len(msg_data)
-                        except Exception as e:
-                            print(f"Error writing to MongoDB: {e}", flush=True)
-                            continue
-
-        print("Finished processing all messages for MongoDB", flush=True)
-        return
+        return all_messages, topics
 
     def decode_parquet(self, msg):
         """

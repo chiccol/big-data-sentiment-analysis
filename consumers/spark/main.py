@@ -1,5 +1,4 @@
 from pyspark.sql import SparkSession
-
 from kafka_consumer import KafkaConsumer
 from utils import write_mongo, write_postgres
 import os

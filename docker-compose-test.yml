@@ -78,19 +78,22 @@ services:
         dockerfile: spark/test.Dockerfile
     command: /bin/bash -c "./run_spark_job.sh"
     mem_limit: 1g
-    container_name: spark-master
+    container_name: spark-master-test
     environment:
       - SPARK_MODE=master
-      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_HOST=spark-master-test
       #- SPARK_DYNAMIC_ALLOCATION_ENABLED=true
       - SPARK_MASTER_PORT=7077
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
       - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it 
+      - CLIENT_ID=spark-consumer
+      - GROUP_ID=spark-group 
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI
     volumes: 
-      - ./consumers/spark/main.py:/app/main.py 
+      - ./consumers/spark/main-test.py:/app/main.py 
+      - ./consumers/spark/utils-test.py:/app/utils.py
       - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
     depends_on:
       - kafka
@@ -103,12 +106,12 @@ services:
     container_name: spark-worker-1
     environment:
       - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_MASTER_URL=spark://spark-master-test:7077
       #- SPARK_DYNAMIC_ALLOCATION_ENABLED=true # controls how many executors to request but operates within the worker resource limits
       - SPARK_WORKER_CORES=2
       - SPAKR_WORKER_MEMORY=2g # resource limit per worker
     depends_on:
-      - spark-master
+      - spark-master-test
   
   postgres:
     image: postgres:17.0  

@@ -15,7 +15,7 @@ class KafkaConsumer:
                  bootstrap_servers: str = 'kafka:9092',
                  group_id: str = 'mongo-group',
                  client_id: str = 'mongo-consumer',
-                 auto_offset_reset: str = 'earliest',): 
+                 auto_offset_reset: str = 'earliest'):
         
         self.config = {
             'bootstrap.servers': bootstrap_servers,
@@ -111,7 +111,8 @@ class KafkaConsumer:
         """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
-    
+
+
 # VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
     def consume_messages_spark(self, timeout=15.0):
         """
@@ -132,6 +133,7 @@ class KafkaConsumer:
         metadata = self.get_metadata()
         topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
         print(f"Topics in the kafka class are: {topics}")        
+        
         # Initialize data structures
         all_messages = []
         topic_messages = {}  # Changed to store messages per topic
@@ -148,40 +150,36 @@ class KafkaConsumer:
         topics_with_messages = set()
         
         try:
-            # Consume messages from each topic
-            for topic in topics:
-                topic_messages[topic] = 0
-                print(f"Current topic in Kafka Consumer is: {topic}", flush=True)
+            # Subscribe to all topics
+            self.consumer.subscribe(topics)
+            
+            # Continue polling until no more messages
+            while True:
+                msg = self.poll_message(timeout=timeout)
+                
+                # Break if no more messages
+                if msg is None:
+                    break
+                
                 try:
-                    # Polling for messages from the specific topic
-                    msg = self.poll_message(timeout=timeout)
-                    print(f"The message object is {msg} and its dirs are {dir(msg)}")
-                    
-                    # Validate and process message
-                    current_topic = str(msg.topic())
-                    print(f"Current topic is {current_topic}")
-                    
                     # Decode message 
-                    try:
-                        msg_data = self.decode_parquet(msg.value())
-                    except Exception as decode_error:
-                        print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
-                        continue
+                    current_topic = str(msg.topic())
+                    msg_data = self.decode_parquet(msg.value())
                     
                     # Store messages by topic and in all_messages
                     if current_topic not in topic_messages:
                         topic_messages[current_topic] = 0
                     topic_messages[current_topic] += len(msg_data)
                     all_messages.extend(msg_data)
-
                     
                     # Update tracking variables
                     total_messages_consumed += len(msg_data)
                     if topic_messages[current_topic] > 0:
                         topics_with_messages.add(current_topic)
                     
-                except Exception as topic_error:
-                    print(f"Error processing topic {topic}: {topic_error}", flush=True)
+                except Exception as decode_error:
+                    print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
+                    continue
         
         except Exception as e:
             print(f"Unexpected error during Kafka message consumption: {e}", flush=True)
@@ -195,7 +193,7 @@ class KafkaConsumer:
             for topic, messages in topic_messages.items():
                 print(f"{topic}: {messages} messages", flush=True)
         
-        print(f"Finally this is the dictionary of topic messages: {topic_messages}", flush = True)
+        print(f"Finally this is the dictionary of topic messages: {topic_messages}", flush=True)
         return all_messages, topic_messages
 
     def decode_parquet(self, msg):

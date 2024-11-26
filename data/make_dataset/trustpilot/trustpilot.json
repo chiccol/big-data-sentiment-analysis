@@ -1,0 +1,14 @@
+{
+    "training": 
+    {
+        "www.samsung.com": "2020-01-01T00:52:28.262828Z", 
+        "www.apple.com": "2020-01-01T00:52:28.402881Z",
+        "surfshark.com" : "2020-01-01T00:52:28.402881Z",
+        "primera.com" : "2020-01-01T00:52:28.402881Z"
+    },
+    "out_of_sample": 
+    {
+        "scufgaming.com" : "2020-01-01T00:52:28.402881Z",
+        "www.quicken.com" : "2020-01-01T00:52:28.402881Z"
+    }
+}

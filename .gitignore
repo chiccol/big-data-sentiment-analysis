@@ -1,2 +1,5 @@
 __pycache__/
 /consumers/spark/model
+*.ipynb
+/data/make_dataset/trustpilot/*dataset*
+/data/make_dataset/youtube/*dataset*

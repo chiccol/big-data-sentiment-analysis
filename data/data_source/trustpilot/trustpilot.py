@@ -53,9 +53,10 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     locations = []
     dates = []
     text = []
+    num_reviews = 0
     language = "www" if language == "en" else language
-    review_list = []
     for num_page in range(from_page, to_page + 1):
+        review_list = []
         print(f"Scraping page {num_page} for {company}...", flush=True)
 
         if num_page > 1:
@@ -104,12 +105,18 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                         return 1
                     else:
                         print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.", flush=True)
+                        num_reviews += len(review_list)
+                        print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
+                        review_list_serialized = encode_message_to_parquet(review_list)
+                        producer.produce(record = review_list_serialized, topic=company)
                         return 1
                 review_list.append(full_review) 
             except Exception as e:
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}", flush=True)
                 print(f"Length location: {len(locations)}, num_review: {num_review}", flush=True)
         text.clear()
+        num_reviews += len(review_list)
+        print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
         review_list_serialized = encode_message_to_parquet(review_list)
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

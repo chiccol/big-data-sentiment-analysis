@@ -57,15 +57,16 @@ def main():
         print("Getting data from Kafka...", flush=True)
         all_messages, topics = consumer.consume_messages_spark()
         print("We obtained", topics) 
-        print("Messages consumed with Spark", flush=True)
-        df = process_data(all_messages, spark)
-        df.show(5)
-        if df:
-            df_mongo = df.select(["source", "date", "text", "company"])
-            df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", "neutral_probability", "positive_probability"])
+        print(f"Messages consumed with Spark: {len(all_messages)}", flush=True)
+        if all_messages:
+            df = process_data(all_messages, spark)
+            df.show(5)
+            df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
+            df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", 
+                                     "neutral_probability", "positive_probability", "tp_stars", "tp_location", 
+                                     "yt_videoid", "yt_like_count", "yt_reply_count"])
             write_mongo(df_mongo, topics)
             write_postgres(df_postgres)
-            
         else:
             print("No data was consumed", flush=True)
             print("Sleeping for 15 seconds...", flush=True)

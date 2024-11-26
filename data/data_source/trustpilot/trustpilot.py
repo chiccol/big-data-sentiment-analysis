@@ -52,17 +52,18 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     ratings = []
     locations = []
     dates = []
-    text = []
     num_reviews = 0
     language = "www" if language == "en" else language
+    url = f"https://{language}.trustpilot.com/review/{company}"
     for num_page in range(from_page, to_page + 1):
         review_list = []
+        text = []
         print(f"Scraping page {num_page} for {company}...", flush=True)
 
         if num_page > 1:
-            result = requests.get(f"https://{language}.trustpilot.com/review/{company}?page={num_page}&sort=recency")
+            result = requests.get(url + f"?page={num_page}&sort=recency")
         else:
-            result = requests.get(f"https://{language}.trustpilot.com/review/{company}?sort=recency")
+            result = requests.get(url + "?sort=recency")
 
         if result.status_code != 200:
             print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.", 
@@ -114,7 +115,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
             except Exception as e:
                 print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}", flush=True)
                 print(f"Length location: {len(locations)}, num_review: {num_review}", flush=True)
-        text.clear()
+
         num_reviews += len(review_list)
         print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
         review_list_serialized = encode_message_to_parquet(review_list)

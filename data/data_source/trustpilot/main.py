@@ -10,15 +10,15 @@ if __name__ == "__main__":
     bootstrap_servers = "kafka:9092"
     source = "trustpilot"
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id = client_id)
-    print(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}")
+    print(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}", flush=True)
 
     # Load companies and dates of the last scraping
     companies_from_date_path = "urls-trustpilot.json"
     with open(companies_from_date_path, 'r') as file:
         companies_date = json.load(file)
-    print(f"Companies and dates of the last scraping loaded from {companies_from_date_path}")
+    print(f"Companies and dates of the last scraping loaded from {companies_from_date_path}", flush=True)
     for company in companies_date.keys():
-        print(f"Company: {company}, Last scraping: {companies_date[company]}")
+        print(f"Company: {company}, Last scraping: {companies_date[company]}", flush=True)
 
     date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
                     

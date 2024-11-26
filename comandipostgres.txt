@@ -1,0 +1,7 @@
+psql -U admin -d warehouse
+\l
+\dt
+SELECT * FROM predictions;
+
+Delete all untagged images:
+docker rmi $(docker images -f "dangling=true" -q)

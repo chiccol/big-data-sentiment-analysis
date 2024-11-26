@@ -52,20 +52,22 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     ratings = []
     locations = []
     dates = []
-    text = []
+    num_reviews = 0
     language = "www" if language == "en" else language
-    review_list = []
     url = f"https://{language}.trustpilot.com/review/{company}"
     for num_page in range(from_page, to_page + 1):
-        print(f"Scraping page {num_page} for {company}...")
-    
+        review_list = []
+        text = []
+        print(f"Scraping page {num_page} for {company}...", flush=True)
+
         if num_page > 1:
             result = requests.get(url + f"?page={num_page}&sort=recency")
         else:
             result = requests.get(url + "?sort=recency")
 
         if result.status_code != 200:
-            print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.")
+            print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.", 
+                  flush=True)
             return 0
         
         soup = BeautifulSoup(result.content, 'html.parser')
@@ -86,28 +88,36 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
 
         for num_review in range(len(text)):
             full_review = dict()
+            full_review["source"] = "Trustpilot"
             try:
-                full_review["source"] = "Trustpilot"
+                full_review["tp_location"] = locations[num_review].get_text()
+            except:
+                full_review["tp_location"] = "N/A"
+            try:
                 full_review["text"] = text[num_review]
+                full_review["tp_stars"] = int(ratings[num_review]["data-service-review-rating"])
                 full_review["date"] = dates[num_review]
-                full_review["tp-location"] = locations[num_review].get_text()
-                full_review["tp-stars"] = int(ratings[num_review]["data-service-review-rating"])
+                full_review["company"] = company
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["date"],date_format) < from_date:
-                    print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.")
+                    print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.", flush=True)
                     if num_review == 0 and num_page == 1:
-                        print(f"No new reviews found for {company} after date {from_date}.")
+                        print(f"No new reviews found for {company} after date {from_date}.", flush=True)
                         return 1
                     else:
-                        print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")
+                        print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.", flush=True)
+                        num_reviews += len(review_list)
+                        print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
+                        review_list_serialized = encode_message_to_parquet(review_list)
+                        producer.produce(record = review_list_serialized, topic=company)
                         return 1
-                print(full_review)
                 review_list.append(full_review) 
             except Exception as e:
-                print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}")
-                print(f"Length location: {len(locations)}, num_review: {num_review}")
-        
-        text.clear()
+                print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}", flush=True)
+                print(f"Length location: {len(locations)}, num_review: {num_review}", flush=True)
+
+        num_reviews += len(review_list)
+        print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
         review_list_serialized = encode_message_to_parquet(review_list)
         review_list.clear()
         producer.produce(record = review_list_serialized, topic=company)

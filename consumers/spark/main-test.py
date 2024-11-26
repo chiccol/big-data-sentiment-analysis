@@ -1,10 +1,10 @@
 from pyspark.sql import SparkSession
 from kafka_consumer import KafkaConsumer
-from utils import get_sentiment_udf, process_data 
+from utils import write_mongo, write_postgres, spark_process
 import os
 
 def write_mongo(df_mongo, topics):
-    for topic in topics:
+    for topic, _ in topics.items():
         filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
         filtered_df_mongo.write \
             .format("mongo") \
@@ -28,6 +28,7 @@ def write_postgres(df_postgres):
     table_name = "predictions"
     # jdbc is the thing we installed to write directly from the dataframe
     df_postgres.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
+    print(f"Wrote {df_postgres.count()} messages to Postgres", flush=True)
 
 def main():
     # Get venv variables 
@@ -37,10 +38,10 @@ def main():
     kafka_adv_external_listener = os.getenv("KAFKA_ADVERTISED_LISTENERS")
     client_id = os.getenv("CLIENT_ID")
     group_id = os.getenv("GROUP_ID")
+    print(spark_master, spark_port, kafka_adv_external_listener, client_id, group_id, flush = True)
 
     spark = SparkSession.builder \
         .master(f"spark://{spark_master}:{spark_port}") \
-        .config("spark.mongodb.output.uri", f"mongodb://mongo:27017/") \
         .appName("Writer-Sentiment-Analysis") \
         .getOrCreate()
 
@@ -52,24 +53,19 @@ def main():
     except Exception as e:
         print(f"Error initializing Kafka consumer: {e}", flush=True)
         exit(1)
-
+    
     while True:
+        # it has to call a process function that works like this. 
         print("Getting data from Kafka...", flush=True)
+        
+        # get a list of dictionaries of all messages + a list of the topics we polled the messages from
         all_messages, topics = consumer.consume_messages_spark()
-        print("We obtained", topics) 
-        print(f"Messages consumed with Spark: {len(all_messages)}", flush=True)
-        if all_messages:
-            df = process_data(all_messages, spark)
-            df.show(5)
-            df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
-            df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", 
-                                     "neutral_probability", "positive_probability", "tp_stars", "tp_location", 
-                                     "yt_videoid", "yt_like_count", "yt_reply_count"])
-            write_mongo(df_mongo, topics)
-            write_postgres(df_postgres)
-        else:
-            print("No data was consumed", flush=True)
-            print("Sleeping for 15 seconds...", flush=True)
+        df = spark_process(all_messages, spark)
+        df.show(5)
+        df_mongo = df.select(["source", "date", "text", "company"])
+        df_postgres = df.select(["source", "date", "text", "company"])
+        write_mongo(df_mongo, topics)
+        write_postgres(df_postgres)
 
 if __name__ == "__main__":
     main()

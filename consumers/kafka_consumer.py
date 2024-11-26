@@ -1,8 +1,8 @@
 import pyarrow.parquet as pq
 from confluent_kafka import Consumer, KafkaError, KafkaException
-
 from io import BytesIO
 from typing import List
+import time
 
 class KafkaConsumer:
     """
@@ -53,25 +53,28 @@ class KafkaConsumer:
         difference = list(set(topics) - set(self.current_topic_list))
         
         if difference:
-            print(f"Found new topics:\n {difference}")
+            print(f"Found new topics:\n {difference}", flush=True)
             # Update our current topic list
             self.current_topic_list.extend(difference)
             # Subscribe to new topics
             self.consumer.subscribe(difference)
-            print(f'Subscribed to {difference}')
+            print(f'Subscribed to {difference}', flush=True)
             
         return topics
 
     def initialize_consumer(self) -> None:
+        """
+        Init function to correctly instantiate the consumer.
+        """
         try:
             self.consumer = Consumer(self.config)
-            print('Kafka consumer initialized correctly\n')
+            print('Kafka consumer initialized correctly\n', flush=True)
             self.topic = self.get_topics()  # Call get_topics with self
         except KafkaException as e:
-            print(f'Failed to initialize kafka consumer: {str(e)}')
+            print(f'Failed to initialize kafka consumer: {str(e)}', flush=True)
             raise
 
-    def poll_message(self, timeout: float = 1.0): 
+    def poll_message(self, timeout: float = 1.0):
         """Poll Kafka for messages with a timeout."""
         try:
             msg = self.consumer.poll(timeout)
@@ -80,129 +83,131 @@ class KafkaConsumer:
                 
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
-                    print(f"Reached end of partition: {msg.error()}")
+                    print(f"Reached end of partition: {msg.error()}", flush=True)
                     return None
                 else:
-                    print(f"Error while polling: {msg.error()}")
+                    print(f"Error while polling: {msg.error()}", flush=True)
                     return None
                     
             return msg
             
         except KafkaException as e:
-            print(f"Error in poll: {str(e)}")
+            print(f"Error in poll: {str(e)}", flush=True)
             raise
 
     def close(self):
-        """Properly close the Kafka consumer."""
+        """Closes the Kafka consumer."""
         if self.consumer is not None:
             try:
                 self.consumer.close()
-                print("Kafka consumer closed")
+                print("Kafka consumer closed", flush=True)
             except KafkaException as e:
-                print(f"Error closing consumer: {str(e)}")
+                print(f"Error closing consumer: {str(e)}", flush=True)
                 raise
     
     def get_metadata(self, timeout = 10.0):
+        """
+        Returns: metadata Kafka object.
+        """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
-
-    def inspect_broker(self, num_messages: int = 5):
+    
+# VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
+    def consume_messages_spark(self, timeout=15.0):
         """
-        Inspect the broker to see what topics, partitions, and messages are available.
-        Attempts to consume a few messages from each topic partition.
+        Consumes messages from Kafka for Spark processing and writing.
+        
+        Args:
+            timeout (float): Seconds to wait between polls.
+        
+        Returns:
+            tuple: (
+                all_messages: list of all messages regardless of topic,
+                topic_messages: dict with topic as key and list of messages as value
+            )
         """
-        print("\nInspecting Kafka broker...\n")
+        ignore_topics = ['__consumer_offsets']
         
-        # List all topics
-        metadata = self.consumer.list_topics(timeout=10)
-        topics = metadata.topics.keys()
+        # Get metadata and create a list of topics to explore
+        metadata = self.get_metadata()
+        topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
+        print(f"Topics in the kafka class are: {topics}")        
+        # Initialize data structures
+        all_messages = []
+        topic_messages = {}  # Changed to store messages per topic
         
+        # Validation checks
         if not topics:
-            print("No topics found in Kafka broker.")
-            return
+            print("No topics found in Kafka broker to consume.", flush=True)
+            return [], {}
         
-        print("Topics available in broker:", topics)
+        print(f"Consuming messages from topics: {topics}", flush=True)
         
-        # Inspect each topic's partitions and messages
-        for topic in topics:
-            if topic == '__consumer_offsets':  # Ignore internal Kafka topic
-                continue
-            
-            print(f"\nInspecting topic: {topic}")
-            partitions = metadata.topics[topic].partitions.keys()
-            print(f"Partitions for {topic}: {partitions}")
-            
-            # Try to consume a few messages from each partition
-            for partition in partitions:
-                print(f"Reading up to {num_messages} messages from topic '{topic}', partition {partition}")
-                count = 0
-                while count < num_messages:
-                    msg = self.consumer.poll(timeout=1.0)
-                    if msg is None:
-                        print("No more messages available.")
-                        break
-                    elif msg.error():
-                        print(f"Error while polling message: {msg.error()}")
-                    else:
-                        print(f"Message {count + 1} from partition {partition}: {msg.value().decode('utf-8')}")
-                        count += 1
-                if count == 0:
-                    print(f"No messages found in partition {partition}.")
-            
-        print("\nFinished inspecting broker.\n")
-
-    def consume_messages(self, consumer,mongo_manager = None, timeout = 100.0):
-        print("Entered consume message function")
-        if consumer == "mongo" and mongo_manager is None:
-            ValueError("Consumer is set to mongo but no mongo_manager is provided")
-        metadata = self.get_metadata(timeout=timeout)
-        topics = list(metadata.topics.keys())
-        spark_msgs = [] if consumer == "spark" else None
-
-        if not topics:
-            print("No topics found in Kafka broker.")
-            return
+        # Tracking variables
+        total_messages_consumed = 0
+        topics_with_messages = set()
         
-        print("Topics available in broker:", topics)
-        sources = set() # added to test spark messages
-        for topic in topics:
-            if topic == '__consumer_offsets':  # Ignore internal Kafka topic
-                continue
-            
-            print(f"\nRetrieving messages from {topic}")
-            partitions = metadata.topics[topic].partitions.keys()
-            print(partitions)
-            print(f"Partitions for {topic}: {partitions}")
-            
-            for partition in partitions:
-                count = 0
-                print(f"Reading all messages from topic '{topic}', partition {partition}")
-                # Use a while loop to continuously poll for messages
-                while True:
+        try:
+            # Consume messages from each topic
+            for topic in topics:
+                topic_messages[topic] = 0
+                print(f"Current topic in Kafka Consumer is: {topic}", flush=True)
+                try:
+                    # Polling for messages from the specific topic
                     msg = self.poll_message(timeout=timeout)
-                    if msg is None:
-                        print("No more messages available.")
-                        if consumer == "spark":
-                            return spark_msgs
-                        break
-                    elif msg.error():
-                        print(f"Error while polling message: {msg.error()}")
-                    else:
-                        count += 1
-                        print(f"The message is of type {type(msg.value())} and it is {msg.value()}")
-                        topic = str(msg.topic())
-                        msg = self.decode_parquet(msg.value())
-                        if consumer == "mongo":
-                            print(f"Attempting to write it on mongo on collection {topic}")
-                            mongo_manager.write_on_mongo(msg, topic) # mongo should be moved
-                        elif consumer == "spark":
-                            print(f"Appending message to spark_msgs")
-                            spark_msgs.extend(msg)
-                        else:
-                            print("Consumer not recognized")
-                            ValueError("Consumer not recognized. Consumer should be either MongoDB object or spark")
+                    print(f"The message object is {msg} and its dirs are {dir(msg)}")
+                    
+                    # Validate and process message
+                    current_topic = str(msg.topic())
+                    print(f"Current topic is {current_topic}")
+                    
+                    # Decode message 
+                    try:
+                        msg_data = self.decode_parquet(msg.value())
+                    except Exception as decode_error:
+                        print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
+                        continue
+                    
+                    # Store messages by topic and in all_messages
+                    if current_topic not in topic_messages:
+                        topic_messages[current_topic] = 0
+                    topic_messages[current_topic] += len(msg_data)
+                    all_messages.extend(msg_data)
+
+                    
+                    # Update tracking variables
+                    total_messages_consumed += len(msg_data)
+                    if topic_messages[current_topic] > 0:
+                        topics_with_messages.add(current_topic)
+                    
+                except Exception as topic_error:
+                    print(f"Error processing topic {topic}: {topic_error}", flush=True)
+        
+        except Exception as e:
+            print(f"Unexpected error during Kafka message consumption: {e}", flush=True)
+        
+        finally:
+            # Logging summary
+            print(f"Time:{time.localtime()}\n--- Kafka Message Consumption Summary ---", flush=True)
+            print(f"Total messages consumed: {total_messages_consumed}", flush=True)
+            print(f"Topics with messages: {topics_with_messages}", flush=True)
+            print("Detailed message count per topic:", flush=True)
+            for topic, messages in topic_messages.items():
+                print(f"{topic}: {messages} messages", flush=True)
+        
+        print(f"Finally this is the dictionary of topic messages: {topic_messages}", flush = True)
+        return all_messages, topic_messages
 
     def decode_parquet(self, msg):
+        """
+        Decodes a parquet-encoded message and returns it.
+
+        Args:
+            msg: parquet-encoded messages
+
+        Returns:
+            decoded_msg: kafka message object
+        """
         # Use BytesIO to read the binary Parquet data
         buffer = BytesIO(msg)
         
@@ -211,5 +216,5 @@ class KafkaConsumer:
         
         # Convert the Arrow table to a pandas DataFrame for easier manipulation
         decoded_msg = table.to_pylist()
-        print(f"Function decode_parquet worked, this is the output: {decoded_msg}")
+        print(f"Function decode_parquet worked.", flush=True)
         return decoded_msg

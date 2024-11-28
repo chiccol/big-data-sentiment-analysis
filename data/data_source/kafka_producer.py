@@ -1,6 +1,19 @@
 from confluent_kafka import Producer
 from time import sleep
+import logging
 
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+
+logger = logging.getLogger("kafka-producer")
+logger.info("Started logging")
 class KafkaProducer:
     def __init__(self, bootstrap_servers, client_id):
         producer_config = {
@@ -12,10 +25,9 @@ class KafkaProducer:
     def produce(self, record, topic):
         def delivery_report(err, msg):
             if err is not None:
-                print(f"Message delivery failed: {err}")
+                logger.error(f"Message delivery failed: {err}")
             else:
-                print(f"Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
-        
+                logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
         self.producer.produce(topic, value=record,callback=delivery_report)
         self.producer.poll(1)  # Wait up to 1 second for any delivery reports (optional but recommended)
         self.producer.flush()  # Wait until all messages are delivered before proceeding

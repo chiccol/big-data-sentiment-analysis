@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Wait for kafka and consumers to start
-echo "Waiting 30 seconds for Kafka and consumers to start..."
-sleep 30
 # Start the Spark master process in the background
 spark-class org.apache.spark.deploy.master.Master &
 

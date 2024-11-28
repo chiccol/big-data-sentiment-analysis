@@ -7,7 +7,30 @@ import pyarrow.parquet as pq
 from io import BytesIO
 import pandas as pd
 
-def encode_message_to_parquet(data):
+import logging
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("trustpilot-producer")
+logger.info("Started logging")
+
+def encode_message_to_parquet(data: list[dict]) -> bytes: 
+    """
+    Encodes a list of dictionaries into a in-memory parquet table.
+
+    Args:
+        data -> list of dicts
+
+    Returns:
+        bytes
+    """
     # Infer the schema from the data
     schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
 
@@ -17,7 +40,7 @@ def encode_message_to_parquet(data):
     # Write the table to an in-memory bytes buffer as Parquet
     buffer = BytesIO()
     pq.write_table(table, buffer)
-
+    logger.info(f"Encoded the message successfully")
     # Return the Parquet bytes for saving or sending
     return buffer.getvalue()
 
@@ -58,16 +81,14 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
     for num_page in range(from_page, to_page + 1):
         review_list = []
         text = []
-        print(f"Scraping page {num_page} for {company}...", flush=True)
-
+        logger.info(f"Scraping page {num_page} for {company}...")
         if num_page > 1:
             result = requests.get(url + f"?page={num_page}&sort=recency")
         else:
             result = requests.get(url + "?sort=recency")
 
         if result.status_code != 200:
-            print(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.", 
-                  flush=True)
+            logger.error(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.")
             return 0
         
         soup = BeautifulSoup(result.content, 'html.parser')
@@ -100,24 +121,25 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 full_review["company"] = company
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["date"],date_format) < from_date:
-                    print(f"Reached reviews older than {from_date}. Stopping scraping for {company}.", flush=True)
+                    logger.info(f"Reached reviews older than {from_date}. Stopping scraping for {company}.") 
                     if num_review == 0 and num_page == 1:
-                        print(f"No new reviews found for {company} after date {from_date}.", flush=True)
+                        logger.info(f"No new reviews found for {company} after date {from_date}.")
                         return 1
                     else:
-                        print(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.", flush=True)
+                        logger.info(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")   
                         num_reviews += len(review_list)
-                        print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
+                        logger.info(f"Scraped {num_reviews} reviews for {company} so far.")
                         review_list_serialized = encode_message_to_parquet(review_list)
                         producer.produce(record = review_list_serialized, topic=company)
                         return 1
                 review_list.append(full_review) 
             except Exception as e:
-                print(f"Error while scraping review {num_review} on page {num_page} for {company}: {e}", flush=True)
-                print(f"Length location: {len(locations)}, num_review: {num_review}", flush=True)
+                error_message = "\n".join([f"Error while scraping review {num_review} on page {num_page} for {company}: {e}\n",
+                        f"Length location: {len(locations)}, num_review: {num_review}"])
+                logger.error(error_message)
 
         num_reviews += len(review_list)
-        print(f"Scraped {num_reviews} reviews for {company} so far.", flush=True)
+        logger.info(f"Scraped {num_reviews} reviews for {company} so far.")
         review_list_serialized = encode_message_to_parquet(review_list)
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

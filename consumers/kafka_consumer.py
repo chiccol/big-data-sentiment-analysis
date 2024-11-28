@@ -3,6 +3,19 @@ from confluent_kafka import Consumer, KafkaError, KafkaException
 from io import BytesIO
 from typing import List
 import time
+import logging
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("kafka-consumer")
+logger.info("Started logging")
 
 class KafkaConsumer:
     """
@@ -53,29 +66,36 @@ class KafkaConsumer:
         difference = list(set(topics) - set(self.current_topic_list))
         
         if difference:
-            print(f"Found new topics:\n {difference}", flush=True)
+            logger.info(f"Found new topics:\n {difference}")
             # Update our current topic list
             self.current_topic_list.extend(difference)
             # Subscribe to new topics
             self.consumer.subscribe(difference)
-            print(f'Subscribed to {difference}', flush=True)
+            logger.info(f"Subscribed to {difference}")
             
         return topics
 
     def initialize_consumer(self) -> None:
         """
-        Init function to correctly instantiate the consumer.
+        Init function to instantiate the consumer.
         """
         try:
             self.consumer = Consumer(self.config)
-            print('Kafka consumer initialized correctly\n', flush=True)
+            logger.info(f"Kafka consumer initialized correctly\n")
             self.topic = self.get_topics()  # Call get_topics with self
         except KafkaException as e:
-            print(f'Failed to initialize kafka consumer: {str(e)}', flush=True)
+            logger.error(f"Failed to initialize kafka consumer: {str(e)}")
             raise
 
     def poll_message(self, timeout: float = 1.0):
-        """Poll Kafka for messages with a timeout."""
+        """Poll Kafka for messages with a timeout.
+        
+        Args:
+            timeout -> float
+
+        Returns:
+            msg -> cimplMessage or None
+        """
         try:
             msg = self.consumer.poll(timeout)
             if msg is None:
@@ -83,16 +103,16 @@ class KafkaConsumer:
                 
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
-                    print(f"Reached end of partition: {msg.error()}", flush=True)
+                    logger.info(f"Reached end of partition: {msg.error()}") 
                     return None
                 else:
-                    print(f"Error while polling: {msg.error()}", flush=True)
+                    logger.error(f"Error while polling: {msg.error()}") 
                     return None
                     
             return msg
             
         except KafkaException as e:
-            print(f"Error in poll: {str(e)}", flush=True)
+            logger.error(f"Error in poll: {str(e)}")
             raise
 
     def close(self):
@@ -100,9 +120,9 @@ class KafkaConsumer:
         if self.consumer is not None:
             try:
                 self.consumer.close()
-                print("Kafka consumer closed", flush=True)
+                logger.info("Kafka consumer closed")
             except KafkaException as e:
-                print(f"Error closing consumer: {str(e)}", flush=True)
+                logger.error(f"Error closing consumer: {str(e)}")
                 raise
     
     def get_metadata(self, timeout = 10.0):
@@ -132,18 +152,16 @@ class KafkaConsumer:
         # Get metadata and create a list of topics to explore
         metadata = self.get_metadata()
         topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
-        print(f"Topics in the kafka class are: {topics}")        
-        
+        logger.info(f"Topics in the kafka class are: {topics}") 
         # Initialize data structures
         all_messages = []
         topic_messages = {}  # Changed to store messages per topic
         
         # Validation checks
         if not topics:
-            print("No topics found in Kafka broker to consume.", flush=True)
+            logger.info(f"No topics found in Kafka broker to consume.")
             return [], {}
-        
-        print(f"Consuming messages from topics: {topics}", flush=True)
+        logger.info(f"Consuming messages from topics: {topics}") 
         
         # Tracking variables
         total_messages_consumed = 0
@@ -178,22 +196,24 @@ class KafkaConsumer:
                         topics_with_messages.add(current_topic)
                     
                 except Exception as decode_error:
-                    print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
+                    logger.error(f"Error decoding message from topic {current_topic}: {decode_error}") 
                     continue
         
         except Exception as e:
-            print(f"Unexpected error during Kafka message consumption: {e}", flush=True)
-        
+            logger.error(f"Unexpected error during Kafka message consumption: {e}") 
         finally:
-            # Logging summary
-            print(f"Time:{time.localtime()}\n--- Kafka Message Consumption Summary ---", flush=True)
-            print(f"Total messages consumed: {total_messages_consumed}", flush=True)
-            print(f"Topics with messages: {topics_with_messages}", flush=True)
-            print("Detailed message count per topic:", flush=True)
+            summary = "\n".join([
+            f"Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}",
+            "--- Kafka Message Consumption Summary ---",
+            f"Total messages consumed: {total_messages_consumed}",
+            f"Topics with messages: {topics_with_messages}",
+            "Detailed message count per topic:"
+            ])
+            logger.info(summary)
             for topic, messages in topic_messages.items():
-                print(f"{topic}: {messages} messages", flush=True)
+                logger.info(f"{topic}: {messages} messages")
         
-        print(f"Finally this is the dictionary of topic messages: {topic_messages}", flush=True)
+        logger.info(f"Finally this is the dictionary of topic messages: {topic_messages}") 
         return all_messages, topic_messages
 
     def decode_parquet(self, msg):
@@ -214,5 +234,6 @@ class KafkaConsumer:
         
         # Convert the Arrow table to a pandas DataFrame for easier manipulation
         decoded_msg = table.to_pylist()
-        print(f"Function decode_parquet worked.", flush=True)
+        logger.info(f"Function decode_parquet worked.")
         return decoded_msg
+

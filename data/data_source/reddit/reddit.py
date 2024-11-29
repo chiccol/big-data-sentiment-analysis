@@ -15,9 +15,7 @@ def getcomments_reddit(
     company,
     max_num_comments,
     producer,
-    save_submission=True,
-    after_comment_id=None
-):
+    save_submission=True):
     """
     Fetch comments from a Reddit submission and send them to a Kafka topic, with an option to save submission data.
 
@@ -68,45 +66,38 @@ def getcomments_reddit(
     num_comments = 0
     comments_to_send = []
 
-    # Sort comments by creation time (newest first)
-    comments_list.sort(key=lambda x: x.created_utc, reverse=True)
+    # Sort comments by creation time (oldest first)
+    comments_list.sort(key=lambda x: x.created_utc)
+    
+    last_comment_id = None
 
-    # If after_comment_id is provided, find the index to start from
-    start_index = 0
-    if after_comment_id:
-        for idx, comment in enumerate(comments_list):
-            if comment.id == after_comment_id:
-                start_index = idx + 1
-                break
-
-    for comment in comments_list[start_index:]:
+    for comment in comments_list:
         comment_datetime = datetime.fromtimestamp(comment.created_utc)
         comment_date_str = comment_datetime.strftime(date_format)
 
-        if comment_datetime < datetime.strptime(from_date, date_format):
-            print(f"Comment is older than {from_date}")
-            break
+        if from_date:
+            if comment_datetime < datetime.strptime(from_date, date_format):
+                print(f"Comment is older than {from_date}")
+                continue
 
         extracted_comment = {
-            # "id": submission_id,
             "id": comment.id,
             "source": "reddit",
             "text": comment.body,
             "date": comment_date_str,
             "re-subreddit": str(submission.subreddit),
             "re-vote": comment.score,
-            "re-reply-count": len(comment.replies)#,
-            # "author": str(comment.author),
-            # "parentId": comment.parent_id,
-            # "permalink": comment.permalink
+            "re-reply-count": len(comment.replies)
         }
         comments_to_send.append(extracted_comment)
         num_comments += 1
 
         if num_comments >= max_num_comments:
             print(f"Reached {max_num_comments} comments for submission {submission_id} of company {company}")
-            after_comment_id = comment.id
+            last_comment_id = comment.id
             break
+    if not last_comment_id:
+        print(f"Comment {comment.id} is the last one of this post at date {comment_date_str}")
 
     if comments_to_send:
         comments_json = json.dumps(comments_to_send).encode('utf-8')
@@ -117,10 +108,10 @@ def getcomments_reddit(
             print(f"Error sending comments to Kafka for submission {submission_id}: {e}")
     else:
         print(f"No new comments to fetch for submission {submission_id} of company {company}")
-        after_comment_id = None
+        last_comment_id = None
 
     sleep(5)  
-    return after_comment_id
+    return last_comment_id
 
 
 import praw
@@ -134,8 +125,6 @@ def search_posts(
     reddit_client,
     company,
     max_posts,
-    min_comments=10,
-    min_score=100,
     subreddit_list=None
 ):
     """
@@ -159,11 +148,11 @@ def search_posts(
 
     if company not in reddit_companies_posts:
         reddit_companies_posts[company] = {
-            # "posts": {},
-            "from_date": after_date,
+            "posts": {},
+            "from_date": None,
             "query": query,
-            "submissions": [],
-            "subreddits": [company]
+            # "submissions": [],
+            "subreddits": subreddit_list if subreddit_list is not None else [company]
         }
 
     # Define subreddits to search in
@@ -191,39 +180,29 @@ def search_posts(
         if submission_created < datetime.strptime(after_date, date_format):
             print(f"Post {submission.id} is older than {after_date}")
             continue
-
-        # # Check if the post meets the minimum criteria
-        # if submission.num_comments < min_comments:
-        #     print(f"Post {submission.id} does not have enough comments.")
-        #     continue
-
+        
         # Check if the post is already in the data
         if submission.id in [sub["submission_id"] for sub in reddit_companies_posts[company]["submissions"]]:
             print(f"Post {submission.id} is already processed.")
             continue
 
         # Add the post to the data
-        # reddit_companies_posts[company]["posts"][submission.id] = {
-        #     "_id": submission.id,
-        #     "source": "reddit",
-        #     "text": submission.title + " : " + submission.selftext,
-        #     "date": submission_created.strftime(date_format),
-        #     "re-subreddit": str(submission.subreddit),
-        #     "re-vote": submission.score,
-        #     "re-reply-count": submission.num_comments
-        # }
-        new_posts.append({
-            "submission_id": submission.id,
+        reddit_companies_posts[company]["posts"][submission.id] = {
             "from_date": after_date,
-            "max_num_comments": 10  # Fetch up to n comments per post for every iteration in main.py
-        })
+            "max_num_comments": 10
+        }
+        
+        new_posts[submission.id] = {    
+            "from_date": after_date,
+            "max_num_comments": 10  
+        }
         # new_posts.append(submission.id)
         num_posts += 1
         print(f"Added post {submission.id} to {company}")
 
         sleep(10)  # Sleep to respect Reddit's API rate limits
 
-    reddit_companies_posts[company]["from_date"] = datetime.now().strftime(date_format)
+    reddit_companies_posts[company]["searching_post_date"] = datetime.now().strftime(date_format)
 
     # Save the updated data
     print("Saving file...")

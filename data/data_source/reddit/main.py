@@ -82,44 +82,34 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Error during search_posts for {company}: {e}")
                 continue
-
-            # Ensure submissions list exists
-            if "submissions" not in companies_submissions.keys():
-                companies_submissions["submissions"] = []
-
-            # Update submissions with new ones
-            companies_submissions["submissions"].extend(new_submissions)
             
-            for submission in new_submissions:
+            for submission_id in new_submissions.keys():
 
-                submission_id = submission.get("submission_id")
-                from_date = submission.get("from_date")
-                max_num_comments = submission.get("max_num_comments", 100)
+                from_date = companies_submissions[company]["posts"][submission_id].get("from_date")
+                max_num_comments = companies_submissions[company]["posts"][submission_id].get("max_num_comments", 100)
                 
                 if not submission_id or not from_date:
                     print(f"Invalid submission data: {submission_id}. Skipping.")
                     continue
 
-                after_comment_id = None
-
                 print(f"Fetching comments for submission {submission_id} of company {company}")
                 try:
-                    after_comment_id = getcomments_reddit(
+                    last_comment_id = getcomments_reddit(
                         submission_id=submission_id,
                         reddit_client=reddit_scraper,
                         from_date=from_date,
                         company=company,
                         max_num_comments=max_num_comments,
                         producer=producer,
-                        save_submission=True,
-                        after_comment_id=after_comment_id
+                        save_submission=True
                     )
                 except Exception as e:
                     print(f"Error fetching Reddit comments for submission {submission_id}: {e}")
                     continue
 
-                # Update the submission's from_date to now
-                submission["from_date"] = datetime.now().strftime(date_format)
+                # Update the submission's from_date to the last fetched comment's date
+                if not last_comment_id:
+                    companies_submissions[company]["posts"]["from_date"] = datetime.now().strftime(date_format)
 
             # Save the updated Reddit submissions data
             try:

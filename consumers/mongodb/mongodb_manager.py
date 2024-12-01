@@ -45,7 +45,7 @@ class MongoDB:
             self.db
         """
 
-        print(f"Creating DB Called {db_name}")
+        print(f"Creating DB Called {db_name}", flush=True)
         self.db = self.client[db_name]
         self.db_list.append(db_name)
         return self.db
@@ -65,7 +65,7 @@ class MongoDB:
             if db_name not in self.db_list:
                 self.create_db(db_name)
             self.db = db_name
-            print(f"Switching to DB called {db_name}")
+            print(f"Switching to DB called {db_name}", flush=True)
 
         return self.db
         
@@ -86,7 +86,7 @@ class MongoDB:
         self.collection = self.db[collection_name]
         if collection_name not in self.collection_list:
             self.collection_list.append(collection_name)
-        print(f"Creating a collection called {collection_name}")
+        print(f"Creating a collection called {collection_name}", flush=True)
         return self.collection
 
     def change_collection(self, collection_name = None):
@@ -105,7 +105,7 @@ class MongoDB:
                 self.create_collection(collection_name)
             else:
                 self.collection = self.db[collection_name]
-            print(f"Switching to a collection called {collection_name}")
+            print(f"Switching to a collection called {collection_name}", flush=True)
         return self.collection
     
     def insert_single_dict(self, value: dict):
@@ -114,10 +114,10 @@ class MongoDB:
         """
 
         if type(value) != dict:
-            print('Insert a dict object')
+            print('Insert a dict object', flush=True)
             return 1 
         else:
-            print(f'Inserting a dict:\n {value}')
+            print(f'Inserting a dict:\n {value}', flush=True)
             self.collection.insert_one(value)
 
     def insert_list_dict(self, list_dict: list):
@@ -132,7 +132,7 @@ class MongoDB:
             return 1
         else:
             self.collection.insert_many(list_dict)
-            print(f'Inserting a list of dictionaries:\n {list_dict}')
+            print(f'Inserting a list of dictionaries:\n {list_dict}', flush=True)
 
     def read_all(self):
         """
@@ -144,7 +144,7 @@ class MongoDB:
 
         results = self.collection.find()
         for result in results:
-            print(f'{result}\n')
+            print(f'{result}\n', flush=True)
 
         return results
     
@@ -160,9 +160,9 @@ class MongoDB:
                 self.insert_list_dict(msg)
             # aggiusta gli errori con parquet
             except json.JSONDecodeError as e:
-                print(f"Error decoding JSON message: {str(e)}")
+                print(f"Error decoding JSON message: {str(e)}", flush=True)
             except Exception as e:
-                print(f"Error processing message: {str(e)}")
+                print(f"Error processing message: {str(e)}", flush=True)
                 
         except Exception as e:
-            print(f"Error writing to MongoDB: {str(e)}")
+            print(f"Error writing to MongoDB: {str(e)}", flush=True)

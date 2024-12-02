@@ -133,3 +133,16 @@ services:
       - "5432:5432"
     volumes:
       - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+
+  pseudo-producer:
+    container_name: pseudo-producer
+    build:
+      context: data/data_source/
+      dockerfile: pseudo/pseudo.Dockerfile
+    depends_on:
+      - mongo
+      - kafka
+      - postgres
+    volumes:
+      - ./data/data_source/pseudo/main.py:/app/main.py
+      - ./data/data_source/pseudo/pseudo.py:/app/pseudo.py

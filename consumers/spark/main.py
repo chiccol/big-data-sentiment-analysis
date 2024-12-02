@@ -5,6 +5,8 @@ import os
 import time
 import random
 import logging
+from time import sleep
+
 
 def main():
     # Setup logger
@@ -51,18 +53,10 @@ def main():
                 logger.warning(f"Error initializing Kafka consumer. Retrying in {delay:.2f} seconds...")
                 time.sleep(delay)
             else:
-                logger.error("Max retries reached. Exiting.")
+                logger.error(f"Max retries reached. Exiting. {e}")
                 raise
+            # aggiungere cosa raisiamo :)
     logger.info("Initializing Kafka consumer...") 
-    while True:
-        try:
-            consumer = KafkaConsumer(bootstrap_servers=kafka_adv_external_listener, 
-                                     client_id=client_id, 
-                                     group_id=group_id)
-            break
-        except Exception as e:
-            logger.error(f"Error initializing Kafka consumer: {e}")
-            exit(1)
 
     while True:
         logger.info("Getting data from Kafka...")
@@ -72,14 +66,15 @@ def main():
         if all_messages:
             df = process_data(all_messages, spark)
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
+            write_mongo(df_mongo, topics)
             df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", 
                                      "neutral_probability", "positive_probability", "tp_stars", "tp_location", 
                                      "yt_videoid", "yt_like_count", "yt_reply_count"])
-            write_mongo(df_mongo, topics)
             write_postgres(df_postgres)
         else:
             logger.info(f"No data was consumed")
             logger.info(f"Sleeping for 15 seconds...")
+            sleep(15)
 
 if __name__ == "__main__":
     main()

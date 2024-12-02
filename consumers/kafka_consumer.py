@@ -4,6 +4,7 @@ from io import BytesIO
 from typing import List
 import time
 import logging
+import pyarrow as pa
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -28,7 +29,7 @@ class KafkaConsumer:
                  bootstrap_servers: str = 'kafka:9092',
                  group_id: str = 'mongo-group',
                  client_id: str = 'mongo-consumer',
-                 auto_offset_reset: str = 'earliest'):
+                 auto_offset_reset: str = 'earliest',):
         
         self.config = {
             'bootstrap.servers': bootstrap_servers,
@@ -40,6 +41,7 @@ class KafkaConsumer:
         self.msg = None
         self.consumer = None
         self.initialize_consumer()
+        
 
     def get_topics(self) -> List[str]:
         """
@@ -228,12 +230,29 @@ class KafkaConsumer:
         """
         # Use BytesIO to read the binary Parquet data
         buffer = BytesIO(msg)
-        
+        pyarrow_schema = pa.schema([
+                    ('source', pa.string()),
+                    ('text', pa.string()),
+                    ('company', pa.string()),
+                    ('date', pa.string()),
+                    ('tp_stars', pa.int32()), 
+                    ('tp_location', pa.string()),
+                    ('yt_videoid', pa.string()),
+                    ('yt_like_count', pa.int32()),
+                    ('yt_reply_count', pa.int32()),
+                ])
+        print(pyarrow_schema)
         # Read the Parquet data back into an Arrow table
-        table = pq.read_table(buffer)
+        table = pq.read_table(source = buffer, schema = pyarrow_schema)
         
         # Convert the Arrow table to a pandas DataFrame for easier manipulation
         decoded_msg = table.to_pylist()
+
         logger.info(f"Function decode_parquet worked.")
+
+        for index, message in enumerate(decoded_msg):
+            for key, value in message.items():
+                if isinstance(value, float):
+                    print(f"Float detected in message {index} at key '{key}': {value}", flush=True)
         return decoded_msg
 

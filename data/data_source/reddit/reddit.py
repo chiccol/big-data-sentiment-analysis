@@ -171,7 +171,8 @@ def search_posts(
             "posts": {},
             "from_date": None,
             "query": query,
-            "subreddits": subreddit_list if subreddit_list is not None else [company]
+            "subreddits": subreddit_list if subreddit_list is not None else [company],
+            "max_posts": max_posts,
         }
         logging.info(f"Initialized posts data for company '{company}'")
 
@@ -221,8 +222,8 @@ def search_posts(
             continue
 
         # Check if the post is already in the data
-        existing_submissions = reddit_companies_posts[company].get("submissions", [])
-        if any(sub["submission_id"] == submission.id for sub in existing_submissions):
+        existing_posts = reddit_companies_posts[company]["posts"]
+        if submission.id in existing_posts:
             logging.debug(f"Post {submission.id} is already processed for company '{company}'. Skipping.")
             continue
 

@@ -7,6 +7,10 @@ import json
 from datetime import datetime
 from time import sleep
 import logging
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pandas as pd
+from io import BytesIO
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -54,22 +58,23 @@ def getcomments_reddit(
     if save_submission:
         # Fetch submission data
         submission_data = {
-            "id": submission_id,
             "source": "reddit",
             "text": submission.title + ": " + submission.selftext,
+            "company": company,
             "date": datetime.fromtimestamp(submission.created_utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "re-subreddit": str(submission.subreddit),
-            "re-vote": submission.score,
-            "re-reply-count": submission.num_comments
+            "re_id": submission_id,
+            "re_subreddit": str(submission.subreddit),
+            "re_vote": submission.score,
+            "re_reply_count": submission.num_comments
         }
         # Append submission data to record_list
         record_list.append(submission_data)
 
         # If record_list reaches 100 items, send to Kafka
         if len(record_list) >= 100:
-            records_json = json.dumps(record_list).encode('utf-8')
+            records_serialized = encode_message_to_parquet(record_list) 
             try:
-                producer.produce(record=records_json, topic=company)
+                producer.produce(record=records_serialized, topic=company)
                 logger.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
                 record_list = []  # Reset the list after sending
             except Exception as e:
@@ -125,9 +130,9 @@ def getcomments_reddit(
         
          # If record_list reaches 100 items, send to Kafka
         if len(record_list) >= 100:
-            records_json = json.dumps(record_list).encode('utf-8')
+            records_serialized = encode_message_to_parquet(record_list) 
             try:
-                producer.produce(record=records_json, topic=company)
+                producer.produce(record=records_serialized, topic=company)
                 logger.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
                 record_list = []  # Reset the list after sending
             except Exception as e:
@@ -143,9 +148,9 @@ def getcomments_reddit(
         logger.info(f"Comment {last_comment_id} is the last one of submission {submission_id} at date {comment_date_str}")
 
     if comments_to_send:
-        comments_json = json.dumps(comments_to_send).encode('utf-8')
+        records_serialized = encode_message_to_parquet(record_list) 
         try:
-            producer.produce(record=comments_json, topic=company)
+            producer.produce(record=records_serialized, topic=company)
             logger.info(f"Sent {num_comments} comments for submission {submission_id} of company '{company}' to Kafka topic '{company}'")
         except Exception as e:
             logger.exception(f"Error sending comments to Kafka for submission {submission_id} of company '{company}': {e}")
@@ -275,3 +280,26 @@ def search_posts(
     logger.info(f"Completed search_posts for company '{company}' in {search_end_time - search_start_time:.2f} seconds")
 
     return new_posts, reddit_companies_posts
+
+def encode_message_to_parquet(data: list[dict]) -> bytes: 
+    """
+    Encodes a list of dictionaries into a in-memory parquet table.
+
+    Args:
+        data -> list of dicts
+
+    Returns:
+        bytes
+    """
+    # Infer the schema from the data
+    schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
+
+    # Convert the data to an Arrow Table using the inferred schema
+    table = pa.Table.from_pandas(pd.DataFrame(data), schema=schema)
+
+    # Write the table to an in-memory bytes buffer as Parquet
+    buffer = BytesIO()
+    pq.write_table(table, buffer)
+    logger.info(f"Encoded the message successfully")
+    # Return the Parquet bytes for saving or sending
+    return buffer.getvalue()

@@ -11,5 +11,9 @@ CREATE TABLE IF NOT EXISTS predictions (
     tp_location TEXT NULL, 
     yt_videoid TEXT NULL,
     yt_like_count INT NULL,
-    yt_reply_count INT NULL
+    yt_reply_count INT NULL,
+	re_subreddit TEXT NULL,
+	re_id TEXT NULL,
+	re_vote INT NULL,
+	re_reply_count INT NULL
 );

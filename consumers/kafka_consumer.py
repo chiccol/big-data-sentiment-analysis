@@ -240,6 +240,10 @@ class KafkaConsumer:
                     ('yt_videoid', pa.string()),
                     ('yt_like_count', pa.int32()),
                     ('yt_reply_count', pa.int32()),
+                    ('re_id', pa.string()),
+                    ('re_subreddit', pa.string()),
+                    ('re_vote', pa.int32()),
+                    ('re_reply_count', pa.int32())
                 ])
         print(pyarrow_schema)
         # Read the Parquet data back into an Arrow table

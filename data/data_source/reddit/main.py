@@ -5,7 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import praw
 from kafka_producer import KafkaProducer
-from reddit import getcomments_reddit, search_posts
+from reddit import getcomments_reddit, search_posts, encode_message_to_parquet
 import logging
 
 logging.basicConfig(
@@ -124,9 +124,9 @@ if __name__ == "__main__":
                     
             # send all the remaining comments in the record_list to Kafka
             if len(record_list) > 0:
-                record_json = json.dumps(record_list).encode('utf-8')
+                record_serialized = encode_message_to_parquet(record_list) 
                 try:
-                    producer.produce(record=record_json, topic=company)
+                    producer.produce(record=record_serialized, topic=company)
                     logger.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
                     record_list = []  # Reset the list after sending
                 except Exception as e:
@@ -141,5 +141,5 @@ if __name__ == "__main__":
                 logger.error(f"Error saving Reddit submissions data: {e}")
 
         # Sleep before the next iteration
-        logger.info("Sleeping for 60 seconds... zzzz...")
-        sleep(4)
+        logger.info("Sleeping for 60 seconds.")
+        sleep(60)

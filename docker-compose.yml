@@ -30,18 +30,6 @@ services:
       - kafka
     restart: always
 
-  mongo-controller:
-    container_name: mongo-controller
-    build:
-      context: consumers/
-      dockerfile: mongodb/mongo-controller.Dockerfile
-    depends_on:
-      - kafka
-      - mongo
-    volumes: 
-      - ./consumers/mongodb/main.py:/app/main.py
-      - ./consumers/mongodb/mongodb_manager.py:/app/mongodb_manager.py
-      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
   
   youtube-producer:
     container_name: youtube-producer

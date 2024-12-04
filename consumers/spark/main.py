@@ -69,12 +69,11 @@ def main():
             write_mongo(df_mongo, topics)
             df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", 
                                      "neutral_probability", "positive_probability", "tp_stars", "tp_location", 
-                                     "yt_videoid", "yt_like_count", "yt_reply_count"])
+                                     "yt_videoid", "yt_like_count", "yt_reply_count", "re_subreddit", "re_id", "re_vote", "re_reply_count"])
             write_postgres(df_postgres)
         else:
             logger.info(f"No data was consumed")
             logger.info(f"Sleeping for 15 seconds...")
             sleep(15)
-
 if __name__ == "__main__":
     main()

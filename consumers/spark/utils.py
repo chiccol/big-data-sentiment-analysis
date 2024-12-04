@@ -26,7 +26,7 @@ output_schema = StructType([
 schema = StructType([
         StructField("source", StringType(), nullable = False),
         StructField("text", StringType(), nullable = False),
-        StructField("company", StringType(), nullable = True),
+        StructField("company", StringType(), nullable = False),
         StructField("date", StringType(), nullable = True),
         StructField("tp_stars", IntegerType(), nullable = True),
         StructField("tp_location", StringType(), nullable = True),
@@ -34,9 +34,9 @@ schema = StructType([
         StructField("yt_like_count", IntegerType(), nullable = True),
         StructField("yt_reply_count", IntegerType(), nullable = True),
         StructField("re_id", StringType(), nullable = True),
-        StructField("re-subreddit", StringType(), nullable = True),
-        StructField("re-vote", IntegerType(), nullable = True),
-        StructField("re-reply-count", IntegerType(), nullable = True)
+        StructField("re_subreddit", StringType(), nullable = True),
+        StructField("re_vote", IntegerType(), nullable = True),
+        StructField("re_reply_count", IntegerType(), nullable = True)
     ])
 # These paths should be replaced in the future with online registry paths
 model_path = r"/app/model/distilbert-base-uncased"

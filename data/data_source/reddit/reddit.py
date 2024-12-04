@@ -117,13 +117,14 @@ def getcomments_reddit(
                 continue
 
         extracted_comment = {
-            "id": comment.id,
             "source": "reddit",
             "text": comment.body,
             "date": comment_date_str,
-            "re-subreddit": str(submission.subreddit),
-            "re-vote": comment.score,
-            "re-reply-count": len(comment.replies)
+            "company": company,
+            "re_id": comment.id,
+            "re_subreddit": str(submission.subreddit),
+            "re_vote": comment.score,
+            "re_reply_count": len(comment.replies)
         }
         record_list.append(extracted_comment)
         num_comments += 1

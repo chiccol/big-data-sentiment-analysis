@@ -17,5 +17,3 @@ CREATE TABLE IF NOT EXISTS predictions (
 	re_vote INT NULL,
 	re_reply_count INT NULL
 );
-
-git commit -m "Added reddit. Added parquet encoding to reddit. Added its fields to the schema for decoding in spark. Removed from docker compose mongo-controller. There is still an issue where the company from reddit is Null, I had to change the spark dataframe schema allowing company to be nullable to circumvent this, but it is not doable, it must be non-null."

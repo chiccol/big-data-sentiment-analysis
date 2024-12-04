@@ -20,6 +20,7 @@ def getcomments_reddit(
     company,
     max_num_comments,
     producer,
+    record_list=[],
     save_submission=True):
     """
     Fetch comments from a Reddit submission and send them to a Kafka topic, with an option to save submission data.
@@ -35,6 +36,7 @@ def getcomments_reddit(
     """
     logging.debug(f"Entered getcomments_reddit with submission_id={submission_id}, company={company}")
 
+    
     # Retrieve the submission
     try:
         submission = reddit_client.submission(id=submission_id)
@@ -54,16 +56,21 @@ def getcomments_reddit(
             "re-vote": submission.score,
             "re-reply-count": submission.num_comments
         }
+        # Append submission data to record_list
+        record_list.append(submission_data)
 
-        # Send submission data to Kafka
-        submission_json = json.dumps(submission_data).encode('utf-8')
-        try:
-            producer.produce(record=submission_json, topic=company)
-            logging.info(f"Sent submission data for submission {submission_id} of company '{company}' to Kafka topic '{company}'")
-        except Exception as e:
-            logging.exception(f"Error sending submission data to Kafka for submission {submission_id} of company '{company}': {e}")
+        # If record_list reaches 100 items, send to Kafka
+        if len(record_list) >= 100:
+            records_json = json.dumps(record_list).encode('utf-8')
+            try:
+                producer.produce(record=records_json, topic=company)
+                logging.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
+                record_list = []  # Reset the list after sending
+            except Exception as e:
+                logging.exception(f"Error sending records to Kafka for submission {submission_id} of company '{company}': {e}")
     else:
         logging.info(f"Skipping submission data for submission {submission_id} of company '{company}'")
+
 
     # Now process comments
     try:
@@ -108,8 +115,18 @@ def getcomments_reddit(
             "re-vote": comment.score,
             "re-reply-count": len(comment.replies)
         }
-        comments_to_send.append(extracted_comment)
+        record_list.append(extracted_comment)
         num_comments += 1
+        
+         # If record_list reaches 100 items, send to Kafka
+        if len(record_list) >= 100:
+            records_json = json.dumps(record_list).encode('utf-8')
+            try:
+                producer.produce(record=records_json, topic=company)
+                logging.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
+                record_list = []  # Reset the list after sending
+            except Exception as e:
+                logging.exception(f"Error sending records to Kafka for submission {submission_id} of company '{company}': {e}")
 
         if num_comments >= max_num_comments:
             logging.info(f"Reached {max_num_comments} comments for submission {submission_id} of company '{company}'")
@@ -133,7 +150,7 @@ def getcomments_reddit(
 
     sleep(5)
     logging.debug(f"Exiting getcomments_reddit for submission_id={submission_id}, company={company} with last_comment_id={last_comment_id}")
-    return last_comment_id
+    return last_comment_id, record_list
 
 
 def search_posts(
@@ -169,7 +186,7 @@ def search_posts(
     if company not in reddit_companies_posts:
         reddit_companies_posts[company] = {
             "posts": {},
-            "from_date": None,
+            "from_date": "2023-01-01T00:00:00Z",
             "query": query,
             "subreddits": subreddit_list if subreddit_list is not None else [company],
             "max_posts": max_posts,
@@ -222,7 +239,7 @@ def search_posts(
             continue
 
         # Check if the post is already in the data
-        existing_posts = reddit_companies_posts[company]["posts"]
+        existing_posts = list(reddit_companies_posts[company]["posts"].keys())
         if submission.id in existing_posts:
             logging.debug(f"Post {submission.id} is already processed for company '{company}'. Skipping.")
             continue
@@ -240,11 +257,12 @@ def search_posts(
         num_posts += 1
         logging.info(f"Added post {submission.id} to company '{company}'")
 
-        sleep(10)  # Sleep to respect Reddit's API rate limits
+        sleep(3)  
 
-    reddit_companies_posts[company]["searching_post_date"] = datetime.now().strftime(date_format)
-    logging.debug(f"Updated 'searching_post_date' for company '{company}' to {reddit_companies_posts[company]['searching_post_date']}")
-
+    if num_posts == 0:
+        logging.info(f"No posts found for company '{company}', new posts will be searched from now")
+        reddit_companies_posts[company]["from_date"] = datetime.now().strftime(date_format)
+    
     # Save the updated data
     try:
         with open(reddit_companies_posts_path, 'w') as file:

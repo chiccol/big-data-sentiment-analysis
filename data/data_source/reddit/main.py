@@ -1,4 +1,3 @@
-import sys
 import os
 import json
 from time import sleep
@@ -9,16 +8,22 @@ from kafka_producer import KafkaProducer
 from reddit import getcomments_reddit, search_posts
 import logging
 
-# Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
 )
+logger = logging.getLogger("reddit-producer")
 
+logger.info("Started logging")
 if __name__ == "__main__":
     sleep(10)
     load_dotenv(dotenv_path=os.path.join(os.getcwd(), "reddit.env"))
-    logging.info(f"Current working directory: {os.getcwd()}")
+    logger.info(f"Current working directory: {os.getcwd()}")
 
     # Load Reddit credentials from environment variables
     reddit_client_id = os.getenv("REDDIT_CLIENT_ID")
@@ -26,7 +31,7 @@ if __name__ == "__main__":
     reddit_username = os.getenv("REDDIT_USERNAME")
     reddit_user_agent = os.getenv("REDDIT_USER_AGENT")
     reddit_user_password = os.getenv("REDDIT_USER_PASSWORD")
-    logging.info(f"Reddit client ID: {reddit_client_id}")
+    logger.info(f"Reddit client ID: {reddit_client_id}")
     
     # Initialize Reddit Scraper
     try:
@@ -37,9 +42,9 @@ if __name__ == "__main__":
             username=reddit_username,
             password=reddit_user_password
         )
-        logging.info(f"Logged in as: {reddit_scraper.user.me()}")
+        logger.info(f"Logged in as: {reddit_scraper.user.me()}")
     except Exception as e:
-        logging.error(f"Error initializing Reddit scraper: {e}")
+        logger.error(f"Error initializing Reddit scraper: {e}")
         exit(1)
 
     # Initialize Kafka Producer
@@ -47,9 +52,9 @@ if __name__ == "__main__":
         client_id = "reddit-producer"
         bootstrap_servers = "kafka:9092" # Kafka broker
         producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id=client_id)
-        logging.info(f"Kafka producer '{client_id}' connected to '{bootstrap_servers}'")
+        logger.info(f"Kafka producer '{client_id}' connected to '{bootstrap_servers}'")
     except Exception as e:
-        logging.error(f"Error initializing Kafka Producer: {e}")
+        logger.error(f"Error initializing Kafka Producer: {e}")
         exit(1)
 
     # Load companies and scraping info
@@ -57,19 +62,19 @@ if __name__ == "__main__":
     try:
         with open(companies_path, 'r') as file:
             companies = json.load(file)
-        logging.info(f"Loaded Reddit submissions data from {companies_path}")
+        logger.info(f"Loaded Reddit submissions data from {companies_path}")
     except FileNotFoundError:
         companies = {}
-        logging.warning(f"{companies_path} not found. Starting with empty Reddit submissions data.")
+        logger.warning(f"{companies_path} not found. Starting with empty Reddit submissions data.")
     except json.JSONDecodeError as e:
-        logging.error(f"Error decoding JSON from {companies_path}: {e}")
+        logger.error(f"Error decoding JSON from {companies_path}: {e}")
         companies = {}
 
     date_format = "%Y-%m-%dT%H:%M:%SZ"
 
     while True:
         for company in companies.keys():
-            logging.info(f"Searching for new submissions for '{company}'")
+            logger.info(f"Searching for new submissions for '{company}'")
             try:
                 new_submissions, companies_submissions = search_posts(
                     query=companies[company].get("query", ""),
@@ -79,9 +84,9 @@ if __name__ == "__main__":
                     max_posts=companies[company].get("max_submissions", 10),
                     subreddit_list=companies[company].get("subreddits", [company])
                 )
-                logging.info(f"Found {len(new_submissions)} new submissions for '{company}'")
+                logger.info(f"Found {len(new_submissions)} new submissions for '{company}'")
             except Exception as e:
-                logging.error(f"Error during search_posts for '{company}': {e}")
+                logger.error(f"Error during search_posts for '{company}': {e}")
                 continue
 
             # initialize the list for sending messages to Kafka
@@ -92,10 +97,10 @@ if __name__ == "__main__":
                 max_num_comments = companies_submissions[company]["posts"][submission_id].get("max_num_comments", 100)
 
                 if not submission_id or not from_date:
-                    logging.warning(f"Invalid submission data for submission ID '{submission_id}'. Skipping.")
+                    logger.warning(f"Invalid submission data for submission ID '{submission_id}'. Skipping.")
                     continue
 
-                logging.info(f"Fetching comments for submission '{submission_id}' of company '{company}'")
+                logger.info(f"Fetching comments for submission '{submission_id}' of company '{company}'")
                 try:
                     last_comment_id, record_list = getcomments_reddit(
                         submission_id=submission_id,
@@ -107,34 +112,34 @@ if __name__ == "__main__":
                         record_list=record_list,
                         save_submission=True
                     )
-                    logging.info(f"Fetched comments for submission '{submission_id}', last comment ID: '{last_comment_id}'")
+                    logger.info(f"Fetched comments for submission '{submission_id}', last comment ID: '{last_comment_id}'")
                 except Exception as e:
-                    logging.error(f"Error fetching Reddit comments for submission '{submission_id}': {e}")
+                    logger.error(f"Error fetching Reddit comments for submission '{submission_id}': {e}")
                     continue
 
                 # Update the submission's from_date to the last fetched comment's date
                 if not last_comment_id:
                     companies_submissions[company]["posts"][submission_id]["from_date"] = datetime.now().strftime(date_format)
-                    logging.info(f"Updated 'from_date' for submission '{submission_id}' of company '{company}'")
+                    logger.info(f"Updated 'from_date' for submission '{submission_id}' of company '{company}'")
                     
             # send all the remaining comments in the record_list to Kafka
             if len(record_list) > 0:
                 record_json = json.dumps(record_list).encode('utf-8')
                 try:
                     producer.produce(record=record_json, topic=company)
-                    logging.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
+                    logger.info(f"Sent batch of {len(record_list)} records to Kafka topic '{company}'")
                     record_list = []  # Reset the list after sending
                 except Exception as e:
-                    logging.exception(f"Error sending records to Kafka for submission {submission_id} of company '{company}': {e}")
+                    logger.exception(f"Error sending records to Kafka for submission {submission_id} of company '{company}': {e}")
 
             # Save the updated Reddit submissions data
             try:
                 with open(companies_path, 'w') as file:
                     json.dump(companies_submissions, file, indent=4)
-                logging.info(f"Updated Reddit submissions data saved to '{companies_path}'")
+                logger.info(f"Updated Reddit submissions data saved to '{companies_path}'")
             except Exception as e:
-                logging.error(f"Error saving Reddit submissions data: {e}")
+                logger.error(f"Error saving Reddit submissions data: {e}")
 
         # Sleep before the next iteration
-        logging.info("Sleeping for 60 seconds... zzzz...")
-        sleep(60)
+        logger.info("Sleeping for 60 seconds... zzzz...")
+        sleep(4)

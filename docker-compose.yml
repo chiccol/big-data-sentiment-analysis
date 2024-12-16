@@ -134,3 +134,28 @@ services:
     volumes:
       - ./data/data_source/pseudo/main.py:/app/main.py
       - ./data/data_source/pseudo/pseudo.py:/app/pseudo.py
+
+
+  backend:
+    container_name: fastapi-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"   
+    depends_on:
+      - mongo         
+      - postgres      
+    environment:
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/warehouse
+      - MONGO_URL=mongodb://mongo:27017
+
+  frontend:
+    container_name: react-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"  
+    depends_on:
+      - backend    

@@ -1,4 +1,5 @@
 services:  
+  
   zookeeper:  #Zookeeper, a distributed coordination service used by Kafka.
     image: wurstmeister/zookeeper  # updated 5 years ago, but video said is stable version (consider bitnami)
     container_name: zookeeper  # Sets a custom name for the Zookeeper container, making it easier to reference.
@@ -63,8 +64,6 @@ services:
       - ./data/data_source/pseudo/main.py:/app/main.py
       - ./data/data_source/pseudo/pseudo.py:/app/pseudo.py
   
-
-  
   spark-master:
     build:
         context: consumers
@@ -126,3 +125,27 @@ services:
       - "5432:5432"
     volumes:
       - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+
+  backend:
+    container_name: fastapi-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"   
+    depends_on:
+      - mongo         
+      - postgres      
+    environment:
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/warehouse
+      - MONGO_URL=mongodb://mongo:27017
+
+  frontend:
+    container_name: react-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"  
+    depends_on:
+      - backend    

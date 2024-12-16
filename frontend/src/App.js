@@ -15,7 +15,7 @@ function App() {
         <Container>
           <LineChartComponent />
           {/* <MongoDataComponent /> */}
-          <PostgresDataComponent />
+          {/* <PostgresDataComponent /> */}
           <WordCloudContainer />
           <BarChartComponent />
         </Container>

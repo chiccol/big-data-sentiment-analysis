@@ -147,15 +147,19 @@ def get_aggregated_postgres_data(pg_conn: psycopg2.extensions.connection = Depen
         cursor = pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         query = """
             SELECT
-                date,
+                CAST(
+                    CASE 
+                        WHEN date LIKE '%T%Z' THEN date::timestamp 
+                        ELSE date::date                                  
+                    END AS date
+                ) AS normalized_date,
                 source,
-                AVG(positive_probability - neutral_probability) AS average_sentiment_score
+                company,
+                AVG(COALESCE(positive_probability,0) - COALESCE(negative_probability,0)) AS average_sentiment_score
             FROM
                 predictions
-            WHERE
-                LOWER(source) IN ('reddit', 'trustpilot', 'youtube')
             GROUP BY
-                date, source
+                source, company, date
             ORDER BY
                 date ASC;
         """
@@ -168,19 +172,21 @@ def get_aggregated_postgres_data(pg_conn: psycopg2.extensions.connection = Depen
 
         aggregation = {}
         for row in rows:
-            date_str = row['date'].isoformat()
+            date = row['normalized_date'].strftime("%Y-%m-%d")
             source = row['source'].lower()
+            company = row['company']
             avg_score = float(row['average_sentiment_score'])
 
-            if date_str not in aggregation:
-                aggregation[date_str] = {
-                    "date": row['date'],
+            key = f"{date}-{company}"
+            if key not in aggregation:
+                aggregation[key] = {
+                    "date": date,
+                    "company": company,
                     "reddit": None,
                     "trustpilot": None,
                     "youtube": None
                 }
-            aggregation[date_str][source] = avg_score
-            # logger.debug(f"Aggregated data for date {date_str}, source {source}: {avg_score}")
+            aggregation[key][source] = avg_score
 
         aggregated_data = sorted(aggregation.values(), key=lambda x: x['date'])
         logger.info("Successfully processed aggregated data.")
@@ -189,6 +195,7 @@ def get_aggregated_postgres_data(pg_conn: psycopg2.extensions.connection = Depen
         pg_pool.putconn(pg_conn)
         logger.error(f"Error fetching aggregated Postgres data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/word-cloud-data", response_model=Dict[str, int])
 def get_word_cloud_data():

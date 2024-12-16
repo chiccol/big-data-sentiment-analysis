@@ -245,7 +245,6 @@ class KafkaConsumer:
                     ('re_vote', pa.int32()),
                     ('re_reply_count', pa.int32())
                 ])
-        print(pyarrow_schema)
         # Read the Parquet data back into an Arrow table
         table = pq.read_table(source = buffer, schema = pyarrow_schema)
         

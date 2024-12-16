@@ -21,15 +21,6 @@ services:
     depends_on:
       - zookeeper
   
-  mongo:
-    image: mongo:6.0.5
-    container_name: mongo
-    ports:
-      - "27017:27017"  # Expose MongoDB on port 35001
-    depends_on:
-      - kafka
-    restart: always
-
   
   youtube-producer:
     container_name: youtube-producer
@@ -37,9 +28,7 @@ services:
       context: data/data_source/
       dockerfile: youtube/youtube.Dockerfile
     depends_on:
-      - mongo
       - kafka
-      - postgres
     volumes: 
       - ./data/data_source/youtube/main.py:/app/main.py 
       - ./data/data_source/youtube/youtube.py:/app/youtube.py
@@ -50,9 +39,7 @@ services:
       context: data/data_source/
       dockerfile: trustpilot/trustpilot.Dockerfile
     depends_on:
-      - mongo
       - kafka
-      - postgres
     volumes: 
       - ./data/data_source/trustpilot/main.py:/app/main.py 
       - ./data/data_source/trustpilot/trustpilot.py:/app/trustpilot.py 
@@ -63,9 +50,20 @@ services:
       context: data/data_source/
       dockerfile: reddit/reddit.Dockerfile
     depends_on:
-      - mongo
       - kafka
-      - postgres
+  
+  pseudo-producer:
+    container_name: pseudo-producer
+    build:
+      context: data/data_source/
+      dockerfile: pseudo/pseudo.Dockerfile
+    depends_on:
+      - kafka
+    volumes:
+      - ./data/data_source/pseudo/main.py:/app/main.py
+      - ./data/data_source/pseudo/pseudo.py:/app/pseudo.py
+  
+
   
   spark-master:
     build:
@@ -109,9 +107,16 @@ services:
       - SPARK_WORKER_MEMORY=2g # resource limit per worker
     depends_on:
       - spark-master
-
+  
+  mongo:
+    image: mongo:6.0.5
+    container_name: mongo
+    ports:
+      - "27017:27017"  
+    restart: always
+  
   postgres:
-    image: postgres:17.0  
+    image: postgres:17.0
     container_name: postgres
     environment:
       - POSTGRES_USER=admin
@@ -121,16 +126,3 @@ services:
       - "5432:5432"
     volumes:
       - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
-
-  pseudo-producer:
-    container_name: pseudo-producer
-    build:
-      context: data/data_source/
-      dockerfile: pseudo/pseudo.Dockerfile
-    depends_on:
-      - mongo
-      - kafka
-      - postgres
-    volumes:
-      - ./data/data_source/pseudo/main.py:/app/main.py
-      - ./data/data_source/pseudo/pseudo.py:/app/pseudo.py

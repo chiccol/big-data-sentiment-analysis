@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS predictions (
     id SERIAL PRIMARY KEY,
     source TEXT NOT NULL,
-    date TEXT, 
+    date TIMESTAMP, 
     company TEXT,
     sentiment TEXT NULL, 
     negative_probability FLOAT NULL,

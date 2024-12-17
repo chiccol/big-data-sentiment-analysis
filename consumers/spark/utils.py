@@ -1,5 +1,5 @@
 from pyspark.sql.functions import when, col, pandas_udf
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType, TimestampType
 import pandas as pd
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
@@ -27,7 +27,7 @@ schema = StructType([
         StructField("source", StringType(), nullable = False),
         StructField("text", StringType(), nullable = False),
         StructField("company", StringType(), nullable = False),
-        StructField("date", StringType(), nullable = True),
+        StructField("date", TimestampType(), nullable = True),
         StructField("tp_stars", IntegerType(), nullable = True),
         StructField("tp_location", StringType(), nullable = True),
         StructField("yt_videoid", StringType(), nullable = True),

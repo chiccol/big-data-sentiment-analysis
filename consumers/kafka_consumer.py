@@ -1,4 +1,5 @@
 import pyarrow.parquet as pq
+from datetime import datetime
 from confluent_kafka import Consumer, KafkaError, KafkaException
 from io import BytesIO
 from typing import List
@@ -214,7 +215,7 @@ class KafkaConsumer:
             logger.info(summary)
             for topic, messages in topic_messages.items():
                 logger.info(f"{topic}: {messages} messages")
-        
+        all_messages = self.convert_dates_in_dictionaries(all_messages) 
         logger.info(f"Finally this is the dictionary of topic messages: {topic_messages}") 
         return all_messages, topic_messages
 
@@ -258,4 +259,39 @@ class KafkaConsumer:
                 if isinstance(value, float):
                     print(f"Float detected in message {index} at key '{key}': {value}", flush=True)
         return decoded_msg
-
+    
+    def convert_dates_in_dictionaries(self, data):
+        """
+        Convert 'date' field in list of dictionaries to datetime objects
+        
+        Args:
+            data (list): List of dictionaries with potential string dates
+        
+        Returns:
+            list: Updated list of dictionaries with datetime dates
+        """
+        logger.info("Entered conversion function")
+        for item in data:
+            # Handle different potential date formats
+            if isinstance(item.get('date'), str):
+                try:
+                    # Try parsing with multiple potential formats
+                    item['date'] = datetime.fromisoformat(item['date'].replace('Z', '+00:00'))
+                except ValueError:
+                    # Fallback parsing attempts
+                    formats = [
+                        '%Y-%m-%d %H:%M:%S',
+                        '%Y-%m-%dT%H:%M:%S',
+                        '%Y-%m-%d'
+                    ]
+                    for fmt in formats:
+                        try:
+                            item['date'] = datetime.strptime(item['date'], fmt)
+                            break
+                        except ValueError:
+                            continue
+                    else:
+                        # If no format works, log or handle as needed
+                        logger.error(f"Could not parse date: {item['date']}")
+        
+        return data

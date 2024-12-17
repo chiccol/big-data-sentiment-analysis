@@ -17,7 +17,6 @@ import { format, parseISO } from 'date-fns';
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
-// MUI styles for multiple selection
 const MenuProps = {
   PaperProps: {
     style: {
@@ -27,51 +26,57 @@ const MenuProps = {
   },
 };
 
-const LineChartComponent = () => {
+/**
+ * This component:
+ *  1) Fetches daily aggregated sentiment data (with +1/-1 logic) from the new endpoint.
+ *  2) Allows you to pick a company from a dropdown.
+ *  3) Allows multi-selection of sources to display multiple lines in the same chart.
+ */
+const LineChartDiscreteComponent = () => {
+  // State to hold the fetched data
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Full list of possible sources
+  // Available sentiment sources
   const allSources = ['reddit', 'trustpilot', 'youtube'];
 
-  // Unique company names from the data
+  // Dynamically populated list of companies
   const [companies, setCompanies] = useState([]);
 
-  // State for user selection
+  // User selections
   const [selectedCompany, setSelectedCompany] = useState('');
-  // Now we store sources as an array, defaulting to none or some
-  const [selectedSources, setSelectedSources] = useState(['reddit']);  
+  const [selectedSources, setSelectedSources] = useState(['reddit']); // multi-select sources
 
   /**
-   * Fetch data from the backend endpoint
+   * Fetch the daily +1/-1 aggregated data from the new endpoint.
    */
   const fetchData = async () => {
     try {
-      // Replace the endpoint as needed (Docker Compose, etc.)
-      const response = await axios.get('http://127.0.0.1:8000/aggregated-postgres-data');
+      // IMPORTANT: Adjust the URL as needed for your environment (Docker, etc.)
+      const response = await axios.get('http://127.0.0.1:8000/aggregated-postgres-data-discrete');
       const aggregatedData = response.data.aggregated_data;
 
-      // Extract unique companies
+      // Extract unique companies from the data
       const uniqueCompanies = [...new Set(aggregatedData.map(entry => entry.company))];
       setCompanies(uniqueCompanies);
 
-      // Format date to 'yyyy-MM-dd'
-      const formattedData = aggregatedData.map(entry => ({
-        ...entry,
-        date: format(parseISO(entry.date), 'yyyy-MM-dd')
+      // Format the date so that we have a consistent string format (optional)
+      const formattedData = aggregatedData.map(item => ({
+        ...item,
+        // If "date" is already a string, parseISO might be optional 
+        // but if it's a Date object, format accordingly.
+        date: format(parseISO(item.date), 'yyyy-MM-dd')
       }));
 
       setData(formattedData);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching aggregated data:', error);
+      console.error("Error fetching daily aggregated data:", error);
       setLoading(false);
     }
   };
 
-  /**
-   * Initial data fetch + periodic refresh every 30 seconds
-   */
+  // On component mount, fetch data + refresh every 30s if desired
   useEffect(() => {
     fetchData();
     const interval = setInterval(() => {
@@ -80,23 +85,21 @@ const LineChartComponent = () => {
     return () => clearInterval(interval);
   }, []);
 
-  /**
-   * Filter data to the selected company and skip rows that don't match or are null
-   */
-  const filteredData = data.filter(entry => entry.company === selectedCompany);
+  // Filter data based on selected company
+  const filteredData = data.filter(
+    (entry) => entry.company === selectedCompany
+  );
 
-  // Handlers for dropdown changes
+  // Handler for selecting a company
   const handleCompanyChange = (event) => {
     setSelectedCompany(event.target.value);
   };
 
+  // Handler for selecting multiple sources
   const handleSourcesChange = (event) => {
-    // MUI multi-select returns an array
     const {
       target: { value },
     } = event;
-
-    // If the value is a string, split it into an array; otherwise keep array as is
     setSelectedSources(typeof value === 'string' ? value.split(',') : value);
   };
 
@@ -111,10 +114,10 @@ const LineChartComponent = () => {
   return (
     <Box m={4}>
       <Typography variant="h5" gutterBottom>
-        Average Sentiment Over Time
+        Daily Aggregated Sentiment (+1 / -1)
       </Typography>
 
-      {/* Dropdown for selecting the company */}
+      {/* Company Dropdown */}
       <FormControl sx={{ minWidth: 200, marginBottom: 2 }}>
         <InputLabel id="company-select-label">Select Company</InputLabel>
         <Select
@@ -131,7 +134,7 @@ const LineChartComponent = () => {
         </Select>
       </FormControl>
 
-      {/* Multi-select for sources */}
+      {/* Multi-select for Sources */}
       <FormControl sx={{ minWidth: 200, marginBottom: 2, marginLeft: 2 }}>
         <InputLabel id="source-select-label">Select Source(s)</InputLabel>
         <Select
@@ -151,23 +154,22 @@ const LineChartComponent = () => {
         </Select>
       </FormControl>
 
-      {/* Render line chart if company is selected */}
       {selectedCompany && (
         <ResponsiveContainer width="100%" height={400}>
           <LineChart
             data={filteredData}
-            margin={{
-              top: 5, right: 30, left: 20, bottom: 5,
-            }}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(date) => format(parseISO(date), 'MM-dd')} />
+            <XAxis
+              dataKey="date"
+              tickFormatter={(dateStr) => format(parseISO(dateStr), 'MM-dd')}
+            />
             <YAxis domain={[-1, 1]} />
             <Tooltip />
             <Legend />
-            {/*
-              Render multiple <Line> elements—one per selected source
-            */}
+
+            {/* Render one Line per selected source */}
             {selectedSources.map((source) => (
               <Line
                 key={source}
@@ -182,16 +184,17 @@ const LineChartComponent = () => {
           </LineChart>
         </ResponsiveContainer>
       )}
+
       {!selectedCompany && (
         <Typography variant="body1" color="textSecondary" mt={2}>
-          Please select a company to view the chart.
+          Please select a company to view the daily sentiment chart.
         </Typography>
       )}
     </Box>
   );
 };
 
-// Helper function to assign colors for each source
+// Helper function for line colors
 const getColor = (source) => {
   const colorMap = {
     reddit: '#FF4500',
@@ -201,7 +204,7 @@ const getColor = (source) => {
   return colorMap[source] || '#8884d8';
 };
 
-// Helper function to capitalize the first letter
+// Helper function to capitalize source labels
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
-export default LineChartComponent;
+export default LineChartDiscreteComponent;

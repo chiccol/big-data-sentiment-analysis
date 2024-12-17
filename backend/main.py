@@ -51,6 +51,7 @@ class MongoData(BaseModel):
 
 class AggregatedPostgresData(BaseModel):
     date: datetime
+    company: str
     reddit: Optional[float] = None
     trustpilot: Optional[float] = None
     youtube: Optional[float] = None
@@ -194,6 +195,83 @@ def get_aggregated_postgres_data(pg_conn: psycopg2.extensions.connection = Depen
     except Exception as e:
         pg_pool.putconn(pg_conn)
         logger.error(f"Error fetching aggregated Postgres data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/aggregated-postgres-data-discrete", response_model=AggregatedPostgresResponse)
+def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connection = Depends(get_pg_connection)):
+    """
+    Returns an object in the form of AggregatedPostgresResponse,
+    where each record's sentiment is calculated as +1 (positive) or -1 (negative),
+    then averaged for each date/source/company.
+    """
+    logger.debug("Fetching daily aggregated data (+1/-1) from PostgreSQL.")
+    try:
+        cursor = pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Notice we use a CASE expression to convert each row to +1 or -1
+        # Then we take the average of those values for each date/company/source
+        query = """
+            SELECT
+                CAST(
+                    CASE 
+                        WHEN date LIKE '%T%Z' THEN date::timestamp 
+                        ELSE date::date                                  
+                    END AS date
+                ) AS normalized_date,
+                source,
+                company,
+                AVG(
+                    CASE 
+                        WHEN sentiment = 'positive' THEN 1 
+                        WHEN sentiment = 'negative' THEN -1
+                        WHEN sentiment = 'neutral'  THEN 0
+                    END
+                ) AS daily_sentiment_score
+            FROM
+                predictions
+            GROUP BY
+                source, company, date
+            ORDER BY
+                date ASC;
+        """
+
+        logger.debug(f"Executing SQL query (daily +1/-1): {query}")
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        logger.debug(f"Fetched {len(rows)} rows from PostgreSQL (daily +1/-1).")
+        cursor.close()
+        pg_pool.putconn(pg_conn)  # or however you return the conn to the pool
+
+        # We'll aggregate the data in a dictionary keyed by (date, company),
+        # with separate fields for reddit, trustpilot, youtube
+        aggregation = {}
+        for row in rows:
+            date_str = row['normalized_date'].strftime("%Y-%m-%d")
+            source = row['source'].lower()  # ensure consistent naming
+            company = row['company']
+            daily_score = float(row['daily_sentiment_score'])  # average of +1/-1
+
+            key = f"{date_str}-{company}"
+            if key not in aggregation:
+                aggregation[key] = {
+                    "date": row['normalized_date'],  # keep it as datetime
+                    "company": company,
+                    "reddit": None,
+                    "trustpilot": None,
+                    "youtube": None
+                }
+            aggregation[key][source] = daily_score
+
+        # Sort by date
+        aggregated_data = sorted(aggregation.values(), key=lambda x: x['date'])
+        logger.info("Successfully processed daily +1/-1 aggregated data.")
+
+        return {"aggregated_data": aggregated_data}
+
+    except Exception as e:
+        pg_pool.putconn(pg_conn)
+        logger.error(f"Error fetching daily +1/-1 Postgres data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

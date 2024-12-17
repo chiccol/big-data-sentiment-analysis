@@ -6,6 +6,7 @@ import { Container } from '@mui/material';
 import PostgresDataComponent from './components/ProcessedDataComponent';
 import WordCloudContainer from './components/WordCloudContainer';
 import BarChartComponent from './components/BarChartComponent';
+import LineChartDiscreteComponent from './components/LineChartDiscreteComponent';
 
 function App() {
 
@@ -13,6 +14,7 @@ function App() {
       <div>
         <Header />
         <Container>
+          <LineChartDiscreteComponent />
           <LineChartComponent />
           {/* <MongoDataComponent /> */}
           {/* <PostgresDataComponent /> */}

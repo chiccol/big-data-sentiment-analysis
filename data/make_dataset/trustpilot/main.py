@@ -4,6 +4,7 @@ from datetime import datetime
 import json 
 import os 
 from time import sleep
+from tqdm import tqdm
 
 def scrape_reviews(company, from_date, date_format, stars, from_page=1, to_page=999999, language="en"):
     """
@@ -128,30 +129,45 @@ def main():
 
     for dataset in companies_date.keys():
         print(f"Building {dataset} dataset...")
-        for company in companies_date[dataset].keys():
-            print(f"Scraping reviews for {company}...")
-            new_reviews = []
-            try:
-                from_date = datetime.strptime(companies_date[dataset][company], date_format)
-            except:
-                raise AssertionError(f"The date '{companies_date[dataset][company]}' does NOT match the format '{date_format}'")
-            # Get 2 pages (40 x 5 stars) of reviews for training dataset and 1 page (20 x 5 stars) for out-of-sample dataset
-            to_page = 2 if dataset == "training" else 1
-            for stars in range(1, 6):
-                star_new_reviews = scrape_reviews(company = company,
-                                                   from_date = from_date,
-                                                   stars = stars,
-                                                   date_format = date_format,
-                                                   to_page = to_page)
-                new_reviews.extend(star_new_reviews)
-            print(f"Scraped {len(new_reviews)} reviews for {company}.")
-            if dataset == "training":
-                store_reviews(new_reviews, training_dataset_path)
-                print(f"Added {len(new_reviews)} reviews for {company} to the training")
-            elif dataset == "out_of_sample":
-                store_reviews(new_reviews, out_of_company_dataset_path)
-                print(f"Added {len(new_reviews)} reviews for {company} to the out-of-sample")
-            print("*"*50)
+        
+        # Wrap the outer loop with tqdm for a progress bar
+        with tqdm(companies_date[dataset].keys(), desc="Companies", unit="company", dynamic_ncols=True, leave=False) as pbar:
+            for company in pbar:
+                pbar.set_description(f"Processing {company}")  # Update bar description dynamically
+                new_reviews = []
+                
+                try:
+                    from_date = datetime.strptime(companies_date[dataset][company], date_format)
+                except:
+                    raise AssertionError(f"The date '{companies_date[dataset][company]}' does NOT match the format '{date_format}'")
+                
+                # Get reviews for different star ratings
+                for stars in range(1, 6):
+                    if stars != 3:
+                        to_page = 2 if dataset == "training" else 1
+                    else:
+                        to_page = 4 if dataset == "training" else 2
+                    
+                    # Scrape reviews
+                    star_new_reviews = scrape_reviews(company=company,
+                                                    from_date=from_date,
+                                                    stars=stars,
+                                                    date_format=date_format,
+                                                    to_page=to_page)
+                    new_reviews.extend(star_new_reviews)
+                
+                # Use tqdm.write to avoid clashing with the progress bar
+                tqdm.write(f"Scraped {len(new_reviews)} reviews for {company}.")
+                
+                if dataset == "training":
+                    store_reviews(new_reviews, training_dataset_path)
+                    tqdm.write(f"Added {len(new_reviews)} reviews for {company} to the training")
+                elif dataset == "out_of_sample":
+                    store_reviews(new_reviews, out_of_company_dataset_path)
+                    tqdm.write(f"Added {len(new_reviews)} reviews for {company} to the out-of-sample")
+                
+                tqdm.write("*" * 50)
+    
         print(f"Finished building {dataset} dataset.")
 
 if __name__ == "__main__":

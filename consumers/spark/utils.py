@@ -1,10 +1,22 @@
 from pyspark.sql.functions import when, col, pandas_udf
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType, TimestampType
 import pandas as pd
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
-
 import os
+import logging
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("spark-master-utils")
+logger.info("Started logging")
 
 output_schema = StructType([
         StructField("probabilities", ArrayType(DoubleType()), True),
@@ -14,21 +26,33 @@ output_schema = StructType([
 schema = StructType([
         StructField("source", StringType(), nullable = False),
         StructField("text", StringType(), nullable = False),
-        StructField("kafka_topic", StringType(), nullable = False),
-        StructField("date", StringType(), nullable = True),
+        StructField("company", StringType(), nullable = False),
+        StructField("date", TimestampType(), nullable = True),
         StructField("tp_stars", IntegerType(), nullable = True),
         StructField("tp_location", StringType(), nullable = True),
         StructField("yt_videoid", StringType(), nullable = True),
         StructField("yt_like_count", IntegerType(), nullable = True),
         StructField("yt_reply_count", IntegerType(), nullable = True),
+        StructField("re_id", StringType(), nullable = True),
+        StructField("re_subreddit", StringType(), nullable = True),
+        StructField("re_vote", IntegerType(), nullable = True),
+        StructField("re_reply_count", IntegerType(), nullable = True)
     ])
-
 # These paths should be replaced in the future with online registry paths
 model_path = r"/app/model/distilbert-base-uncased"
 tokenizer_path = r"/app/model/tokenizer-distilbert-base-uncased"
 
 @pandas_udf(output_schema)
 def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
+    """
+    Uses DistilBert to tokenize and create predictions based on the input data.
+
+    Args:
+        text_series: pd.Series
+
+    Returns:
+        results: pd.DataFrame 
+    """
     results = []
 
     # Load DistilBERT tokenizer and model
@@ -38,13 +62,13 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
     try:
         batch_size = int(os.getenv("BATCH_SIZE"))
     except:
-        print("BATCH_SIZE not set, using default value 32", flush=True)
+        logger.info("BATCH_SIZE not set, using default value 32")
         batch_size = 32
-    print(f"Processing data using batch size: {batch_size}", flush=True)
+    logger.info(f"Processing data using batch size: {batch_size}")
 
     model.eval()
     with torch.no_grad():
-        print(f"Processing {len(text_series)} messages", flush=True)
+        logger.info(f"Processing {len(text_series)} messages")
         for i in range(0, len(text_series), batch_size):
             batch = list(text_series[i:i + batch_size])
             inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True)
@@ -62,22 +86,18 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
         
     return pd.DataFrame(results)
 
-
-schema = StructType([
-        StructField("source", StringType(), nullable = False),
-        StructField("text", StringType(), nullable = False),
-        StructField("company", StringType(), nullable = False),
-        StructField("date", StringType(), nullable = True),
-        StructField("tp_stars", IntegerType(), nullable = True),
-        StructField("tp_location", StringType(), nullable = True),
-        StructField("yt_videoid", StringType(), nullable = True),
-        StructField("yt_like_count", IntegerType(), nullable = True),
-        StructField("yt_reply_count", IntegerType(), nullable = True),
-    ])
-
 def process_data(all_messages, spark):
+    """
+    Cretes a Spark Dataframe, runs the model and returns a Spark Datafame with the probabilities column.
+    
+    Args:
+        all_messages -> list of dictionaries
+
+    Returns:
+        df_with_sentiment_multi_columns -> SparkDataFrame 
+    """
+
     df = spark.createDataFrame(all_messages, schema)
-    print("Successfully created a dataframe")
     # Perform sentiment analysis only for sources without natural labels
     df_with_sentiment = df.withColumn(
         "sentiment_analysis", 
@@ -108,3 +128,49 @@ def process_data(all_messages, spark):
     # df_postgres: drop "text"
     
     return df_with_sentiment_multi_columns
+
+def write_mongo(df_mongo, topics):
+    """
+    Writes on MongoDB's different collections based on the topic the message came from.
+
+    Args:
+        df_mongo -> SparkDataFrame
+        topics -> dict with key = topic
+
+    Returns:
+        None
+    """
+    for topic in topics:
+        filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
+        filtered_df_mongo.write \
+            .format("mongo") \
+            .mode("append") \
+            .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{topic}") \
+            .save()
+        
+        logger.info(f"Wrote {filtered_df_mongo.count()} messages from topic {topic} to MongoDB")
+    return None
+
+def write_postgres(df_postgres):
+    """
+    Writes on Postgres table.
+
+    Args:
+        df_postgres -> SparkDataFrame
+
+    Returns:
+        None
+    """
+    logger.info(f"Writing on postgres")
+    url = "jdbc:postgresql://postgres:5432/warehouse"
+
+    properties = {
+        "user": "admin",
+        "password": "password",
+        "driver": "org.postgresql.Driver"
+    }
+
+    table_name = "predictions"
+    # jdbc is the thing we installed to write directly from the dataframe
+    df_postgres.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
+    return None

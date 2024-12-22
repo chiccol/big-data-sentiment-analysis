@@ -1,8 +1,23 @@
 import pyarrow.parquet as pq
+from datetime import datetime
 from confluent_kafka import Consumer, KafkaError, KafkaException
 from io import BytesIO
 from typing import List
 import time
+import logging
+import pyarrow as pa
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("kafka-consumer")
+logger.info("Started logging")
 
 class KafkaConsumer:
     """
@@ -15,7 +30,7 @@ class KafkaConsumer:
                  bootstrap_servers: str = 'kafka:9092',
                  group_id: str = 'mongo-group',
                  client_id: str = 'mongo-consumer',
-                 auto_offset_reset: str = 'earliest',): 
+                 auto_offset_reset: str = 'earliest',):
         
         self.config = {
             'bootstrap.servers': bootstrap_servers,
@@ -27,6 +42,7 @@ class KafkaConsumer:
         self.msg = None
         self.consumer = None
         self.initialize_consumer()
+        
 
     def get_topics(self) -> List[str]:
         """
@@ -53,29 +69,36 @@ class KafkaConsumer:
         difference = list(set(topics) - set(self.current_topic_list))
         
         if difference:
-            print(f"Found new topics:\n {difference}", flush=True)
+            logger.info(f"Found new topics:\n {difference}")
             # Update our current topic list
             self.current_topic_list.extend(difference)
             # Subscribe to new topics
             self.consumer.subscribe(difference)
-            print(f'Subscribed to {difference}', flush=True)
+            logger.info(f"Subscribed to {difference}")
             
         return topics
 
     def initialize_consumer(self) -> None:
         """
-        Init function to correctly instantiate the consumer.
+        Init function to instantiate the consumer.
         """
         try:
             self.consumer = Consumer(self.config)
-            print('Kafka consumer initialized correctly\n', flush=True)
+            logger.info(f"Kafka consumer initialized correctly\n")
             self.topic = self.get_topics()  # Call get_topics with self
         except KafkaException as e:
-            print(f'Failed to initialize kafka consumer: {str(e)}', flush=True)
+            logger.error(f"Failed to initialize kafka consumer: {str(e)}")
             raise
 
     def poll_message(self, timeout: float = 1.0):
-        """Poll Kafka for messages with a timeout."""
+        """Poll Kafka for messages with a timeout.
+        
+        Args:
+            timeout -> float
+
+        Returns:
+            msg -> cimplMessage or None
+        """
         try:
             msg = self.consumer.poll(timeout)
             if msg is None:
@@ -83,16 +106,16 @@ class KafkaConsumer:
                 
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
-                    print(f"Reached end of partition: {msg.error()}", flush=True)
+                    logger.info(f"Reached end of partition: {msg.error()}") 
                     return None
                 else:
-                    print(f"Error while polling: {msg.error()}", flush=True)
+                    logger.error(f"Error while polling: {msg.error()}") 
                     return None
                     
             return msg
             
         except KafkaException as e:
-            print(f"Error in poll: {str(e)}", flush=True)
+            logger.error(f"Error in poll: {str(e)}")
             raise
 
     def close(self):
@@ -100,9 +123,9 @@ class KafkaConsumer:
         if self.consumer is not None:
             try:
                 self.consumer.close()
-                print("Kafka consumer closed", flush=True)
+                logger.info("Kafka consumer closed")
             except KafkaException as e:
-                print(f"Error closing consumer: {str(e)}", flush=True)
+                logger.error(f"Error closing consumer: {str(e)}")
                 raise
     
     def get_metadata(self, timeout = 10.0):
@@ -111,7 +134,8 @@ class KafkaConsumer:
         """
         metadata = self.consumer.list_topics(timeout = timeout)
         return metadata
-    
+
+
 # VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
     def consume_messages_spark(self, timeout=15.0):
         """
@@ -131,71 +155,68 @@ class KafkaConsumer:
         # Get metadata and create a list of topics to explore
         metadata = self.get_metadata()
         topics = [topic for topic in metadata.topics.keys() if topic not in ignore_topics]
-        print(f"Topics in the kafka class are: {topics}")        
+        logger.info(f"Topics in the kafka class are: {topics}") 
         # Initialize data structures
         all_messages = []
         topic_messages = {}  # Changed to store messages per topic
         
         # Validation checks
         if not topics:
-            print("No topics found in Kafka broker to consume.", flush=True)
+            logger.info(f"No topics found in Kafka broker to consume.")
             return [], {}
-        
-        print(f"Consuming messages from topics: {topics}", flush=True)
+        logger.info(f"Consuming messages from topics: {topics}") 
         
         # Tracking variables
         total_messages_consumed = 0
         topics_with_messages = set()
         
         try:
-            # Consume messages from each topic
-            for topic in topics:
-                topic_messages[topic] = 0
-                print(f"Current topic in Kafka Consumer is: {topic}", flush=True)
+            # Subscribe to all topics
+            self.consumer.subscribe(topics)
+            
+            # Continue polling until no more messages
+            while True:
+                msg = self.poll_message(timeout=timeout)
+                
+                # Break if no more messages
+                if msg is None:
+                    break
+                
                 try:
-                    # Polling for messages from the specific topic
-                    msg = self.poll_message(timeout=timeout)
-                    print(f"The message object is {msg} and its dirs are {dir(msg)}")
-                    
-                    # Validate and process message
-                    current_topic = str(msg.topic())
-                    print(f"Current topic is {current_topic}")
-                    
                     # Decode message 
-                    try:
-                        msg_data = self.decode_parquet(msg.value())
-                    except Exception as decode_error:
-                        print(f"Error decoding message from topic {current_topic}: {decode_error}", flush=True)
-                        continue
+                    current_topic = str(msg.topic())
+                    msg_data = self.decode_parquet(msg.value())
                     
                     # Store messages by topic and in all_messages
                     if current_topic not in topic_messages:
                         topic_messages[current_topic] = 0
                     topic_messages[current_topic] += len(msg_data)
                     all_messages.extend(msg_data)
-
                     
                     # Update tracking variables
                     total_messages_consumed += len(msg_data)
                     if topic_messages[current_topic] > 0:
                         topics_with_messages.add(current_topic)
                     
-                except Exception as topic_error:
-                    print(f"Error processing topic {topic}: {topic_error}", flush=True)
+                except Exception as decode_error:
+                    logger.error(f"Error decoding message from topic {current_topic}: {decode_error}") 
+                    continue
         
         except Exception as e:
-            print(f"Unexpected error during Kafka message consumption: {e}", flush=True)
-        
+            logger.error(f"Unexpected error during Kafka message consumption: {e}") 
         finally:
-            # Logging summary
-            print(f"Time:{time.localtime()}\n--- Kafka Message Consumption Summary ---", flush=True)
-            print(f"Total messages consumed: {total_messages_consumed}", flush=True)
-            print(f"Topics with messages: {topics_with_messages}", flush=True)
-            print("Detailed message count per topic:", flush=True)
+            summary = "\n".join([
+            f"Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}",
+            "--- Kafka Message Consumption Summary ---",
+            f"Total messages consumed: {total_messages_consumed}",
+            f"Topics with messages: {topics_with_messages}",
+            "Detailed message count per topic:"
+            ])
+            logger.info(summary)
             for topic, messages in topic_messages.items():
-                print(f"{topic}: {messages} messages", flush=True)
-        
-        print(f"Finally this is the dictionary of topic messages: {topic_messages}", flush = True)
+                logger.info(f"{topic}: {messages} messages")
+        all_messages = self.convert_dates_in_dictionaries(all_messages) 
+        logger.info(f"Finally this is the dictionary of topic messages: {topic_messages}") 
         return all_messages, topic_messages
 
     def decode_parquet(self, msg):
@@ -210,11 +231,67 @@ class KafkaConsumer:
         """
         # Use BytesIO to read the binary Parquet data
         buffer = BytesIO(msg)
-        
+        pyarrow_schema = pa.schema([
+                    ('source', pa.string()),
+                    ('text', pa.string()),
+                    ('company', pa.string()),
+                    ('date', pa.string()),
+                    ('tp_stars', pa.int32()), 
+                    ('tp_location', pa.string()),
+                    ('yt_videoid', pa.string()),
+                    ('yt_like_count', pa.int32()),
+                    ('yt_reply_count', pa.int32()),
+                    ('re_id', pa.string()),
+                    ('re_subreddit', pa.string()),
+                    ('re_vote', pa.int32()),
+                    ('re_reply_count', pa.int32())
+                ])
         # Read the Parquet data back into an Arrow table
-        table = pq.read_table(buffer)
+        table = pq.read_table(source = buffer, schema = pyarrow_schema)
         
         # Convert the Arrow table to a pandas DataFrame for easier manipulation
         decoded_msg = table.to_pylist()
-        print(f"Function decode_parquet worked.", flush=True)
+
+        logger.info(f"Function decode_parquet worked.")
+
+        for index, message in enumerate(decoded_msg):
+            for key, value in message.items():
+                if isinstance(value, float):
+                    print(f"Float detected in message {index} at key '{key}': {value}", flush=True)
         return decoded_msg
+    
+    def convert_dates_in_dictionaries(self, data):
+        """
+        Convert 'date' field in list of dictionaries to datetime objects
+        
+        Args:
+            data (list): List of dictionaries with potential string dates
+        
+        Returns:
+            list: Updated list of dictionaries with datetime dates
+        """
+        logger.info("Entered conversion function")
+        for item in data:
+            # Handle different potential date formats
+            if isinstance(item.get('date'), str):
+                try:
+                    # Try parsing with multiple potential formats
+                    item['date'] = datetime.fromisoformat(item['date'].replace('Z', '+00:00'))
+                except ValueError:
+                    # Fallback parsing attempts
+                    formats = [
+                        '%Y-%m-%d %H:%M:%S',
+                        '%Y-%m-%dT%H:%M:%S',
+                        '%Y-%m-%d'
+                    ]
+                    for fmt in formats:
+                        try:
+                            item['date'] = datetime.strptime(item['date'], fmt)
+                            break
+                        except ValueError:
+                            continue
+                    else:
+                        # If no format works, log or handle as needed
+                        logger.error(f"Could not parse date: {item['date']}")
+        
+        return data

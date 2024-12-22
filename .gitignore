@@ -1,5 +1,7 @@
 __pycache__/
-/consumers/spark/model
+consumers/spark/model/
+appunti.txt
+comandipostgres.txt
 *.ipynb
 /data/make_dataset/trustpilot/*dataset*
 /data/make_dataset/youtube/*dataset*

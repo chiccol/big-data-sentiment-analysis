@@ -3,7 +3,7 @@ FROM python:3.11.1-slim
 WORKDIR /app
 
 # Copy only requirements first to leverage build cache
-COPY reddit/requirements.txt .
+COPY pseudo/requirements.txt .
 
 # Install system dependencies and Python packages in a single layer
 RUN apt-get update && \
@@ -11,8 +11,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy the rest of the application files
-COPY reddit /app
-COPY kafka_producer.py /app 
+COPY pseudo /app
+COPY kafka_producer.py /app
 
 # Set executable permissions in one layer
 RUN chmod +x wait.sh

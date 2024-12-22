@@ -6,8 +6,44 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from io import BytesIO
 import pandas as pd
+import logging
 
-def encode_message_to_parquet(data):
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("youtube-producer")
+logger.info("Started logging")
+
+def encode_message_to_parquet(data: list[dict]) -> bytes: 
+    """
+    Encodes a list of dictionaries into a in-memory parquet table.
+
+    Args:
+        data -> list of dicts
+
+    Returns:
+        bytes
+    """
+    # Infer the schema from the data
+    schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
+
+    # Convert the data to an Arrow Table using the inferred schema
+    table = pa.Table.from_pandas(pd.DataFrame(data), schema=schema)
+
+    # Write the table to an in-memory bytes buffer as Parquet
+    buffer = BytesIO()
+    pq.write_table(table, buffer)
+
+    # Return the Parquet bytes for saving or sending
+    return buffer.getvalue()
+
+def encode_message_to_parquet_old(data): #REMOVE IF THE NEW VERSION WORKS
     # Infer the schema from the data
     schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
 
@@ -63,7 +99,7 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
     num_comments = 0
 
     while True:
-        print(f"Fetching comments for video {video} of company {company}", flush=True)
+        logger.info(f"Fetching comments for video {video} of company {company}")
         # Handle disabled comment sections or failed requests
         try:
             response = request.execute()
@@ -77,11 +113,11 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             comment = item['snippet']['topLevelComment']['snippet']
             if datetime.strptime(comment.get("publishedAt", None), date_format) < datetime.strptime(from_date, date_format):
                 if flag_pinned_comment:
-                    print(f"Pinned comment is older than {from_date}", flush=True)
+                    logger.info(f"Pinned comment is older than {from_date}")
                     flag_pinned_comment = False
                     continue # Skip the pinned comment
                 else:
-                    print(f"Comment is older than {from_date}", flush=True)
+                    logger.info(f"Comment is older than {from_date}")
                     return None, num_comments
             extracted_comment = {
                 "source": "youtube",
@@ -96,16 +132,16 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             flag_pinned_comment = False
 
         num_comments += len(comments)
-        # print("Sending encoded comments to Kafka...", comments, flush=True)
         encoded_comments = encode_message_to_parquet(comments)
+        logger.info("Sending message to Kafka")
         producer.produce(record = encoded_comments, topic=company)
         # Stop if no more pages or enough comments have been retrieved
         next_page_token = response.get('nextPageToken',None)
         if num_comments >= max_num_comments: 
-            print(f"Reached {max_num_comments} comments for video {video} of company {company}", flush=True)
+            logging.info(f"Reached {max_num_comments} comments for video {video} of company {company}")
             return next_page_token, num_comments
         if not next_page_token: 
-            print(f"No more comments to fetch for video {video} of company {company}", flush=True) 
+            logging.info(f"No more comments to fetch for video {video} of company {company}")
             return None, num_comments
 
         request = youtube_scraper.commentThreads().list(
@@ -168,18 +204,18 @@ def search_videos(query,
 
     for videoId in videoIds:
             if videoId not in youtube_comapanies_videos[company]["videos"]:
-                print(f"Checking video {videoId}", flush=True)
+                logger.info(f"Checking video {videoId}")
                 video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
                 duration = iso8601_to_seconds(video_info['items'][0]['contentDetails']['duration'])
                 view_count = int(video_info['items'][0]["statistics"]["viewCount"])
                 comment_count = int(video_info['items'][0]["statistics"]["commentCount"])
                 if duration < min_duration:
                     youtube_comapanies_videos[company]["videos"][videoId] = "too_short"
-                    print(f"Video {videoId} is too short", flush=True)
+                    logger.info(f"Video {videoId} is too short")
                     continue
                 if comment_count < min_comment or view_count < min_view:
                     youtube_comapanies_videos[company]["videos"][videoId] = "currently_irrelevant"
-                    print(f"Video {videoId} is currently irrelevant", flush=True)
+                    logger.info(f"Video {videoId} is currently irrelevant") 
                     continue
                 
                 youtube_comapanies_videos[company]["videos"][videoId] = {
@@ -187,12 +223,11 @@ def search_videos(query,
                     "next_page_token" : "None", 
                     "region_code" : regionCode
                 }
-                print(f"Added video {videoId} to {company}", flush=True)
+                logger.info(f"Added video {videoId} to {company}")
                 new_videos.append(videoId)
     
     youtube_comapanies_videos[company]["search_from_date"] = datetime.now().strftime(date_format)
 
-    print("Saving file...", flush=True)
     with open(youtube_comapanies_videos_path, 'w') as file:
         json.dump(youtube_comapanies_videos, file, indent=4)
 

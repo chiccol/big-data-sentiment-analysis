@@ -3,22 +3,33 @@ import json
 from datetime import datetime
 from trustpilot import scrape_and_send_reviews
 from kafka_producer import KafkaProducer
+import logging
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("trustpilot-producer")
+logger.info("Started logging")
 
 if __name__ == "__main__":
-    # this doesn't work yet because I can't connect to the kafka container, probably because need external port
     client_id = "trustpilot-producer"
     bootstrap_servers = "kafka:9092"
     source = "trustpilot"
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id = client_id)
-    print(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}", flush=True)
-
+    logger.info(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}")
     # Load companies and dates of the last scraping
     companies_from_date_path = "urls-trustpilot.json"
     with open(companies_from_date_path, 'r') as file:
         companies_date = json.load(file)
-    print(f"Companies and dates of the last scraping loaded from {companies_from_date_path}", flush=True)
+    logger.info(f"Companies and dates of the last scraping loaded from {companies_from_date_path}") 
     for company in companies_date.keys():
-        print(f"Company: {company}, Last scraping: {companies_date[company]}", flush=True)
+        logger.info(f"Company: {company}, Last scraping: {companies_date[company]}")
 
     date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
                     

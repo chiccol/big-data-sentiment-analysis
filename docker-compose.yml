@@ -1,4 +1,5 @@
 services:  
+  
   zookeeper:  #Zookeeper, a distributed coordination service used by Kafka.
     image: wurstmeister/zookeeper  # updated 5 years ago, but video said is stable version (consider bitnami)
     container_name: zookeeper  # Sets a custom name for the Zookeeper container, making it easier to reference.
@@ -21,27 +22,6 @@ services:
     depends_on:
       - zookeeper
   
-  mongo:
-    image: mongo:6.0.5
-    container_name: mongo
-    ports:
-      - "27017:27017"  # Expose MongoDB on port 35001
-    depends_on:
-      - kafka
-    restart: always
-
-  mongo-controller:
-    container_name: mongo-controller
-    build:
-      context: consumers/
-      dockerfile: mongodb/mongo-controller.Dockerfile
-    depends_on:
-      - kafka
-      - mongo
-    volumes: 
-      - ./consumers/mongodb/main.py:/app/main.py
-      - ./consumers/mongodb/mongodb_manager.py:/app/mongodb_manager.py
-      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py 
   
   youtube-producer:
     container_name: youtube-producer
@@ -49,9 +29,7 @@ services:
       context: data/data_source/
       dockerfile: youtube/youtube.Dockerfile
     depends_on:
-      - mongo
       - kafka
-      - postgres
     volumes: 
       - ./data/data_source/youtube/main.py:/app/main.py 
       - ./data/data_source/youtube/youtube.py:/app/youtube.py
@@ -62,9 +40,7 @@ services:
       context: data/data_source/
       dockerfile: trustpilot/trustpilot.Dockerfile
     depends_on:
-      - mongo
       - kafka
-      - postgres
     volumes: 
       - ./data/data_source/trustpilot/main.py:/app/main.py 
       - ./data/data_source/trustpilot/trustpilot.py:/app/trustpilot.py 
@@ -75,9 +51,18 @@ services:
       context: data/data_source/
       dockerfile: reddit/reddit.Dockerfile
     depends_on:
-      - mongo
       - kafka
-      - postgres
+  
+  pseudo-producer:
+    container_name: pseudo-producer
+    build:
+      context: data/data_source/
+      dockerfile: pseudo/pseudo.Dockerfile
+    depends_on:
+      - kafka
+    volumes:
+      - ./data/data_source/pseudo/main.py:/app/main.py
+      - ./data/data_source/pseudo/pseudo.py:/app/pseudo.py
   
   spark-master:
     build:
@@ -121,9 +106,16 @@ services:
       - SPARK_WORKER_MEMORY=2g # resource limit per worker
     depends_on:
       - spark-master
-
+  
+  mongo:
+    image: mongo:6.0.5
+    container_name: mongo
+    ports:
+      - "27017:27017"  
+    restart: always
+  
   postgres:
-    image: postgres:17.0  
+    image: postgres:17.0
     container_name: postgres
     environment:
       - POSTGRES_USER=admin
@@ -133,3 +125,27 @@ services:
       - "5432:5432"
     volumes:
       - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+
+  backend:
+    container_name: fastapi-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"   
+    depends_on:
+      - mongo         
+      - postgres      
+    environment:
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/warehouse
+      - MONGO_URL=mongodb://mongo:27017
+
+  frontend:
+    container_name: react-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"  
+    depends_on:
+      - backend    

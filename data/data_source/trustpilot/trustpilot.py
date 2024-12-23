@@ -140,5 +140,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
         num_reviews += len(review_list)
         logger.info(f"Scraped {num_reviews} reviews for {company} so far.")
         review_list_serialized = encode_message_to_parquet(review_list)
+        review_list.clear()
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

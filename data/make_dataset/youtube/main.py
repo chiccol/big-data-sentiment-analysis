@@ -1,11 +1,15 @@
-import json
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
+import pandas as pd
+from sklearn.utils import resample
+from sklearn.model_selection import train_test_split
+
 from youtube import fetch_and_store_comments
+import googleapiclient.discovery
+
 import json
 import os
 from dotenv import load_dotenv
-import googleapiclient.discovery
 
 def analyze_sentiment(data, candidate_labels, model, tokenizer):
     """
@@ -19,8 +23,8 @@ def analyze_sentiment(data, candidate_labels, model, tokenizer):
         A list of sentiment labels (e.g., ['positive', 'neutral', 'negative']) to classify the text against.
     tokenizer : transformers.PreTrainedTokenizer
         The tokenizer to preprocess the text data for the model.
-    model : any torch like model designed for sequence classification i.e. the output must be the logits of: contradiction, neutral, entailment 
-        The pretrained transformer model used for classification.
+    model : any 
+        A torch like model designed for sequence classification i.e. the output must be the logits of: contradiction, neutral, entailment 
     
     Returns:
     -------
@@ -72,6 +76,66 @@ def analyze_sentiment(data, candidate_labels, model, tokenizer):
         item['sentiment'] = max(label_scores, key=label_scores.get)  # Add sentiment to the data
     return data
 
+def balance_dataset(data, 
+                    test_size=0.2, 
+                    random_state=42, 
+                    train_path="train_dataset_balanced.json", 
+                    test_path="test_dataset.json"):
+
+    pd_data = []
+    for company in data:
+        for comment in data[company]:
+            comment["company"] = company
+            pd_data.append(comment)
+    df = pd.DataFrame(pd_data)
+
+    train_df, test_df = train_test_split(df, test_size=test_size, random_state=random_state, stratify=df[['company', 'sentiment']])
+
+    count_df = train_df.groupby(["company", "sentiment"]).size().reset_index()
+    count_df.columns = ["company", "sentiment", "count"]
+
+    # Create a balanced training dataset by oversampling "neutral"
+    balanced_data = []
+
+    # Group by company and balance sentiments
+    for company, group in train_df.groupby('company'):
+        print(f"Balancing sentiments in training dataset for company: {company}")
+
+        # Determine the target count (min comments among sentiments for this company)
+        target_count = count_df.loc[(count_df.company == company) & (count_df.sentiment != "neutral"), "count"].min()
+        # avoid oversampling "neutral" too much
+        current_count = count_df.loc[(count_df.company == company) & (count_df.sentiment == "neutral"), "count"].values[0]
+        target_count = target_count if current_count*10 > target_count else current_count*10
+
+        company_balanced = []
+        
+        for sentiment in group['sentiment'].unique():
+            subset = group[group['sentiment'] == sentiment]
+            if sentiment == "neutral":
+                # Oversample "neutral" to match the target count
+                oversampled = resample(
+                    subset,
+                    replace=True,                # Allow resampling with replacement
+                    n_samples=target_count,      # Match the target count
+                    random_state=42              # For reproducibility
+                )
+                company_balanced.append(oversampled)
+            else:
+                # Append the other sentiments as-is
+                company_balanced.append(subset)
+        
+        # Combine the balanced sentiments for this company
+        balanced_data.append(pd.concat(company_balanced))
+
+        # Combine data for all companies
+        train_df_balanced = pd.concat(balanced_data).reset_index(drop=True)
+
+        train_df_balanced.to_json(train_path, orient="records")
+        print(f"Balanced training dataset saved in {train_path}")
+        test_df.to_json(test_path, orient="records")
+        print(f"Testing dataset saved in {test_path}")
+        
+
 if __name__ == "__main__":
     with open("youtube_companies_videos.json", "r") as file:
         company_configs = json.load(file)
@@ -86,7 +150,7 @@ if __name__ == "__main__":
             developerKey=DEVELOPER_KEY
         )
     
-    scraped_comments = "youtube_comments_dataset.json"
+    scraped_comments = "youtube_dataset.json"
 
     fetch_and_store_comments(company_configs,
                              youtube_scraper,
@@ -114,3 +178,8 @@ if __name__ == "__main__":
         json.dump(comments_data, file, indent=4)
 
     print(f"Sentiment analysis completed. Youtube dataset saved in {scraped_comments}.")
+
+    with open("youtube_dataset.json", "r") as f:
+        dataset = json.load(f)
+
+    balance_dataset(dataset, test_size=0.2, random_state=42, train_path="train_dataset_balanced.json", test_path="test_dataset.json")

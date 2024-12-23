@@ -142,7 +142,6 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
             extracted_comment = {
                 "text": comment.get("textOriginal", None),
                 "date": comment.get("publishedAt", None),
-                "company": company,
                 "yt_videoid": video
             }
             comments.append(extracted_comment)

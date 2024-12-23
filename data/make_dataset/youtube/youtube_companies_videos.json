@@ -1,0 +1,838 @@
+{
+    "samsung": {
+        "query": "Samsung smartphones and tv review",
+        "search_from_date": "2024-12-22T22:40:41Z",
+        "get_comments_from_date": "2020-01-01T00:00:00Z",
+        "max_videos": 50,
+        "relevance_language": "en",
+        "max_num_comments_per_scraping": 100,
+        "min_duration": 240,
+        "min_comment": 10,
+        "min_view": 1000,
+        "num_comments_to_fetch": 333,
+        "videos": {
+            "Y7sHf0tfwaw": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Bp5G5pju6NY": "too_short",
+            "uWTsUFw85fc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "_MSLZKtoX_k": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "jYPL8tpDhqs": "too_short",
+            "s2CXe9-3A2g": "too_short",
+            "gGiQu9jnv_k": "too_short",
+            "1EvhcbvDbl4": "too_short",
+            "E50fQzg5Ri4": "too_short",
+            "BSYsXVFzmKA": "too_short",
+            "dEEZwIEzlT8": "too_short",
+            "92YmWzNNE9w": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "RW8Ya_NcFOk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "QdkRuu4jvsk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "oC5V8w_OBRU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "a4EBmUedqc0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "9v_6XaC-vEc": "too_short",
+            "9PtataC5wFg": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "bHtADE5sXlY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Vn0dlfdjSOk": "too_short",
+            "24YlEPiCK7Q": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "f4hh5b9drzM": "too_short",
+            "D5joALEtp98": "too_short",
+            "obp3ycxIMIY": "too_short",
+            "382-ivtORkQ": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "sgFEZalYp8s": "too_short",
+            "BHYZX03lu4Q": "too_short",
+            "pcOQE41d0rE": "too_short",
+            "Je1sdRR74mw": "too_short",
+            "KKFkQ5zSQT0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "QrFgCtdA6QA": "too_short",
+            "9h0QYJ6mMfE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "MwKE_3tnxxc": "too_short",
+            "JCZYnbUm9DA": "too_short",
+            "3bEG94BD_Jk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ZlBUUBI9XZM": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "3EbuoOKlsm8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "S7TvqToAaVY": "too_short",
+            "SgjMljd3dmI": "currently_irrelevant",
+            "NlBU0izF0v8": "too_short",
+            "wW9OrtQz5qQ": "too_short",
+            "RfRbZBusmLo": "too_short",
+            "OJxzBuJxO38": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "yCgj-r5xwt4": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "vkfEq0yzVdM": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "6smXI6ab6Jk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "xDwg6V-9r1s": "too_short",
+            "mVpbVKMo1HU": "too_short",
+            "3wpTNv0v-DE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "z5GTT0FBZZE": "too_short",
+            "rYjMVsI5KQA": "too_short",
+            "-tCknrVO2tY": "too_short",
+            "7Lny90E0cBU": "too_short",
+            "Sk0dy_wbXSQ": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "wksf1eCfYBs": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "mqVorIUJS6Y": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "dYGvJ7aMLxA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "jMY29Cl_rBE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "8SyJM0CgGHY": "too_short",
+            "stLdshXSS_Y": "too_short"
+        }
+    },
+    "xiaomi": {
+        "query": "Xiaomi review",
+        "search_from_date": "2024-12-22T22:40:44Z",
+        "get_comments_from_date": "2020-01-01T00:00:00Z",
+        "max_videos": 50,
+        "relevance_language": "en",
+        "max_num_comments_per_scraping": 50,
+        "min_duration": 240,
+        "min_comment": 10,
+        "min_view": 1000,
+        "num_comments_to_fetch": 333,
+        "videos": {
+            "xc43X4ra_nM": "currently_irrelevant",
+            "ET_OI59TLGY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "vMdsTry9Cvc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "cCx437vGOo8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "_3Jo7Vy4YbY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "EKsW4QabcWs": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "44CMdsNuoNM": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "gUJmQHhXjIw": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "s1vhjk4dtwI": "too_short",
+            "xhGPhH85_3s": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "vfYwn2O0TS8": "too_short",
+            "NLezhiocEVo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "3iTidh00Blc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "39wcd4kLVeA": "too_short",
+            "5tDPiJFGamA": "too_short",
+            "b3M9HWG4pk0": "too_short",
+            "nAWnTcRxrSE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "UU8k3JxW43c": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "5yznwg9_aS0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "7MTQYxmihNo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lxTsz74VK3I": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "vBcU3ckMhw4": "too_short",
+            "6u7wyrUyiAU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ONuO0FD8eV8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "4QJq2h8tCv8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "i5ay1tRyJoo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "5kQRU7TDhWY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "FeRLGhq6M4g": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "nb0BG0ixuQA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "dpejnm8Qh_8": "too_short",
+            "kYaMluxoyOM": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lBb3xGgIq8E": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "JqKjTUBYuSU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "2_XyG9Kl8SY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "upPFWo78QYA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "iY1JJfWb6bI": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "u0z9CePCyvo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Lg8CKjDN810": "too_short",
+            "eqVSvai1Xwc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "HUiuL4dRvDE": "currently_irrelevant",
+            "3t78OVc0OnY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "efWL342tiSU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "0w1fudCqRSs": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "T1g0qiQ4aVk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "M-SNCMOrBUQ": "too_short",
+            "FeZ4kIbsfJk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "rPHVvINyFpA": "too_short",
+            "G6daOh-PgRU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ccj5rR_aPXA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "3HrazJSa00Y": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "c1WckjnQo3I": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "xd2bKrDzMTg": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "rmj_gi0uueo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "SD35ypIgwiQ": "too_short",
+            "0kpIdioDaKQ": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lYPe4MsALk4": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "i1aKpceiIcY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "mDo_TiWwzpM": "too_short",
+            "ZiFclVrlmro": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "91bb7Uq5b4g": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "2ipBP8ThixI": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "GjTBKLbjt7w": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ns-Mc2Jd5po": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ohltpJStiKc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "NHYSAGz_jhE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "6jVUSsByq9Y": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "g4iM1J_HdHE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "nNTPI44Bzm0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            }
+        }
+    },
+    "apple": {
+        "query": "Apple smartphones and laptops review",
+        "search_from_date": "2024-12-22T22:40:51Z",
+        "get_comments_from_date": "2020-01-01T00:00:00Z",
+        "max_videos": 50,
+        "relevance_language": "en",
+        "max_num_comments_per_scraping": 50,
+        "min_duration": 240,
+        "min_comment": 10,
+        "min_view": 1000,
+        "num_comments_to_fetch": 333,
+        "videos": {
+            "eYnupz8pBHk": "too_short",
+            "t5MWcLXJNug": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "j4h3lAYBM_U": "too_short",
+            "nfnq__xvmMc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ghXFG1OlNoI": "too_short",
+            "BwRwSwrHLEI": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Pel70b0uj3E": "too_short",
+            "XKTUdEUK0YM": "too_short",
+            "RyIcxfclqYw": "currently_irrelevant",
+            "9dUj0KmAz-Q": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lACHhr7RKXc": "too_short",
+            "Sq_nTvYFA5k": "too_short",
+            "O5TRw-AmIBY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "eOVVm15R1LA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "J29xdXi7ys0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "TfvIgdzImt4": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "kHP6n3OmA_A": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "HeMIZC2rkMo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "X50A29v27yQ": "too_short",
+            "aLcfXvGSJVY": "too_short",
+            "v_c0XSOLWeE": "too_short",
+            "A5qSZeEP7TE": "too_short",
+            "B208Sd-wCRg": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "315W8b2OJ3k": "too_short",
+            "JBfxAxgtVLI": "too_short",
+            "eIj9wCH0pT0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "wVKp-7mDG1U": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "KTnQoOqEkNU": "too_short",
+            "KMiXhbRGVfw": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "AGqq5Cg4Cl4": "too_short",
+            "GeqS7J5h-Zk": "too_short",
+            "po7t_U-sLi8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "UufSZF-a8aU": "too_short",
+            "xf2DPY3vGto": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ZaY5vRwL9zI": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "esoluJfPrD0": "too_short",
+            "C59KeiI4bfs": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ZXO0LtDvt-M": "too_short",
+            "V7o8RwliSP4": "too_short",
+            "8GLtdnkyGuA": "too_short",
+            "egvVwWuzdaQ": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "abOR0w5DtLs": "too_short",
+            "kyGXoMXQqKE": "too_short",
+            "f010yw53Nd8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "WHqxBlFuIXA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "95cN-MqBOes": "too_short",
+            "gTBpxYpukdc": "too_short",
+            "8z670tl55e8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Xmb_jQRsM0I": "too_short",
+            "HTiBSG7E474": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            }
+        }
+    },
+    "microsoft": {
+        "query": "microsoft review",
+        "search_from_date": "2024-12-22T22:40:56Z",
+        "get_comments_from_date": "2020-01-01T00:00:00Z",
+        "max_videos": 50,
+        "relevance_language": "en",
+        "max_num_comments_per_scraping": 50,
+        "min_duration": 240,
+        "min_comment": 10,
+        "min_view": 1000,
+        "num_comments_to_fetch": 333,
+        "videos": {
+            "nfnq__xvmMc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "vJEbP2Vdq2U": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "AqmA_EZsHWc": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "z78Ws3gSFaQ": "too_short",
+            "7iD_85y3kpw": "too_short",
+            "ZTGkBaEtlVs": "currently_irrelevant",
+            "ImUpTIqDHmo": "too_short",
+            "4bxEFdELnFM": "too_short",
+            "Av5QF95snK8": "currently_irrelevant",
+            "Gd5hIIb8_XI": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ZgQHaLtQiYU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "2uvFqjsbemY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "ij69iW6C2s0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "OjShmC6Y_is": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "H3ix2t4I7UU": "too_short",
+            "qdxL1WvTyYI": "too_short",
+            "2MCmnr2L50o": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lI9CU_wDYY8": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "TspZy_QbajU": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "xYtsHIlolck": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Z0XggU4jXvo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "-OGeGCiM-E0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lV4kaDHknC8": "too_short",
+            "-f0XIVEP7bE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "Up63DQNcDfY": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "qaCHITOuWPw": "too_short",
+            "_rWfXVNPDQE": "too_short",
+            "GqH_vmE-3Vs": "too_short",
+            "XjYHDrdFxI0": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "4mwT-lmPs9s": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "EzeE3cVNV3k": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "6fnP3zhP6-M": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "a8jvF6h6hcA": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "kr_LD5Wuckg": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "SfBc2CMAUuo": "too_short",
+            "QzqRD2ds7Vk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "hoP2v6cJYA4": "too_short",
+            "oEr5iDYlgEM": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "bKCCAdgoSsk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "gQ9-Lh0_WNg": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "sQFjKmWYpLk": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "tSSnBlyhau4": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "diwvbVgloSw": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "7y94tif1ZGU": "too_short",
+            "rZFgKJkqz7c": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "EzORtZEupAE": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "QxJKcTw4O0g": "too_short",
+            "WGn9LWO09Nw": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "TpABlcB4gZI": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            },
+            "lvCbk9Izswo": {
+                "date_last_scrape": "2020-01-01T00:00:00Z",
+                "next_page_token": "None",
+                "region_code": "IT"
+            }
+        }
+    }
+}

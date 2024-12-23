@@ -13,14 +13,15 @@ sudo docker compose up --build
 This application will scrape data from the internet, run the data through a machine learning model and store the relevant data in various databases. 
 The data is obtained through the official APIs of Youtube and Reddit, a custom-made web scraper for TrustPilot and a random data generator used to test heavier data loads, since every other data producer is limited in throughput (daily rates).
 
-### Training
+### Training and Testing
 
 Download the trustpilot dataset: 
 ```
-gdown https://drive.google.com/uc?id=1wPJC00XvvTJ0wqQry0EmDG0hRmy7-pcd
-gdown https://drive.google.com/uc?id=1oXOdq8x4NuqAfbaR2ak8n4atclAlHxdz
+gdown https://drive.google.com/uc?id=1wPJC00XvvTJ0wqQry0EmDG0hRmy7-pcd # test
+gdown https://drive.google.com/uc?id=1oXOdq8x4NuqAfbaR2ak8n4atclAlHxdz # train
 ```
 Download the youtube dataset:
 ```
-gdown https://drive.google.com/uc?id=
+gdown https://drive.google.com/uc?id=1ij9G4y2MqRuP1-s0KEcBSwGtimWz6uyf # test
+gdown https://drive.google.com/uc?id=13OCC_WsLB2Vwt3pz2nm_hEFjNszfLV15 # train
 ```

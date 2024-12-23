@@ -56,7 +56,7 @@ def search_videos(query,
             if videoId not in youtube_comapanies_videos[company]["videos"]:
                 print(f"Checking video {videoId}")
                 video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
-                duration = iso8601_to_seconds(video_info['items'][0]['contentDetails']['duration'])
+                duration = iso8601_to_seconds(video_info['items'][0]['contentDetails'].get('duration',"0"))
                 view_count = int(video_info['items'][0]["statistics"].get("viewCount",0))
                 comment_count = int(video_info['items'][0]["statistics"].get("commentCount",0))
                 if duration < min_duration:
@@ -98,6 +98,8 @@ def search_videos(query,
   return new_videos, youtube_comapanies_videos
 
 def iso8601_to_seconds(duration):
+    if duration == "0":
+        return 0
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(duration)
     if not match:

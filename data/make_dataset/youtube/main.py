@@ -127,13 +127,13 @@ def balance_dataset(data,
         # Combine the balanced sentiments for this company
         balanced_data.append(pd.concat(company_balanced))
 
-        # Combine data for all companies
-        train_df_balanced = pd.concat(balanced_data).reset_index(drop=True)
+    # Combine data for all companies
+    train_df_balanced = pd.concat(balanced_data).reset_index(drop=True)
 
-        train_df_balanced.to_json(train_path, orient="records")
-        print(f"Balanced training dataset saved in {train_path}")
-        test_df.to_json(test_path, orient="records")
-        print(f"Testing dataset saved in {test_path}")
+    train_df_balanced.to_json(train_path, orient="records")
+    print(f"Balanced training dataset saved in {train_path}")
+    test_df.to_json(test_path, orient="records")
+    print(f"Testing dataset saved in {test_path}")
         
 
 if __name__ == "__main__":

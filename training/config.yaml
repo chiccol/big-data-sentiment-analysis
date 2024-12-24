@@ -1,8 +1,8 @@
 data:
-  tp_train_path: "training/training_dataset.json"
-  tp_test_path: "training/diff_companies_test_dataset.json"
-  yt_test_path: "training/test_dataset.json"
-  yt_train_path: "training/train_dataset_balanced.json"
+  tp_train_path: "training/tp_training_dataset.json"
+  tp_test_path: "training/tp_diff_companies_test_dataset.json"
+  yt_test_path: "training/yt_test_dataset.json"
+  yt_train_path: "training/yt_train_dataset_balanced.json"
 model_params:
   batch_size: 64
   lr: 1e-3

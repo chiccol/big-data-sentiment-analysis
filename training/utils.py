@@ -36,17 +36,28 @@ class SentimentDataset(Dataset):
             "source" : source
         }
 
-def get_dataset(yt_train_path, yt_test_path, tp_train_path, tp_test_path, tokenizer):
+def get_dataset(yt_train_path, yt_test_path, tp_train_path, tp_test_path, tokenizer, tp_simple=True):
 
+  print("Loading Trustpilot data...")
   tp_train_data = pd.read_json(tp_train_path)
   tp_train_data["source"] = "trustpilot"
   tp_test_data = pd.read_json(tp_test_path)
   tp_test_data["source"] = "trustpilot"
+  if tp_simple:
+    tp_train_data = tp_train_data.loc[~tp_train_data.tp_stars.isin([2,4]),:]
+    tp_test_data = tp_test_data.loc[~tp_test_data.tp_stars.isin([2,4]),:]
 
-  yt_test_data = pd.read_json(yt_test_path)
-  yt_test_data["source"] = "youtube"
-  yt_train_data = pd.read_json(yt_train_path)
-  yt_train_data["source"] = "youtube"
+  if yt_test_path == "None" or yt_train_path == "None": 
+    print("Ignoring Youtube data")
+    yt_test_data = pd.DataFrame(columns = tp_train_data.columns)
+    yt_train_data = pd.DataFrame(columns = tp_train_data.columns) 
+  else:
+    print("Loading Youtube data...")
+    yt_test_data = pd.read_json(yt_test_path)
+    yt_test_data["source"] = "youtube"
+    yt_train_data = pd.read_json(yt_train_path)
+    yt_train_data["source"] = "youtube"
+
 
   train_data = pd.concat([tp_train_data.loc[:,["text","sentiment", "source"]],
                         yt_train_data.loc[:,["text","sentiment", "source"]]])

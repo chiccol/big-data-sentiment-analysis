@@ -1,12 +1,12 @@
 tp_test="training/tp_diff_companies_test_dataset.json"
 tp_train="training/tp_training_dataset.json"
-yt_test="training/yt_test_dataset.json"
-yt_train="training/yt_train_dataset_balanced.json"
+yt_test="None"
+yt_train="None"
 
 # Check if the files already exist
 if [ ! -f "$tp_test" ]; then 
     echo "Downloading Trustpilot test..." 
-    gdown https://drive.google.com/uc?id=1EguvQcsht2zbHhxt-XqXWZ81fgVuHVxu --output training/diff_companies_test_dataset.json
+    gdown https://drive.google.com/uc?id=1EguvQcsht2zbHhxt-XqXWZ81fgVuHVxu --output training/tp_diff_companies_test_dataset.json
 else
     echo "Trustpilot test already exists."
 fi

@@ -4,13 +4,13 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 import torch 
-import pyaml
+import yaml
 
 def main():
 
   # Load configuration
-  with open("config.yaml", "r") as file:
-    config = pyaml.load(file)
+  with open("training/config.yaml", "r") as file:
+    config = yaml.safe_load(file)
 
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model, tokenizer = get_model(config["model_params"]["path"])
@@ -26,7 +26,7 @@ def main():
   test_loader = DataLoader(test_dataset, batch_size=config["model_params"]["batch_size"])
 
   # Optimizer and Loss
-  optimizer = AdamW(model.parameters(), lr=config["model_params"]["lr"])
+  optimizer = AdamW(model.parameters(), lr=float(config["model_params"]["lr"]))
   loss_fn = CrossEntropyLoss()
 
   epochs = config["model_params"]["epochs"]
@@ -55,3 +55,6 @@ def main():
 
     # Print results
     print_epoch_metrics(epoch + 1, epochs, train_results, val_results)
+
+if __name__ == "__main__":
+  main()

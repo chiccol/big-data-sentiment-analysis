@@ -119,10 +119,9 @@ def compute_source_wise_metrics(y_true, y_pred, sources, round_digits=4):
 def print_epoch_metrics(epoch, epochs, train_results, val_results):
     print(f"\nEpoch {epoch}/{epochs}")
 
-    train_loss, train_accuracy, train_global, train_labels, train_sources = train_results
+    train_loss, train_global, train_labels, train_sources = train_results
     print(f"\nTraining Metrics:")
     print(f"  Loss: {train_loss:.4f}")
-    train_global = {key: f"{value:.4f}" for key, value in train_global.items()}
     print(f"  Global: {train_global}")
     print(f"  Label-wise:")
     for label, metrics in train_labels.items():
@@ -133,13 +132,12 @@ def print_epoch_metrics(epoch, epochs, train_results, val_results):
 
     val_loss, val_global, val_labels, val_sources = val_results
     print(f"\nValidation Metrics:")
-    print(f"  Loss: {val_loss:.4f}")
-    val_global = {key: f"{value:.4f}" for key, value in val_global.items()}
+    print(f"  Loss: {val_loss}")
     print(f"  Global: {val_global}")
     print(f"  Label-wise:")
     for label, metrics in val_labels.items():
-        print(f"    {label}: {metrics:.4f}")
+        print(f"    {label}: {metrics}")
     print(f"  Source-wise:")
     for source, metrics in val_sources.items():
-        print(f"    {source}: {metrics:.4f}")
+        print(f"    {source}: {metrics}")
     print("-" * 50)

@@ -1,14 +1,24 @@
 {
     "training": 
     {
-        "www.samsung.com": "2020-01-01T00:52:28.262828Z", 
-        "www.apple.com": "2020-01-01T00:52:28.402881Z",
-        "surfshark.com" : "2020-01-01T00:52:28.402881Z",
-        "primera.com" : "2020-01-01T00:52:28.402881Z"
+        "www.samsung.com": "2018-01-01T00:52:28.262828Z", 
+        "www.apple.com": "2018-01-01T00:52:28.402881Z",
+        "surfshark.com" : "2018-01-01T00:52:28.402881Z",
+        "primera.com" : "2018-01-01T00:52:28.402881Z",
+        "www.gamers-outlet.net" : "2018-01-01T00:52:28.402881Z",
+        "www.toluna.com" : "2018-01-01T00:52:28.402881Z",
+        "casetify.com" : "2018-01-01T00:52:28.402881Z",
+        "patriotmobile.com" : "2018-01-01T00:52:28.402881Z",
+        "hostinger.com" : "2018-01-01T00:52:28.402881Z",
+        "www.inkfarm.com" : "2018-01-01T00:52:28.402881Z",
+        "taskrabbit.com" : "2018-01-01T00:52:28.402881Z",
+        "totalav.com" : "2018-01-01T00:52:28.402881Z"
     },
     "out_of_sample": 
     {
-        "scufgaming.com" : "2020-01-01T00:52:28.402881Z",
-        "www.quicken.com" : "2020-01-01T00:52:28.402881Z"
+        "scufgaming.com" : "2018-01-01T00:52:28.402881Z",
+        "www.quicken.com" : "2018-01-01T00:52:28.402881Z",
+        "www.norton.com" : "2018-01-01T00:52:28.402881Z",
+        "moonpay.com" : "2018-01-01T00:52:28.402881Z"
     }
 }

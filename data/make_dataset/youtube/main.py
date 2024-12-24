@@ -79,8 +79,8 @@ def analyze_sentiment(data, candidate_labels, model, tokenizer):
 def balance_dataset(data, 
                     test_size=0.2, 
                     random_state=42, 
-                    train_path="train_dataset_balanced.json", 
-                    test_path="test_dataset.json"):
+                    train_path="yt_train_dataset_balanced.json", 
+                    test_path="yt_test_dataset.json"):
 
     pd_data = []
     for company in data:
@@ -182,4 +182,4 @@ if __name__ == "__main__":
     with open("youtube_dataset.json", "r") as f:
         dataset = json.load(f)
 
-    balance_dataset(dataset, test_size=0.2, random_state=42, train_path="train_dataset_balanced.json", test_path="test_dataset.json")
+    balance_dataset(dataset, test_size=0.2, random_state=42)

@@ -110,8 +110,8 @@ def store_reviews(new_reviews, path):
         json.dump(reviews, file)
 
 def main():
-    training_dataset_path = "training_dataset.json"
-    out_of_company_dataset_path = "diff_companies_test_dataset.json"
+    training_dataset_path = "tp_train_dataset.json"
+    out_of_company_dataset_path = "tp_diff_companies_test_dataset.json"
 
     if not os.path.exists(training_dataset_path):
         with open(training_dataset_path, 'w') as file:
@@ -144,9 +144,9 @@ def main():
                 # Get reviews for different star ratings
                 for stars in range(1, 6):
                     if stars != 3:
-                        to_page = 2 if dataset == "training" else 1
-                    else:
                         to_page = 4 if dataset == "training" else 2
+                    else:
+                        to_page = 8 if dataset == "training" else 4
                     
                     # Scrape reviews
                     star_new_reviews = scrape_reviews(company=company,

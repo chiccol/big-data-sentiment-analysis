@@ -1,0 +1,7 @@
+numpy==2.2.1
+pandas==2.2.3
+pyaml==24.9.0
+scikit-learn==1.6.0
+torch==2.5.1
+tqdm==4.66.6
+transformers==4.46.1

@@ -71,12 +71,17 @@ def get_dataset(yt_train_path, yt_test_path, tp_train_path, tp_test_path, tokeni
 
   return train_dataset, test_dataset
 
-def compute_metrics(y_true, y_pred):
-    accuracy = accuracy_score(y_true, y_pred)
+def compute_metrics(y_true, y_pred, round_digits=4):
+    accuracy = round(accuracy_score(y_true, y_pred), round_digits)
     precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
-    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
+    return {
+        "accuracy": accuracy,
+        "precision": round(precision, round_digits),
+        "recall": round(recall, round_digits),
+        "f1": round(f1, round_digits),
+    }
 
-def compute_label_wise_metrics(y_true, y_pred, label_names):
+def compute_label_wise_metrics(y_true, y_pred, label_names, round_digits=4):
     precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, average=None, zero_division=0)
     
     metrics = {}
@@ -88,15 +93,15 @@ def compute_label_wise_metrics(y_true, y_pred, label_names):
 
         # Store the label-wise metrics
         metrics[label] = {
-            "accuracy": label_accuracy,
-            "precision": precision[i],
-            "recall": recall[i],
-            "f1": f1[i],
+            "accuracy": round(label_accuracy, round_digits),
+            "precision": round(precision[i], round_digits),
+            "recall": round(recall[i], round_digits),
+            "f1": round(f1[i], round_digits),
         }
     
     return metrics
 
-def compute_source_wise_metrics(y_true, y_pred, sources):
+def compute_source_wise_metrics(y_true, y_pred, sources, round_digits=4):
     source_metrics = defaultdict(lambda: defaultdict(float))
     source_to_labels = defaultdict(list)
     source_to_preds = defaultdict(list)
@@ -107,7 +112,7 @@ def compute_source_wise_metrics(y_true, y_pred, sources):
 
     for src in source_to_labels:
         metrics = compute_metrics(source_to_labels[src], source_to_preds[src])
-        source_metrics[src] = metrics
+        source_metrics[src] = {k: round(v, round_digits) for k, v in metrics.items()}
 
     return dict(source_metrics)
 

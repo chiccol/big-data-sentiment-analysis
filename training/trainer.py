@@ -53,11 +53,15 @@ def run_epoch(
     source_metrics = compute_source_wise_metrics(y_true, y_pred, sources)
     return avg_loss, metrics, label_metrics, source_metrics
 
-def get_model(path):
+def get_model(path, trainable_layers):
   tokenizer = DistilBertTokenizer.from_pretrained(path)
   model = DistilBertForSequenceClassification.from_pretrained(path)
   model.classifier = nn.Linear(768, 3, bias=True)
   # Freeze all layers except the classification head
   for param in model.base_model.parameters():
       param.requires_grad = False
+  # Unfreeze the last `trainable_layers` layers
+  if trainable_layers > 0:
+    for param in model.base_model.transformer.layer[-trainable_layers:].parameters():
+        param.requires_grad = True
   return model, tokenizer

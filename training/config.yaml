@@ -1,13 +1,15 @@
 data:
   tp_train_path: "training/tp_training_dataset.json"
   tp_test_path: "training/tp_diff_companies_test_dataset.json"
+  tp_simple: True
   yt_test_path: "None"
   yt_train_path: "None"
 model_params:
-  batch_size: 256
+  batch_size: 128
   trainable_transformer_layers: 6 # max is 6 for distilbert
   lr: 2e-4
-  epochs: 30
-  path: "distilbert-base-uncased-finetuned-sst-2-english"
+  epochs: 6
+  hf_model: "distilbert-base-uncased-finetuned-sst-2-english"
+  weights_path: "None"
 experiments:
   path: "training/experiments"

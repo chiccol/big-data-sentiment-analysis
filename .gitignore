@@ -6,3 +6,4 @@ comandipostgres.txt
 /data/make_dataset/trustpilot/*dataset*
 /data/make_dataset/youtube/*dataset*
 /training/*dataset*
+/training/experiments/

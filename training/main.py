@@ -15,8 +15,10 @@ def main():
     config = yaml.safe_load(file)
 
   use_yotube = "yes" if config["data"]["yt_train_path"] != "None" else "no"
-  param_path = f"_lr_{config['model_params']['lr']}_bs_{config['model_params']['batch_size']}_epochs_{config['model_params']['epochs']} \
-                  _layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}"
+  param_path = (
+    f"_lr_{config['model_params']['lr']}_bs_{config['model_params']['batch_size']}_epochs_{config['model_params']['epochs']}"
+    f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}"
+    )
   exp_path = os.path.join(config["experiments"]["path"], param_path)
   os.makedirs(exp_path, exist_ok=True)
   

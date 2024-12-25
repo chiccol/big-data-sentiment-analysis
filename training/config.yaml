@@ -9,3 +9,5 @@ model_params:
   lr: 2e-4
   epochs: 30
   path: "distilbert-base-uncased-finetuned-sst-2-english"
+experiments:
+  path: "training/experiments"

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 
-from utils import compute_metrics, compute_label_wise_metrics, compute_source_wise_metrics
+from utils import compute_metrics, compute_label_wise_metrics, compute_source_wise_metrics, log_metrics
 from tqdm import tqdm
 
 def run_epoch(
@@ -12,7 +12,10 @@ def run_epoch(
     optimizer=None, 
     device="cuda", 
     desc="Training", 
-    label_names=None
+    label_names=None,
+    writer=None,
+    step=None,
+    prefix="",
 ):
     is_train = optimizer is not None
     model.train() if is_train else model.eval()
@@ -51,6 +54,17 @@ def run_epoch(
     metrics = compute_metrics(y_true, y_pred)
     label_metrics = compute_label_wise_metrics(y_true, y_pred, label_names=label_names)
     source_metrics = compute_source_wise_metrics(y_true, y_pred, sources)
+
+    # Log metrics and loss to TensorBoard
+    if writer is not None and step is not None:
+        writer.add_scalar(f"{prefix}/loss", avg_loss, step)
+        tensorboard_metrics = {
+            "global": metrics,
+            "label_wise": label_metrics,
+            "source_wise": source_metrics,
+        }
+        log_metrics(writer, tensorboard_metrics, step, prefix)
+
     return avg_loss, metrics, label_metrics, source_metrics
 
 def get_model(path, trainable_layers):

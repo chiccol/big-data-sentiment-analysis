@@ -104,10 +104,10 @@ def compute_label_wise_metrics(y_true, y_pred, label_names, round_digits=4):
 
         # Store the label-wise metrics
         metrics[label] = {
-            "accuracy": round(label_accuracy, round_digits),
-            "precision": round(precision[i], round_digits),
-            "recall": round(recall[i], round_digits),
-            "f1": round(f1[i], round_digits),
+            "accuracy": round(label_accuracy.item(), round_digits),
+            "precision": round(precision[i].item(), round_digits),
+            "recall": round(recall[i].item(), round_digits),
+            "f1": round(f1[i].item(), round_digits),
         }
     
     return metrics
@@ -152,3 +152,27 @@ def print_epoch_metrics(epoch, epochs, train_results, val_results):
     for source, metrics in val_sources.items():
         print(f"    {source}: {metrics}")
     print("-" * 50)
+
+def log_metrics(writer, metrics, step, prefix=""):
+    """
+    Log global, label-wise, and source-wise metrics to TensorBoard.
+    
+    Args:
+        writer: TensorBoard SummaryWriter instance.
+        metrics: Metrics dictionary (global, label-wise, source-wise).
+        step: Current epoch or batch step.
+        prefix: Prefix for metrics (e.g., 'train', 'val').
+    """
+    # Log global metrics
+    for metric, value in metrics["global"].items():
+        writer.add_scalar(f"{prefix}/global/{metric}", value, step)
+
+    # Log label-wise metrics
+    for label, label_metrics in metrics["label_wise"].items():
+        for metric, value in label_metrics.items():
+            writer.add_scalar(f"{prefix}/label_wise/{label}/{metric}", value, step)
+
+    # Log source-wise metrics
+    for source, source_metrics in metrics["source_wise"].items():
+        for metric, value in source_metrics.items():
+            writer.add_scalar(f"{prefix}/source_wise/{source}/{metric}", value, step)

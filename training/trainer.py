@@ -8,7 +8,7 @@ from tqdm import tqdm
 def run_epoch(
     model, 
     dataloader, 
-    loss_fn, 
+    loss_config,
     optimizer=None, 
     device="cuda", 
     desc="Training", 
@@ -23,6 +23,10 @@ def run_epoch(
     total_loss = 0.0
     correct = 0
     y_true, y_pred, sources = [], [], []
+    tp_loss = loss_config["tp_loss"]
+    tp_weight = loss_config["tp_weight"]
+    yt_loss = loss_config["yt_loss"]
+    yt_weight = loss_config["yt_weight"]
 
     loop = tqdm(dataloader, desc=desc, leave=False, ncols=80, unit="batch")
     for batch in loop:
@@ -34,7 +38,17 @@ def run_epoch(
         with torch.set_grad_enabled(is_train):
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             logits = outputs.logits
-            loss = loss_fn(logits, labels)
+            # Separate the data based on the source
+            trustpilot_mask = source == "trustpilot"
+            youtube_mask = source == "youtube"
+
+            # Compute losses for each source
+            loss_trustpilot = tp_loss(logits[trustpilot_mask], labels[trustpilot_mask]) if trustpilot_mask.any() else 0
+            loss_youtube = yt_loss(logits[youtube_mask], labels[youtube_mask]) if youtube_mask.any() else 0
+
+            # Combine the losses if needed (e.g., weighted sum)
+            total_loss = loss_trustpilot * tp_weight + loss_youtube * yt_weight
+
             if is_train:
                 optimizer.zero_grad()
                 loss.backward()

@@ -16,8 +16,10 @@ def main():
 
   use_yotube = "yes" if config["data"]["yt_train_path"] != "None" else "no"
   param_path = (
-    f"_lr_{config['model_params']['lr']}_bs_{config['model_params']['batch_size']}_epochs_{config['model_params']['epochs']}"
+    f"_lr_{config['training']['lr']}_bs_{config['training']['batch_size']}_epochs_{config['training']['epochs']}"
     f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}"
+    f"_yt_weight{config["training"]["yt_weight"]}_tp_weight{config["training"]["tp_weight"]}_yt_smoothing{config["training"]["yt_label_smoothing"]}"
+    f"_tp_weight{config["training"]["tp_label_smoothing"]}"
     )
   exp_path = os.path.join(config["experiments"]["path"], param_path)
   os.makedirs(exp_path, exist_ok=True)
@@ -40,7 +42,14 @@ def main():
     best_val_loss = checkpoint["best_val_loss"]
     print(f"Loaded model weights from {config['model_params']['weights_path']}")
 
-  loss_fn = CrossEntropyLoss()
+  tp_loss_fn = CrossEntropyLoss(label_smoothing=config["training"]["tp_label_smoothing"])
+  yt_loss_fn = CrossEntropyLoss(label_smoothing=config["training"]["yt_label_smoothing"])
+  loss_config = {
+    "tp_loss": tp_loss_fn,
+    "tp_weight" : config["training"]["tp_label_smoothing"],
+    "yt_loss" : yt_loss_fn,
+    "yt_weight" : config["training"]["yt_label_smoothing"]
+  }
 
   train_dataset, val_dataset = get_dataset(yt_train_path = config["data"]["yt_train_path"], 
                                            yt_test_path = config["data"]["yt_test_path"], 
@@ -49,19 +58,19 @@ def main():
                                            tokenizer = tokenizer,
                                            tp_simple=config["data"]["tp_simple"])
   
-  train_loader = DataLoader(train_dataset, batch_size=config["model_params"]["batch_size"], shuffle=True)
-  test_loader = DataLoader(val_dataset, batch_size=config["model_params"]["batch_size"])
+  train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True)
+  test_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"])
 
-  epochs = config["model_params"]["epochs"]
+  epochs = config["training"]["epochs"]
   for epoch in range(epochs):
     # Run training
     train_results = run_epoch(
         model, 
         train_loader, 
-        loss_fn, 
+        loss_config,
         optimizer=optimizer, 
         device=device, 
-        desc=f"Epoch {epoch + 1}/{epochs} - Training",
+        desc=f"Epoch {epoch + first_epoch + 1}/{epochs + first_epoch} - Training",
         label_names=["Positive", "Negative", "Neutral"], 
         writer=writer, 
         step=epoch + first_epoch, 
@@ -72,10 +81,10 @@ def main():
     val_results = run_epoch(
         model,
         test_loader,
-        loss_fn,
+        loss_config,
         optimizer=None,
         device=device,
-        desc=f"Epoch {epoch + 1}/{epochs} - Validating",
+        desc=f"Epoch {epoch + first_epoch + 1}/{epochs + first_epoch} - Validating",
         label_names=["Positive", "Negative", "Neutral"],
         writer=writer,
         step=epoch + first_epoch,

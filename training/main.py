@@ -14,32 +14,42 @@ def main():
   with open("training/config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
-  if not os.path.exists(config["experiments"]["path"]):
-    writer = SummaryWriter(log_dir=config["experiments"]["path"])  
-  else:
-    print("Experiment already exists. Exiting...")
-    exit()
+  use_yotube = "yes" if config["data"]["yt_train_path"] != "None" else "no"
+  param_path = f"_lr_{config['model_params']['lr']}_bs_{config['model_params']['batch_size']}_epochs_{config['model_params']['epochs']} \
+                  _layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}"
+  exp_path = os.path.join(config["experiments"]["path"], param_path)
+  
+  writer = SummaryWriter(log_dir=exp_path)
 
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-  model, tokenizer = get_model(config["model_params"]["path"], 
+  model, tokenizer = get_model(config["model_params"]["hf_model"], 
                                trainable_layers=int(config["model_params"]["trainable_transformer_layers"]))
   model.to(device)
-  
+  # Optimizer and Loss
+  optimizer = AdamW(model.parameters(), lr=float(config["model_params"]["lr"]))
+  first_epoch = 0
+  best_val_loss = float("inf")
+  if config["model_params"]["weights_path"] != "None":
+    checkpoint = torch.load(config["model_params"]["weights_path"])
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    first_epoch = checkpoint["epoch"]
+    best_val_loss = checkpoint["best_val_loss"]
+    print(f"Loaded model weights from {config['model_params']['weights_path']}")
+
+  loss_fn = CrossEntropyLoss()
+
   train_dataset, val_dataset = get_dataset(yt_train_path = config["data"]["yt_train_path"], 
                                            yt_test_path = config["data"]["yt_test_path"], 
                                            tp_train_path = config["data"]["tp_train_path"], 
                                            tp_test_path = config["data"]["tp_test_path"], 
-                                           tokenizer = tokenizer)
+                                           tokenizer = tokenizer,
+                                           tp_simple=config["data"]["tp_simple"])
   
   train_loader = DataLoader(train_dataset, batch_size=config["model_params"]["batch_size"], shuffle=True)
   test_loader = DataLoader(val_dataset, batch_size=config["model_params"]["batch_size"])
 
-  # Optimizer and Loss
-  optimizer = AdamW(model.parameters(), lr=float(config["model_params"]["lr"]))
-  loss_fn = CrossEntropyLoss()
-
   epochs = config["model_params"]["epochs"]
-  best_val_loss = float("inf")
   for epoch in range(epochs):
     # Run training
     train_results = run_epoch(
@@ -51,7 +61,7 @@ def main():
         desc=f"Epoch {epoch + 1}/{epochs} - Training",
         label_names=["Positive", "Negative", "Neutral"], 
         writer=writer, 
-        step=epoch, 
+        step=epoch + first_epoch, 
         prefix="train"
     )
 
@@ -65,13 +75,13 @@ def main():
         desc=f"Epoch {epoch + 1}/{epochs} - Validating",
         label_names=["Positive", "Negative", "Neutral"],
         writer=writer,
-        step=epoch,
+        step=epoch + first_epoch,
         prefix="validation"
     )
 
     if val_results[0] < best_val_loss:
         best_val_loss = val_results[0]
-        save_path = os.path.join(config["experiments"]["path"], "best_checkpoint.pth")
+        save_path = os.path.join(exp_path, "best_checkpoint.pth")
         torch.save({
             "epoch": epoch + 1,
             "model_state_dict": model.state_dict(),

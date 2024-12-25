@@ -1,7 +1,7 @@
 tp_test="training/tp_diff_companies_test_dataset.json"
 tp_train="training/tp_training_dataset.json"
-yt_test="None"
-yt_train="None"
+yt_test="training/yt_test_dataset.json"
+yt_train="training/yt_train_dataset_balanced.json"
 
 # Check if the files already exist
 if [ ! -f "$tp_test" ]; then 

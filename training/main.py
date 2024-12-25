@@ -13,7 +13,8 @@ def main():
     config = yaml.safe_load(file)
 
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-  model, tokenizer = get_model(config["model_params"]["path"])
+  model, tokenizer = get_model(config["model_params"]["path"], 
+                               trainable_layers=int(config["model_params"]["trainable_transformer_layers"]))
   model.to(device)
   
   train_dataset, test_dataset = get_dataset(yt_train_path = config["data"]["yt_train_path"], 

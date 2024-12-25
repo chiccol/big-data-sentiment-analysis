@@ -8,6 +8,26 @@ import torch
 import yaml
 import os 
 
+def print_training_parameters(config, model, exp_path):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    num_layers = config["model_params"]["trainable_transformer_layers"]
+    
+    print("\nTraining Parameters:")
+    print("• Model name: ", config["model_params"]["hf_model"])
+    print("• Total parameters: ", total_params)
+    print("• Trainable parameters: ", trainable_params)
+    print("• Number of trainable layers: ", num_layers)
+    print("• Learning rate (lr): ", config["training"]["lr"])
+    print("• Batch size: ", config["training"]["batch_size"])
+    print("• Number of epochs: ", config["training"]["epochs"])
+    print("• Trustpilot label smoothing: ", config["training"]["tp_label_smoothing"])
+    print("• YouTube label smoothing: ", config["training"]["yt_label_smoothing"])
+    print("• Trustpilot weight: ", config["training"]["tp_weight"])
+    print("• YouTube weight: ", config["training"]["yt_weight"])
+    print("• Train YouTube data: ", "Yes" if config["data"]["yt_train_path"] != "None" else "No")
+    print("• Save path: ", exp_path)
+
 def main():
 
   # Load configuration
@@ -62,6 +82,7 @@ def main():
   test_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"])
 
   epochs = config["training"]["epochs"]
+  print_training_parameters(config, model, exp_path)
   for epoch in range(epochs):
     # Run training
     train_results = run_epoch(

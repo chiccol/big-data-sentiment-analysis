@@ -37,28 +37,33 @@ class SentimentDataset(Dataset):
         }
 
 def get_dataset(yt_train_path, yt_test_path, tp_train_path, tp_test_path, tokenizer, tp_simple=True):
-
-  print("Loading Trustpilot data...")
-  tp_train_data = pd.read_json(tp_train_path)
-  tp_train_data["source"] = "trustpilot"
-  tp_test_data = pd.read_json(tp_test_path)
-  tp_test_data["source"] = "trustpilot"
-  if tp_simple:
-    tp_train_data = tp_train_data.loc[~tp_train_data.tp_stars.isin([2,4]),:]
-    tp_test_data = tp_test_data.loc[~tp_test_data.tp_stars.isin([2,4]),:]
+  
+  if tp_train_path == "None" or tp_test_path == "None":
+      print("Ignoring Trustpilot data")
+      tp_test_data = pd.DataFrame(columns = ["text", "sentiment", "source"])
+      tp_train_data = pd.DataFrame(columns = ["text", "sentiment", "source"])
+  else:
+    print("Loading Trustpilot data...")
+    tp_train_data = pd.read_json(tp_train_path)
+    tp_train_data["source"] = "trustpilot"
+    tp_test_data = pd.read_json(tp_test_path)
+    tp_test_data["source"] = "trustpilot"
+    if tp_simple:
+        tp_train_data = tp_train_data.loc[~tp_train_data.tp_stars.isin([2,4]),:]
+        tp_test_data = tp_test_data.loc[~tp_test_data.tp_stars.isin([2,4]),:]
 
   if yt_test_path == "None" or yt_train_path == "None": 
     print("Ignoring Youtube data")
-    yt_test_data = pd.DataFrame(columns = tp_train_data.columns)
-    yt_train_data = pd.DataFrame(columns = tp_train_data.columns) 
+    yt_test_data = pd.DataFrame(columns = ["text, sentiment", "source"])
+    yt_train_data = pd.DataFrame(columns = ["text, sentiment", "source"]) 
   else:
     print("Loading Youtube data...")
     yt_test_data = pd.read_json(yt_test_path)
     yt_test_data["source"] = "youtube"
     yt_train_data = pd.read_json(yt_train_path)
     yt_train_data["source"] = "youtube"
-
-
+  
+  print("tp_train_cols", tp_train_data.columns)
   train_data = pd.concat([tp_train_data.loc[:,["text","sentiment", "source"]],
                         yt_train_data.loc[:,["text","sentiment", "source"]]])
   test_data = pd.concat([tp_test_data.loc[:,["text","sentiment", "source"]],

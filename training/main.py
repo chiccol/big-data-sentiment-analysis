@@ -26,6 +26,8 @@ def print_training_parameters(config, model, exp_path):
     print("• Trustpilot weight: ", config["training"]["tp_weight"])
     print("• YouTube weight: ", config["training"]["yt_weight"])
     print("• Train YouTube data: ", "Yes" if config["data"]["yt_train_path"] != "None" else "No")
+    print("• Train Trustpilot data: ", "Yes" if config["data"]["tp_train_path"] != "None" else "No")
+    print("• Only simple Trustpilot data: ", "Yes" if config["data"]["tp_simple"] else "No")
     print("• Save path: ", exp_path)
 
 def main():

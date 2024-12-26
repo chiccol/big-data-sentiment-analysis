@@ -36,13 +36,12 @@ def main():
 
   use_yotube = "yes" if config["data"]["yt_train_path"] != "None" else "no"
   param_path = (
-    f"_lr_{config['training']['lr']}_bs_{config['training']['batch_size']}_epochs_{config['training']['epochs']}"
+    f"_lr_{config['training']['lr']}_wd_{config['training']['weight_decay']}_bs_{config['training']['batch_size']}"
     f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}"
     f"_yt_weight{config["training"]["yt_weight"]}_tp_weight{config["training"]["tp_weight"]}_yt_smoothing{config["training"]["yt_label_smoothing"]}"
     f"_tp_weight{config["training"]["tp_label_smoothing"]}"
     )
   exp_path = os.path.join(config["experiments"]["path"], param_path)
-  os.makedirs(exp_path, exist_ok=True)
   
   writer = SummaryWriter(log_dir=exp_path)
 
@@ -51,16 +50,25 @@ def main():
                                trainable_layers=int(config["model_params"]["trainable_transformer_layers"]))
   model.to(device)
   # Optimizer and Loss
-  optimizer = AdamW(model.parameters(), lr=float(config["model_params"]["lr"]))
+  optimizer = AdamW(
+     model.parameters(), 
+     lr=float(config["training"]["lr"]),
+     weight_decay=float(config["training"]["weight_decay"])
+     )
+  
   first_epoch = 0
   best_val_loss = float("inf")
-  if config["model_params"]["weights_path"] != "None":
-    checkpoint = torch.load(config["model_params"]["weights_path"])
+  if os.path.exists(exp_path):
+    print("Experiment already exists. Loading model and optimizer...")
+    checkpoint_path = os.path.join(exp_path,"best_checkpoint.pth")
+    checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint["model_state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
     first_epoch = checkpoint["epoch"]
     best_val_loss = checkpoint["best_val_loss"]
-    print(f"Loaded model weights from {config['model_params']['weights_path']}")
+    print(f"Loaded model weights from {checkpoint_path}")
+  else:
+    os.makedirs(exp_path)
 
   tp_loss_fn = CrossEntropyLoss(label_smoothing=config["training"]["tp_label_smoothing"])
   yt_loss_fn = CrossEntropyLoss(label_smoothing=config["training"]["yt_label_smoothing"])

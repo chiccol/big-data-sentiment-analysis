@@ -21,14 +21,13 @@ def run_epoch(
     model.train() if is_train else model.eval()
 
     total_loss = 0.0
-    correct = 0
     y_true, y_pred, sources = [], [], []
     tp_loss = loss_config["tp_loss"]
     tp_weight = loss_config["tp_weight"]
     yt_loss = loss_config["yt_loss"]
     yt_weight = loss_config["yt_weight"]
 
-    loop = tqdm(dataloader, desc=desc, leave=False, ncols=80, unit="batch")
+    loop = tqdm(dataloader, desc=desc, leave=False, dynamic_ncols=True, unit="batch")
     for batch in loop:
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
@@ -38,16 +37,17 @@ def run_epoch(
         with torch.set_grad_enabled(is_train):
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             logits = outputs.logits
-            # Separate the data based on the source
-            trustpilot_mask = source == "trustpilot"
-            youtube_mask = source == "youtube"
+            
+            # Separate indices based on the source
+            trustpilot_indices = [i for i, s in enumerate(source) if s == "trustpilot"]
+            youtube_indices = [i for i, s in enumerate(source) if s == "youtube"]
 
             # Compute losses for each source
-            loss_trustpilot = tp_loss(logits[trustpilot_mask], labels[trustpilot_mask]) if trustpilot_mask.any() else 0
-            loss_youtube = yt_loss(logits[youtube_mask], labels[youtube_mask]) if youtube_mask.any() else 0
+            loss_trustpilot = tp_loss(logits[trustpilot_indices], labels[trustpilot_indices]) if trustpilot_indices else 0
+            loss_youtube = yt_loss(logits[youtube_indices], labels[youtube_indices]) if youtube_indices else 0
 
             # Combine the losses if needed (e.g., weighted sum)
-            total_loss = loss_trustpilot * tp_weight + loss_youtube * yt_weight
+            loss = loss_trustpilot * tp_weight + loss_youtube * yt_weight
 
             if is_train:
                 optimizer.zero_grad()
@@ -56,13 +56,16 @@ def run_epoch(
 
         total_loss += loss.item()
         preds = torch.argmax(logits, dim=1)
-        correct += (preds == labels).sum().item()
+        batch_accuracy = (preds == labels).sum().item() / preds.shape[0]
 
         y_true.extend(labels.cpu().tolist())
         y_pred.extend(preds.cpu().tolist())
         sources.extend(source)
 
-        loop.set_postfix({"Batch Loss": f"{loss.item():.4f}"})
+        loop.set_postfix({
+            "Batch Loss": f"{loss.item():.4f}",
+            "Batch Accuracy": f"{batch_accuracy:.4f}"
+            })
 
     avg_loss = total_loss / len(dataloader)
     metrics = compute_metrics(y_true, y_pred)

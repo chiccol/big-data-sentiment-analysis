@@ -11,43 +11,75 @@ import json
 import os
 from dotenv import load_dotenv
 
-def analyze_sentiment(data, candidate_labels, model, tokenizer):
+def comment_classification(data, candidate_labels, model, tokenizer, classification, threshold=0.45):
     """
-    Perform sentiment analysis on a dataset of text samples using a given tokenizer and model.
-    
+    Classify comments into specific categories or sentiments using a sequence classification model.
+
     Parameters:
     ----------
     data : list of dict
-        A list of dictionaries where each dictionary represents a comment with at least a 'text' key containing the comment text.
+        A list of dictionaries where each dictionary represents a comment. Each dictionary should 
+        have a 'text' key containing the comment text, and optionally other metadata like 'topic'.
     candidate_labels : list of str
-        A list of sentiment labels (e.g., ['positive', 'neutral', 'negative']) to classify the text against.
+        A list of labels (e.g., ['positive', 'neutral', 'negative'] or other custom labels) to classify 
+        the text against.
     tokenizer : transformers.PreTrainedTokenizer
-        The tokenizer to preprocess the text data for the model.
-    model : any 
-        A torch like model designed for sequence classification i.e. the output must be the logits of: contradiction, neutral, entailment 
-    
+        The tokenizer used to preprocess the text data for the model. It should be compatible with 
+        the given model.
+    model : transformers.PreTrainedModel
+        A sequence classification model that outputs logits corresponding to 
+        [contradiction, neutral, entailment] for input text-label pairs.
+    classification : str
+        The type of classification to perform (e.g., 'sentiment', 'topic', etc.). This determines 
+        how specific scenarios are handled (e.g., hard-coded rules for specific topics).
+    threshold : float, optional (default=0.45)
+        The minimum normalized entailment score required to assign a label. If no label exceeds 
+        this threshold, the label is set to 'unknown'.
+
     Returns:
     -------
     list of dict
-        The updated list of dictionaries, each including a new 'sentiment' key with the predicted sentiment label.
-    
+        The updated list of dictionaries. Each dictionary will include a new key (based on the 
+        classification type, e.g., 'sentiment') with the predicted label.
+
+    Notes:
+    ------
+    - If a comment's 'topic' is 'unknown', the 'sentiment' classification is directly set to 'unknown'.
+    - If the 'topic' is classified as 'other-comments' or 'video-feedback', the 'sentiment' classification is 
+      hard-coded to 'neutral'.
+    - The text and candidate labels are treated as premise and hypothesis pairs for the model.
+    - Normalized entailment scores are used to assign the best label based on the highest score 
+      exceeding the threshold.
+
     Example:
     --------
     data = [
-        {'text': 'This is amazing!', 'source': 'youtube', 'date': '2024-06-05T04:50:51Z'},
-        {'text': 'Not good at all.', 'source': 'youtube', 'date': '2024-06-06T04:50:51Z'}
+        {'text': 'This product is amazing!', 'source': 'youtube', 'topic': 'review-product'},
+        {'text': 'The video quality is great.', 'source': 'youtube', 'topic': 'video-feedback'},
+        {'text': 'Not relevant at all.', 'source': 'youtube', 'topic': 'unknown'}
     ]
     candidate_labels = ['positive', 'neutral', 'negative']
-    updated_data = analyze_sentiment(data, candidate_labels, tokenizer, model)
     
+    updated_data = comment_classification(data, candidate_labels, model, tokenizer, classification='sentiment')
+
     Output:
     [
-        {'text': 'This is amazing!', 'source': 'youtube', 'date': '2024-06-05T04:50:51Z', 'sentiment': 'positive'},
-        {'text': 'Not good at all.', 'source': 'youtube', 'date': '2024-06-06T04:50:51Z', 'sentiment': 'negative'}
+        {'text': 'This product is amazing!', 'source': 'youtube', 'topic': 'review-product', 'sentiment': 'positive'},
+        {'text': 'The video quality is great.', 'source': 'youtube', 'topic': 'video-feedback', 'sentiment': 'neutral'},
+        {'text': 'Not relevant at all.', 'source': 'youtube', 'topic': 'unknown', 'sentiment': 'unknown'}
     ]
     """
     for item in data:
         text = item['text']
+
+        # hard-coding sentiment
+        if classification == "sentiment":
+          if item["topic"] == "unknown":
+            item[classification] = "unknown"
+            continue
+          elif item["topic"] in ("other-comments", "video-feedback"):
+            item[classification] = "neutral"
+            continue
 
         # Tokenize the text for sentiment analysis
         inputs = tokenizer(
@@ -65,15 +97,19 @@ def analyze_sentiment(data, candidate_labels, model, tokenizer):
         probs = torch.nn.functional.softmax(logits, dim=-1)
 
         # Extract sentiment probabilities (index 2 of the logits)
-        # treat the labels and text as if they were hypothesis and premise 
+        # treat the labels and text as if they were hypothesis and premise
         entailment_scores = probs[:, 2].tolist()
 
         # Normalize sentiment scores to sum to 1
         normalized_scores = [score / sum(entailment_scores) for score in entailment_scores]
 
-        # Map labels to normalized scores and determine the highest score
-        label_scores = dict(zip(candidate_labels, normalized_scores))
-        item['sentiment'] = max(label_scores, key=label_scores.get)  # Add sentiment to the data
+        if max(normalized_scores) > threshold: 
+          # Map labels to normalized scores and determine the highest score
+          label_scores = dict(zip(candidate_labels, normalized_scores))
+          item[classification] = max(label_scores, key=label_scores.get)  # Add sentiment to the data
+        else:
+          item[classification] = "unknown"
+
     return data
 
 def balance_dataset(data, 
@@ -88,7 +124,8 @@ def balance_dataset(data,
             comment["company"] = company
             pd_data.append(comment)
     df = pd.DataFrame(pd_data)
-
+    df = df.loc[df.sentiment != "unknown"]
+    
     train_df, test_df = train_test_split(df, test_size=test_size, random_state=random_state, stratify=df[['company', 'sentiment']])
 
     count_df = train_df.groupby(["company", "sentiment"]).size().reset_index()
@@ -152,9 +189,12 @@ if __name__ == "__main__":
     
     scraped_comments = "youtube_dataset.json"
 
-    fetch_and_store_comments(company_configs,
-                             youtube_scraper,
-                             output_file=scraped_comments)
+    if not os.path.exists(scraped_comments):
+        fetch_and_store_comments(company_configs,
+                                 youtube_scraper,
+                                 output_file=scraped_comments)
+    else:
+        print("Using existing dataset.")
     
     # Load the zero-shot classification model and tokenizer
     zero_shot_model = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli')
@@ -165,15 +205,23 @@ if __name__ == "__main__":
     with open(scraped_comments, "r") as file:
         comments_data = json.load(file)
 
+    # Candidate labels for topic classification
+    candidate_labels = ["product-feedback", "video-feedback", "other-comments"]
+
+    # Process topic analysis for each company
+    for company, comments in comments_data.items():
+        print(f"Processing topic analysis for company: {company}")
+        comments_data[company] = comment_classification(comments, candidate_labels, zero_shot_model, tokenizer, "topic", threshold = 0.45)
+
     # Candidate labels for sentiment analysis
     candidate_labels = ['positive', 'neutral', 'negative']
 
     # Process sentiment analysis for each company
     for company, comments in comments_data.items():
         print(f"Processing sentiment analysis for company: {company}")
-        comments_data[company] = analyze_sentiment(comments, candidate_labels, zero_shot_model, tokenizer)
+        comments_data[company] = comment_classification(comments, candidate_labels, zero_shot_model, tokenizer, "sentiment", threshold = 0)
 
-    # Save the updated JSON with sentiment field
+    # Save the updated JSON with sentiment and topic field
     with open(scraped_comments, "w") as file:
         json.dump(comments_data, file, indent=4)
 

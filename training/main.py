@@ -35,15 +35,14 @@ def main():
     config = yaml.safe_load(file)
 
   use_yotube = "yes" if config["data"]["yt_train_path"] != "None" else "no"
+  use_trustpilot = "yes" if config["data"]["tp_train_path"] != "None" else "no"
   param_path = (
     f"_lr_{config['training']['lr']}_wd_{config['training']['weight_decay']}_bs_{config['training']['batch_size']}"
-    f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}"
+    f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}_yt_{use_trustpilot}"
     f"_yt_weight{config["training"]["yt_weight"]}_tp_weight{config["training"]["tp_weight"]}_yt_smoothing{config["training"]["yt_label_smoothing"]}"
     f"_tp_weight{config["training"]["tp_label_smoothing"]}"
     )
   exp_path = os.path.join(config["experiments"]["path"], param_path)
-  
-  writer = SummaryWriter(log_dir=exp_path)
 
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model, tokenizer = get_model(config["model_params"]["hf_model"], 
@@ -67,8 +66,8 @@ def main():
     first_epoch = checkpoint["epoch"]
     best_val_loss = checkpoint["best_val_loss"]
     print(f"Loaded model weights from {checkpoint_path}")
-  else:
-    os.makedirs(exp_path)
+  
+  writer = SummaryWriter(log_dir=exp_path)
 
   tp_loss_fn = CrossEntropyLoss(label_smoothing=config["training"]["tp_label_smoothing"])
   yt_loss_fn = CrossEntropyLoss(label_smoothing=config["training"]["yt_label_smoothing"])

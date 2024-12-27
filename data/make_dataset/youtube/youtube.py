@@ -252,7 +252,7 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
         total_comments = 0
         new_comments = []
 
-        while total_comments >= config["num_comments_to_fetch"]:
+        while total_comments < config["num_comments_to_fetch"]:
             videos, _, next_page_token_search = search_videos(
                 query=config["query"],
                 publishedAfter=config["search_from_date"],

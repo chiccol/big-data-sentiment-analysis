@@ -1,7 +1,7 @@
 {
     "samsung": {
         "query": "Samsung smartphones and tv review",
-        "search_from_date": "2024-12-24T19:01:44Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -14,7 +14,7 @@
     },
     "apple": {
         "query": "Apple smartphones and laptops review",
-        "search_from_date": "2024-12-24T19:01:50Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -27,7 +27,7 @@
     },
     "xiaomi": {
         "query": "Xiaomi review",
-        "search_from_date": "2024-12-24T19:01:57Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -40,7 +40,7 @@
     },
     "microsoft": {
         "query": "microsoft review",
-        "search_from_date": "2024-12-24T19:02:03Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -53,7 +53,7 @@
     },
     "poko": {
         "query": "poko review",
-        "search_from_date": "2024-12-24T19:02:09Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -66,7 +66,7 @@
     },
     "oneplus": {
         "query": "oneplus review",
-        "search_from_date": "2024-12-24T19:02:16Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -79,7 +79,7 @@
     },
     "nordvpn": {
         "query": "nordvpn review",
-        "search_from_date": "2024-12-24T19:02:22Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -92,7 +92,7 @@
     },
     "netflix": {
         "query": "netflix tv-shows and service review",
-        "search_from_date": "2024-12-24T19:02:29Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -105,7 +105,7 @@
     },
     "hp": {
         "query": "hp laptops, smartphones and products review",
-        "search_from_date": "2024-12-24T19:02:34Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",
@@ -118,7 +118,7 @@
     },
     "vodafone": {
         "query": "vodafone review",
-        "search_from_date": "2024-12-24T19:02:39Z",
+        "search_from_date": "2018-01-01T00:00:00Z",
         "get_comments_from_date": "2018-01-01T00:00:00Z",
         "max_videos": 50,
         "relevance_language": "en",

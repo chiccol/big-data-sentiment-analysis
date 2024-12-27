@@ -44,7 +44,8 @@ def search_videos(query,
             q=query, 
             publishedAfter=publishedAfter,
             relevanceLanguage=relevanceLanguage,
-            pageToken=next_token_page_search
+            pageToken=next_token_page_search,
+            order="viewCount"
         )
   
   while True:
@@ -88,7 +89,25 @@ def search_videos(query,
     for videoId in videoIds:
             if videoId not in youtube_comapanies_videos[company]["videos"]:
                 print(f"Checking video {videoId}")
-                video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
+                try:
+                    video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
+                except Exception as e:
+                    error_message = str(e)
+                    if "quotaExceeded" in error_message:
+                        if extra_keys:
+                            youtube_scraper = googleapiclient.discovery.build(
+                                "youtube", 
+                                "v3", 
+                                developerKey=extra_keys[0]
+                            )
+                            extra_keys.pop(0)
+                            print("Using extra key")
+                            video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
+                        print("Quota exceeded. Please try again tomorrow.")
+                        return "quota exceeded", None, None
+                    else:
+                        print(f"An error occurred: {error_message}")
+                        break
                 duration = iso8601_to_seconds(video_info['items'][0]['contentDetails'].get('duration',"0"))
                 view_count = int(video_info['items'][0]["statistics"].get("viewCount",0))
                 comment_count = int(video_info['items'][0]["statistics"].get("commentCount",0))
@@ -266,6 +285,14 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
                 min_view=config["min_view"],
                 next_token_page_search=next_page_token_search
             )
+
+            if videos == "quota exceeded":
+                stored_comments[company] = stored_comments.get(company, []) + new_comments
+                print(f"Fetched {len(new_comments)} comments for {company}.")
+                with open(output_file, 'w') as file:
+                    json.dump(stored_comments, file, indent=4)
+                print(f"Comments stored in {output_file}.")
+                return 
 
             for video in videos:
                 if total_comments >= config["num_comments_to_fetch"]:

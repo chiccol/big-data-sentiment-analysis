@@ -4,7 +4,7 @@ import LineChartComponent from './components/LineChartComponent';
 // import MongoDataComponent from './components/RawDataComponent';
 import { Container } from '@mui/material';
 // import PostgresDataComponent from './components/ProcessedDataComponent';
-import WordCloudComponent from './components/WordCloudComponent';
+// import WordCloudComponent from './components/WordCloudComponent';
 import BarChartComponent from './components/BarChartComponent';
 import LineChartDiscreteComponent from './components/LineChartDiscreteComponent';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -20,9 +20,9 @@ function App() {
           <LineChartComponent />
           {/* <MongoDataComponent /> */}
           {/* <PostgresDataComponent /> */}
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
+          {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
             <WordCloudComponent />
-          </LocalizationProvider>
+          </LocalizationProvider> */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
           <BarChartComponent />
           </LocalizationProvider>

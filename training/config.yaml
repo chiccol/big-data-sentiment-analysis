@@ -5,16 +5,16 @@ data:
   yt_test_path: "training/yt_test_dataset.json"
   yt_train_path: "training/yt_train_dataset_balanced.json"
 model_params:
-  trainable_transformer_layers: 3 # max is 6 for distilbert
+  trainable_transformer_layers: 1 # max is 6 for distilbert
   hf_model: "distilbert-base-uncased-finetuned-sst-2-english"
 experiments:
   path: "training/experiments_new_yt"
 training:
-  batch_size: 64
+  batch_size: 128
   lr: 2e-4
-  weight_decay: 1e-1 # AdamW default: 1e-2
+  weight_decay: 6e-1 # AdamW default: 1e-2
   epochs: 6
   tp_weight: 1
-  yt_weight: 0.5
+  yt_weight: 1
   tp_label_smoothing: 0.1
-  yt_label_smoothing: 0.2
+  yt_label_smoothing: 0.3

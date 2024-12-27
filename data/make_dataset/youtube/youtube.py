@@ -16,7 +16,8 @@ def search_videos(query,
                   relevanceLanguage = "en",
                   min_duration = 240,
                   min_comment = 10,
-                  min_view = 1000
+                  min_view = 1000,
+                  next_token_page_search = None
                     ):
   """
   query: str of the search query
@@ -42,7 +43,8 @@ def search_videos(query,
             maxResults=max_batch_videos,
             q=query, 
             publishedAfter=publishedAfter,
-            relevanceLanguage=relevanceLanguage
+            relevanceLanguage=relevanceLanguage,
+            pageToken=next_token_page_search
         )
   
   while True:
@@ -126,7 +128,7 @@ def search_videos(query,
             relevanceLanguage=relevanceLanguage,
             pageToken=next_page_token_search
         )
-  return new_videos, youtube_comapanies_videos
+  return new_videos, youtube_comapanies_videos, next_page_token_search
 
 def iso8601_to_seconds(duration):
     if duration == "0":
@@ -224,7 +226,7 @@ def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, ma
 
     return next_page_token, comments
 
-def fetch_and_store_comments(company_configs, output_file="youtube_comments.json"):
+def fetch_and_store_comments(company_configs, output_file="youtube_comments.json", next_page_token_search=None):
 
     api_service_name = "youtube"
     api_version = "v3"
@@ -250,36 +252,38 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
         total_comments = 0
         new_comments = []
 
-        videos, _ = search_videos(
-            query=config["query"],
-            publishedAfter=config["search_from_date"],
-            youtube_scraper=youtube_scraper,
-            extra_keys=extra_keys,
-            company=company,
-            max_videos=config["max_videos"],
-            relevanceLanguage=config["relevance_language"],
-            min_duration=config["min_duration"],
-            min_comment=config["min_comment"],
-            min_view=config["min_view"]
-        )
-
-        for video in videos:
-            if total_comments >= config["num_comments_to_fetch"]:
-                break
-
-            next_page_token = config["videos"].get(video, {}).get("next_page_token", "None")
-            next_page_token, comments = getcomments_video(
-                video=video,
+        while total_comments >= config["num_comments_to_fetch"]:
+            videos, _, next_page_token_search = search_videos(
+                query=config["query"],
+                publishedAfter=config["search_from_date"],
                 youtube_scraper=youtube_scraper,
                 extra_keys=extra_keys,
-                from_date=config["get_comments_from_date"],
                 company=company,
-                max_num_comments=config["max_num_comments_per_scraping"],
-                next_page_token=next_page_token
+                max_videos=config["max_videos"],
+                relevanceLanguage=config["relevance_language"],
+                min_duration=config["min_duration"],
+                min_comment=config["min_comment"],
+                min_view=config["min_view"],
+                next_token_page_search=next_page_token_search
             )
 
-            total_comments += len(comments)
-            new_comments.extend(comments)
+            for video in videos:
+                if total_comments >= config["num_comments_to_fetch"]:
+                    break
+
+                next_page_token = config["videos"].get(video, {}).get("next_page_token", "None")
+                next_page_token, comments = getcomments_video(
+                    video=video,
+                    youtube_scraper=youtube_scraper,
+                    extra_keys=extra_keys,
+                    from_date=config["get_comments_from_date"],
+                    company=company,
+                    max_num_comments=config["max_num_comments_per_scraping"],
+                    next_page_token=next_page_token
+                )
+
+                total_comments += len(comments)
+                new_comments.extend(comments)
 
         stored_comments[company] = stored_comments.get(company, []) + new_comments
         print(f"Fetched {len(new_comments)} comments for {company}.")

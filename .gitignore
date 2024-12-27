@@ -8,3 +8,4 @@ comandipostgres.txt
 /training/*dataset*
 /training/experiments/*/best_checkpoint.pth
 /giuse_torch/
+/training/experiments_new_yt/*/best_checkpoint.pth

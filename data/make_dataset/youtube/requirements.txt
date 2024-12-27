@@ -1,0 +1,6 @@
+google_api_python_client==2.156.0
+pandas==2.2.3
+python-dotenv==1.0.1
+scikit_learn==1.6.0
+torch==2.5.1
+transformers==4.46.1

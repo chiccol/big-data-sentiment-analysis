@@ -3,9 +3,14 @@ import json
 from datetime import datetime
 import re
 
+import googleapiclient.discovery
+from dotenv import load_dotenv
+import os
+
 def search_videos(query, 
                   publishedAfter,
-                  youtube_scraper, 
+                  youtube_scraper,
+                  extra_keys,
                   company,
                   max_videos,
                   relevanceLanguage = "en",
@@ -42,7 +47,33 @@ def search_videos(query,
   
   while True:
     
-    response_search_videos = request_search_videos.execute()
+    try:
+        response_search_videos = request_search_videos.execute()
+    except Exception as e:
+        error_message = str(e)
+        if "quotaExceeded" in error_message:
+            if extra_keys:
+                youtube_scraper = googleapiclient.discovery.build(
+                    "youtube", 
+                    "v3", 
+                    developerKey=extra_keys[0]
+                )
+                request_search_videos = youtube_scraper.search().list(
+                    part="snippet",
+                    maxResults=max_batch_videos,
+                    q=query, 
+                    publishedAfter=publishedAfter,
+                    relevanceLanguage=relevanceLanguage
+                    )
+                extra_keys.pop(0)
+                print("Using extra key")
+                continue
+            print("Quota exceeded. Please try again tomorrow.")
+            break  # Exit the loop when quota is exceeded
+        else:
+            print(f"An error occurred: {error_message}")
+            break  # Exit the loop for other errors
+
     next_page_token_search = response_search_videos.get('nextPageToken',None)
     regionCode = response_search_videos['regionCode']
     videoIds = [item["id"]["videoId"] for item in response_search_videos['items']]
@@ -109,7 +140,7 @@ def iso8601_to_seconds(duration):
     seconds = int(match.group(3)) if match.group(3) else 0
     return hours * 3600 + minutes * 60 + seconds
 
-def getcomments_video(video, youtube_scraper, from_date, company, max_num_comments, next_page_token):
+def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, max_num_comments, next_page_token):
     request = youtube_scraper.commentThreads().list(
         part="snippet",
         videoId=video,
@@ -124,11 +155,32 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
 
     while True:
         print(f"Fetching comments for video {video} of company {company}...")
+
         try:
             response = request.execute()
         except Exception as e:
-            print(f"Error fetching comments: {e}")
-            return None, comments
+            error_message = str(e)
+            if "quotaExceeded" in error_message:
+                if extra_keys:
+                    youtube_scraper = googleapiclient.discovery.build(
+                        "youtube", 
+                        "v3", 
+                        developerKey=extra_keys[0]
+                    )
+                    request = youtube_scraper.commentThreads().list(
+                        part="snippet",
+                        videoId=video,
+                        maxResults=100,
+                        pageToken=next_page_token
+                        )
+                    extra_keys.pop(0)
+                    print("Using extra key")
+                    continue
+                print("Quota exceeded. Please try again tomorrow.")
+                return None, comments  # Exit the loop when quota is exceeded
+            else:
+                print(f"An error occurred: {error_message}")
+                return None, comments  # Exit the loop for other errors
 
         for item in response['items']:
             comment = item['snippet']['topLevelComment']['snippet']
@@ -165,7 +217,21 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
 
     return next_page_token, comments
 
-def fetch_and_store_comments(company_configs, youtube_scraper, output_file="youtube_comments.json"):
+def fetch_and_store_comments(company_configs, output_file="youtube_comments.json"):
+
+    api_service_name = "youtube"
+    api_version = "v3"
+    load_dotenv(dotenv_path=os.path.join(os.getcwd(), "youtube.env"))
+    DEVELOPER_KEY = os.getenv("DEVELOPER_KEY")
+    DEVELOPER_KEY_2 = os.getenv("DEVELOPER_KEY_2")
+    extra_keys = [DEVELOPER_KEY_2]
+
+    youtube_scraper = googleapiclient.discovery.build(
+            api_service_name, 
+            api_version, 
+            developerKey=DEVELOPER_KEY
+        )
+    
     try:
         with open(output_file, 'r') as file:
             stored_comments = json.load(file)
@@ -181,6 +247,7 @@ def fetch_and_store_comments(company_configs, youtube_scraper, output_file="yout
             query=config["query"],
             publishedAfter=config["search_from_date"],
             youtube_scraper=youtube_scraper,
+            extra_keys=extra_keys,
             company=company,
             max_videos=config["max_videos"],
             relevanceLanguage=config["relevance_language"],
@@ -197,6 +264,7 @@ def fetch_and_store_comments(company_configs, youtube_scraper, output_file="yout
             next_page_token, comments = getcomments_video(
                 video=video,
                 youtube_scraper=youtube_scraper,
+                extra_keys=extra_keys,
                 from_date=config["get_comments_from_date"],
                 company=company,
                 max_num_comments=config["max_num_comments_per_scraping"],

@@ -5,11 +5,9 @@ from sklearn.utils import resample
 from sklearn.model_selection import train_test_split
 
 from youtube import fetch_and_store_comments
-import googleapiclient.discovery
 
 import json
 import os
-from dotenv import load_dotenv
 
 def comment_classification(data, candidate_labels, model, tokenizer, classification, threshold=0.45):
     """
@@ -176,22 +174,11 @@ def balance_dataset(data,
 if __name__ == "__main__":
     with open("youtube_companies_videos.json", "r") as file:
         company_configs = json.load(file)
-    api_service_name = "youtube"
-    api_version = "v3"
-    load_dotenv(dotenv_path=os.path.join(os.getcwd(), "youtube.env"))
-    DEVELOPER_KEY = os.getenv("DEVELOPER_KEY")
-
-    youtube_scraper = googleapiclient.discovery.build(
-            api_service_name, 
-            api_version, 
-            developerKey=DEVELOPER_KEY
-        )
     
     scraped_comments = "youtube_dataset.json"
 
     if not os.path.exists(scraped_comments):
         fetch_and_store_comments(company_configs,
-                                 youtube_scraper,
                                  output_file=scraped_comments)
     else:
         print("Using existing dataset.")

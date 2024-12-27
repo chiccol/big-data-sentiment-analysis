@@ -7,12 +7,15 @@ FROM bitnami/spark:3.4.0
 # Set the working directory in the container
 WORKDIR /app
 
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+
 # Copy the folder containing the scraper's Python files into the container
 COPY spark/main.py /app
 COPY spark/requirements.txt /app
 COPY spark/model /app/model
 COPY spark/utils.py /app
 COPY kafka_consumer.py /app
+COPY spark/word_count.py /app
 
 COPY spark/run_spark_job.sh /app
 USER root
@@ -20,6 +23,9 @@ RUN chmod +x /app/run_spark_job.sh
 
 # Install transformers and torch
 RUN pip install --no-cache-dir -r requirements.txt
+
+# install stopwords for word counting !!!
+RUN python -m nltk.downloader stopwords
 
 # Install wget to download the connectors 
 RUN apt-get update && apt-get install -y wget

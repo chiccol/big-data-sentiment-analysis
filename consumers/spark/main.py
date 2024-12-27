@@ -6,6 +6,7 @@ import time
 import random
 import logging
 from time import sleep
+from word_count import write_company_word_counts
 
 
 def main():
@@ -21,7 +22,7 @@ def main():
     )
     logger = logging.getLogger("spark-master")
     logger.info("Started logging")
-
+    
     # Get venv variables 
     spark_master = os.getenv("SPARK_MASTER_HOST")
     spark_port = os.getenv("SPARK_MASTER_PORT")
@@ -72,6 +73,8 @@ def main():
                                      "yt_videoid", "yt_like_count", "yt_reply_count", "re_id", "re_subreddit",
                                      "re_vote", "re_reply_count"])
             write_postgres(df_postgres)
+            
+            # write_company_word_counts(df, spark) # can't run because it goes out of memory
         else:
             logger.info(f"No data was consumed")
             logger.info(f"Sleeping for 15 seconds...")

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import LineChartComponent from './components/LineChartComponent';
-import MongoDataComponent from './components/RawDataComponent';
+// import MongoDataComponent from './components/RawDataComponent';
 import { Container } from '@mui/material';
-import PostgresDataComponent from './components/ProcessedDataComponent';
-import WordCloudContainer from './components/WordCloudContainer';
+// import PostgresDataComponent from './components/ProcessedDataComponent';
+import WordCloudComponent from './components/WordCloudComponent';
 import BarChartComponent from './components/BarChartComponent';
 import LineChartDiscreteComponent from './components/LineChartDiscreteComponent';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers';
 
 function App() {
 
@@ -18,8 +20,12 @@ function App() {
           <LineChartComponent />
           {/* <MongoDataComponent /> */}
           {/* <PostgresDataComponent /> */}
-          <WordCloudContainer />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <WordCloudComponent />
+          </LocalizationProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
           <BarChartComponent />
+          </LocalizationProvider>
         </Container>
       </div>
     );

@@ -1,52 +1,201 @@
-import React, { useEffect, useRef } from 'react';
-import cloud from 'd3-cloud';
-import * as d3 from 'd3';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField
+} from '@mui/material';
+import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
+import dayjs from 'dayjs';
 
-const WordCloud = ({ words = [] }) => {
-  const svgRef = useRef();
+// Import the WordCloud component from react-d3-cloud
+import WordCloud from 'react-d3-cloud';
 
+const WordCloudComponent = () => {
+  // State to hold all raw data
+  const [allData, setAllData] = useState([]);
+  // Loading state
+  const [loading, setLoading] = useState(true);
+  
+  // Distinct list of companies
+  const [companies, setCompanies] = useState([]);
+  // Selected company
+  const [selectedCompany, setSelectedCompany] = useState('');
+  
+  // Date filters
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+
+  // 1. Fetch all data on component mount
   useEffect(() => {
-    if (!words || words.length === 0) {
-      console.warn("No words provided to WordCloud component.");
-      return; // Exit early if words are undefined or empty
-    }
+    const fetchAllData = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/word-cloud-data');
+        // response.data => { data: [...] }
+        const rawData = response.data.data;
+        setAllData(rawData);
 
-    const layout = cloud()
-      .size([500, 500])
-      .words(words.map(d => ({ text: d.text, size: d.value })))
-      .padding(5)
-      .rotate(() => (Math.random() > 0.5 ? 90 : 0))
-      .font('Impact')
-      .fontSize(d => d.size)
-      .on('end', draw);
+        // Build a set of unique companies
+        const uniqueCompanies = Array.from(new Set(rawData.map(item => item.company)));
+        setCompanies(uniqueCompanies);
 
-    layout.start();
+        // Optionally select the first company automatically
+        if (uniqueCompanies.length > 0) {
+          setSelectedCompany(uniqueCompanies[0]);
+        }
 
-    function draw(words) {
-      const svg = d3.select(svgRef.current);
-      svg.selectAll('*').remove(); // Clear previous word cloud
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching all data:', error);
+        setLoading(false);
+      }
+    };
 
-      svg
-        .attr('width', layout.size()[0])
-        .attr('height', layout.size()[1])
-        .append('g')
-        .attr(
-          'transform',
-          `translate(${layout.size()[0] / 2},${layout.size()[1] / 2})`
-        )
-        .selectAll('text')
-        .data(words)
-        .enter()
-        .append('text')
-        .style('font-size', d => `${d.size}px`)
-        .style('fill', () => `hsl(${Math.random() * 360}, 100%, 50%)`)
-        .attr('text-anchor', 'middle')
-        .attr('transform', d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
-        .text(d => d.text);
-    }
-  }, [words]);
+    fetchAllData();
+  }, []);
 
-  return <svg ref={svgRef}></svg>;
+  // 2. Filter data client-side
+  const getFilteredData = () => {
+    // We have array of { company, word, count, date }
+    return allData.filter(item => {
+      // Filter by company if selectedCompany is not empty
+      if (selectedCompany && item.company !== selectedCompany) {
+        return false;
+      }
+  
+     // If no dates are selected, skip date filtering and include all items for this company
+      if (!startDate && !endDate) {
+        return true;
+      }
+  
+      // Otherwise, apply date filters (if set)
+      if (startDate && item.date) {
+        const itemDate = dayjs(item.date);
+        if (itemDate.isBefore(dayjs(startDate), 'day')) {
+          return false;
+        }
+      }
+      if (endDate && item.date) {
+        const itemDate = dayjs(item.date);
+        if (itemDate.isAfter(dayjs(endDate), 'day')) {
+          return false;
+        }
+      }
+  
+      return true;
+    });
+  };
+
+  // 3. Transform to the format react-d3-cloud expects: { text, value }
+  const transformDataForWordCloud = () => {
+    const filtered = getFilteredData();
+    // Sum counts by word if duplicates exist
+    const wordMap = new Map();
+
+    filtered.forEach(item => {
+      const existing = wordMap.get(item.word) || 0;
+      wordMap.set(item.word, existing + item.count);
+    });
+
+    return [...wordMap.entries()].map(([word, count]) => ({
+      text: word,
+      value: count
+    }));
+  };
+
+  // This will be used by the WordCloud component
+  const wordCloudData = transformDataForWordCloud();
+
+  // Font sizing: you can tweak this to your liking
+  const fontSizeMapper = (word) => {
+    // For example, use a simple log scale
+    return Math.log2(word.value + 1) * 20;
+  };
+
+  // Optionally rotate words
+  const rotate = (word) => {
+    return word.value % 2 === 0 ? 0 : 90;
+  };
+
+  // 4. Handle loading
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // 5. If there’s no data
+  if (allData.length === 0) {
+    return (
+      <Box m={4}>
+        <Typography variant="h5" gutterBottom>
+          No data found
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box m={4}>
+      <Typography variant="h5" gutterBottom>
+        Word Cloud (Client-Side Filtering)
+      </Typography>
+
+      {/* Company Selection */}
+      <FormControl variant="outlined" sx={{ minWidth: 200, mb: 3, mr: 2 }}>
+        <InputLabel id="company-select-label">Company</InputLabel>
+        <Select
+          labelId="company-select-label"
+          value={selectedCompany}
+          onChange={(e) => setSelectedCompany(e.target.value)}
+          label="Company"
+        >
+          {companies.map(company => (
+            <MenuItem key={company} value={company}>
+              {company}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {/* Start Date Picker */}
+      <DesktopDatePicker
+        label="Start Date"
+        inputFormat="YYYY-MM-DD"
+        value={startDate}
+        onChange={(newValue) => setStartDate(newValue)}
+        renderInput={(params) => <TextField {...params} sx={{ mr: 2 }} />}
+      />
+
+      {/* End Date Picker */}
+      <DesktopDatePicker
+        label="End Date"
+        inputFormat="YYYY-MM-DD"
+        value={endDate}
+        onChange={(newValue) => setEndDate(newValue)}
+        renderInput={(params) => <TextField {...params} />}
+      />
+
+      {/* Word Cloud */}
+      <Box mt={4} display="flex" justifyContent="center">
+        <WordCloud
+          data={wordCloudData}
+          fontSizeMapper={fontSizeMapper}
+          rotate={rotate}
+          padding={2}
+          width={800}
+          height={600}
+        />
+      </Box>
+    </Box>
+  );
 };
 
-export default WordCloud;
+export default WordCloudComponent;

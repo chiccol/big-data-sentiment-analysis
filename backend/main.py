@@ -1,7 +1,7 @@
 import os
 import logging
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from database import mongo_db, pg_pool
 import psycopg2.extras
@@ -12,6 +12,10 @@ from typing import Optional
 from nltk.corpus import stopwords
 import re
 from collections import Counter
+
+# JUST TO GENERATE SAMPLE WORD CLOUD DATA
+from generate_wordcloud_data import seed_word_count_db
+seed_word_count_db()
 
 # Configure Logging
 logging.basicConfig(
@@ -83,6 +87,16 @@ class MongoResponse(BaseModel):
 
 class PostgresResponse(BaseModel):
     postgres_data: List[PostgresData]
+    
+class WordCloudItem(BaseModel):
+    company: str
+    word: str
+    count: int
+    date: str | None = None
+    
+class AllWordCloudData(BaseModel):
+    data: List[WordCloudItem]
+
 
 @app.get("/", response_model=Dict[str, str])
 def read_root():
@@ -274,33 +288,71 @@ def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connectio
         logger.error(f"Error fetching daily +1/-1 Postgres data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+from pymongo import MongoClient
+mongo_client = MongoClient("mongodb://mongo:27017/")
+mongo_db = mongo_client["word_count"]
 
-@app.get("/word-cloud-data", response_model=Dict[str, int])
-def get_word_cloud_data():
-    logger.debug("Generating word cloud data.")
+
+@app.get("/companies")
+def get_companies():
     try:
-        all_text = ''
-        for collection_name in mongo_db.list_collection_names():
-            logger.debug(f"Processing collection for word cloud: {collection_name}")
-            if collection_name.startswith("system."):
-                logger.debug(f"Skipping system collection: {collection_name}")
-                continue
-            collection = mongo_db[collection_name]
-            data = list(collection.find({}, {"_id": 0, "text": 1}))
-            for item in data:
-                if 'text' in item:
-                    all_text += ' ' + item['text']
+        all_collections = mongo_db.list_collection_names()
+        valid_companies = []
+        logging.info(f"Found collections: {all_collections}")
 
-        all_text = re.sub(r'[^\w\s]', '', all_text)
-        all_text = re.sub(r'\d+', '', all_text)
-        all_text = all_text.lower()
-        words = all_text.split()
-        words = [word for word in words if word not in set(stopwords) and word.strip()]
-        word_counts = Counter(words)
-        top_words = dict(word_counts.most_common(100))
+        for collection_name in all_collections:
+            # Only consider collections that end with "_word_count"
+            if collection_name.endswith("_word_count"):
+                # Remove the suffix "_word_count"
+                base_name = collection_name[:-11]  # e.g., "apple" from "apple_word_count"
+                # You could also do base_name.capitalize() or .title() if desired
+                valid_companies.append(base_name)
 
-        logger.info(f"Word cloud data generated with {len(top_words)} words.")
-        return top_words
+        # Return as a JSON list
+        return {"companies": valid_companies}
+
     except Exception as e:
-        logger.error(f"Error generating word cloud data: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate word cloud data")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/word-cloud-data", response_model=AllWordCloudData)  # Or remove if you prefer no validation
+def get_all_word_cloud_data():
+    """
+    Return *all* word-count data for *all* companies, no filtering.
+    """
+    logger.info("Starting to fetch all word cloud data from MongoDB collections.")
+    
+    try:
+        # List all collections in MongoDB
+        all_collections = mongo_db.list_collection_names()
+        logger.debug(f"List of all collections in MongoDB: {all_collections}")
+
+        all_data = []
+        # Filter for collections that end with "_word_count"
+        for collection_name in all_collections:
+            logger.info(f"Processing word_count collection: {collection_name}")
+            
+            # Extract the company name from the collection, e.g. "apple" from "apple_word_count"
+            company_name = collection_name
+            
+            collection = mongo_db[collection_name]
+            docs = list(collection.find({}))
+            logger.debug(f"Found {len(docs)} documents in collection '{collection_name}'.")
+
+            for doc in docs:
+                date_value = doc.get("date")
+                if isinstance(date_value, datetime):
+                    date_value = date_value.isoformat()
+
+                all_data.append({
+                    "company": company_name,
+                    "word": doc["word"],
+                    "count": doc["count"],
+                    "date": date_value
+                })
+
+        logger.info(f"Finished processing all word_count collections. Total data items: {len(all_data)}")
+        return {"data": all_data}
+
+    except Exception as e:
+        logger.error(f"An error occurred while fetching word cloud data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -2,7 +2,9 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json /app/
-RUN npm install
+RUN npm cache clean --force && \
+    npm install
+ENV NODE_ENV=production
 COPY . /app
 RUN npm run build
 

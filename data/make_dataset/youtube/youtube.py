@@ -131,14 +131,21 @@ def search_videos(query,
 def iso8601_to_seconds(duration):
     if duration == "0":
         return 0
+    # Define a regular expression to extract hours, minutes, and seconds
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(duration)
+
     if not match:
-        return None
+        return 0  # If the format is invalid
+
+    # Extract hours, minutes, and seconds from the match groups (or 0 if not available)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
-    return hours * 3600 + minutes * 60 + seconds
+
+    # Convert everything to seconds
+    total_seconds = hours * 3600 + minutes * 60 + seconds
+    return total_seconds
 
 def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, max_num_comments, next_page_token):
     request = youtube_scraper.commentThreads().list(

@@ -65,7 +65,7 @@ def iso8601_to_seconds(duration):
     match = pattern.match(duration)
 
     if not match:
-        return None  # If the format is invalid
+        return 0  # If the format is invalid
 
     # Extract hours, minutes, and seconds from the match groups (or 0 if not available)
     hours = int(match.group(1)) if match.group(1) else 0

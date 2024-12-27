@@ -49,7 +49,7 @@ def search_videos(query,
         )
   
   while True:
-    
+    print(f"Looking for videos for {company}")
     try:
         response_search_videos = request_search_videos.execute()
     except Exception as e:
@@ -72,14 +72,17 @@ def search_videos(query,
                 print("Using extra key")
                 continue
             print("Quota exceeded. Please try again tomorrow.")
-            break  # Exit the loop when quota is exceeded
+            return new_videos, youtube_comapanies_videos, next_page_token_search, None
         else:
             print(f"An error occurred: {error_message}")
-            break  # Exit the loop for other errors
+            return new_videos, youtube_comapanies_videos, next_page_token_search, youtube_scraper
 
     next_page_token_search = response_search_videos.get('nextPageToken',None)
     regionCode = response_search_videos['regionCode']
-    videoIds = [item["id"]["videoId"] for item in response_search_videos['items']]
+    videoIds = [
+        item["id"]["videoId"] for item in response_search_videos["items"]
+        if item["id"]["kind"] == "youtube#video"
+        ]
     num_videos += len(videoIds)
     new_videos = []
 
@@ -93,6 +96,7 @@ def search_videos(query,
                     video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
                 except Exception as e:
                     error_message = str(e)
+                    print(error_message)
                     if "quotaExceeded" in error_message:
                         if extra_keys:
                             youtube_scraper = googleapiclient.discovery.build(
@@ -100,11 +104,11 @@ def search_videos(query,
                                 "v3", 
                                 developerKey=extra_keys[0]
                             )
+                            print(f"Using extra key")
                             extra_keys.pop(0)
-                            print("Using extra key")
                             video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
                         print("Quota exceeded. Please try again tomorrow.")
-                        return "quota exceeded", None, None
+                        return "quota exceeded", None, None, None
                     else:
                         print(f"An error occurred: {error_message}")
                         break
@@ -134,7 +138,6 @@ def search_videos(query,
         json.dump(youtube_comapanies_videos, file, indent=4)
 
     if not next_page_token_search or num_videos >= max_videos:
-        print("No more videos to fetch", flush=True)
         break
     else:
         print(f"Fetching next batch of videos", flush=True)
@@ -147,7 +150,7 @@ def search_videos(query,
             relevanceLanguage=relevanceLanguage,
             pageToken=next_page_token_search
         )
-  return new_videos, youtube_comapanies_videos, next_page_token_search
+  return new_videos, youtube_comapanies_videos, next_page_token_search, youtube_scraper
 
 def iso8601_to_seconds(duration):
     if duration == "0":
@@ -205,10 +208,10 @@ def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, ma
                     print("Using extra key")
                     continue
                 print("Quota exceeded. Please try again tomorrow.")
-                return None, comments  # Exit the loop when quota is exceeded
+                return None, comments, None
             else:
                 print(f"An error occurred: {error_message}")
-                return None, comments  # Exit the loop for other errors
+                return None, comments, youtube_scraper  # Exit the loop for other errors
 
         for item in response['items']:
             comment = item['snippet']['topLevelComment']['snippet']
@@ -219,7 +222,7 @@ def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, ma
                     continue
                 else:
                     print(f"Comment is older than {from_date}")
-                    return None, comments
+                    return None, comments, youtube_scraper
 
             extracted_comment = {
                 "text": comment.get("textOriginal", None),
@@ -243,7 +246,7 @@ def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, ma
         )
         sleep(5)
 
-    return next_page_token, comments
+    return next_page_token, comments, youtube_scraper
 
 def fetch_and_store_comments(company_configs, output_file="youtube_comments.json", next_page_token_search=None):
 
@@ -272,9 +275,9 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
         new_comments = []
 
         while total_comments < config["num_comments_to_fetch"]:
-            videos, _, next_page_token_search = search_videos(
+            videos, _, next_page_token_search, youtube_scraper = search_videos(
                 query=config["query"],
-                publishedAfter=config["search_from_date"],
+                publishedAfter=config["search_from_date"] if config["search_from_date"] != "None" else None,
                 youtube_scraper=youtube_scraper,
                 extra_keys=extra_keys,
                 company=company,
@@ -286,7 +289,7 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
                 next_token_page_search=next_page_token_search
             )
 
-            if videos == "quota exceeded":
+            if videos == "quota exceeded" or next_page_token_search == None:
                 stored_comments[company] = stored_comments.get(company, []) + new_comments
                 print(f"Fetched {len(new_comments)} comments for {company}.")
                 with open(output_file, 'w') as file:
@@ -299,11 +302,11 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
                     break
 
                 next_page_token = config["videos"].get(video, {}).get("next_page_token", "None")
-                next_page_token, comments = getcomments_video(
+                next_page_token, comments, youtube_scraper = getcomments_video(
                     video=video,
                     youtube_scraper=youtube_scraper,
                     extra_keys=extra_keys,
-                    from_date=config["get_comments_from_date"],
+                    from_date=config["get_comments_from_date"] if config["get_comments_from_date"] != "None" else None,
                     company=company,
                     max_num_comments=config["max_num_comments_per_scraping"],
                     next_page_token=next_page_token

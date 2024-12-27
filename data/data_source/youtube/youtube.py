@@ -197,7 +197,10 @@ def search_videos(query,
     response_search_videos = request_search_videos.execute()
     next_page_token_search = response_search_videos.get('nextPageToken',None)
     regionCode = response_search_videos['regionCode']
-    videoIds = [item["id"]["videoId"] for item in response_search_videos['items']]
+    videoIds = [
+        item["id"]["videoId"] for item in response_search_videos["items"]
+        if item["id"]["kind"] == "youtube#video"
+        ]
     num_videos += len(videoIds)
     new_videos = []
 

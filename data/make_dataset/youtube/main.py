@@ -68,6 +68,7 @@ def comment_classification(data, candidate_labels, model, tokenizer, classificat
     ]
     """
     for item in data:
+        if item.get("sentiment", None): continue
         text = item['text']
 
         # hard-coding sentiment
@@ -129,28 +130,27 @@ def balance_dataset(data,
     count_df = train_df.groupby(["company", "sentiment"]).size().reset_index()
     count_df.columns = ["company", "sentiment", "count"]
 
-    # Create a balanced training dataset by oversampling "neutral"
+    # Create a balanced training dataset by undersampling "neutral"
     balanced_data = []
 
     # Group by company and balance sentiments
     for company, group in train_df.groupby('company'):
         print(f"Balancing sentiments in training dataset for company: {company}")
 
-        # Determine the target count (min comments among sentiments for this company)
-        target_count = count_df.loc[(count_df.company == company) & (count_df.sentiment != "neutral"), "count"].min()
-        # avoid oversampling "neutral" too much
+        # Determine the target count (max comments among sentiments for this company)
+        target_count = count_df.loc[(count_df.company == company) & (count_df.sentiment != "neutral"), "count"].max()
         current_count = count_df.loc[(count_df.company == company) & (count_df.sentiment == "neutral"), "count"].values[0]
-        target_count = target_count if current_count*10 > target_count else current_count*10
-
+        # sample with replacement if count(neutral) < count(max(positive,negative))
+        replace = True if current_count < target_count else False
         company_balanced = []
-        
+
         for sentiment in group['sentiment'].unique():
             subset = group[group['sentiment'] == sentiment]
             if sentiment == "neutral":
                 # Oversample "neutral" to match the target count
                 oversampled = resample(
                     subset,
-                    replace=True,                # Allow resampling with replacement
+                    replace=replace,             # Allow resampling with replacement
                     n_samples=target_count,      # Match the target count
                     random_state=42              # For reproducibility
                 )

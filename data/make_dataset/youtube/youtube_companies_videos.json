@@ -90,19 +90,6 @@
         "num_comments_to_fetch": 5000,
         "videos": {}
     },
-    "hp": {
-        "query": "hp laptops, smartphones and products review",
-        "search_from_date": "None",
-        "get_comments_from_date": "2015-01-01T00:00:00Z",
-        "max_videos": 100,
-        "relevance_language": "en",
-        "max_num_comments_per_scraping": 500,
-        "min_duration": 240,
-        "min_comment": 10,
-        "min_view": 1000,
-        "num_comments_to_fetch": 5000,
-        "videos": {}
-    },
     "vodafone": {
         "query": "vodafone review",
         "search_from_date": "None",

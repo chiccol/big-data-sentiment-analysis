@@ -2,8 +2,7 @@ import os
 import re
 import pandas as pd
 import logging
-from collections import defaultdict
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient
 from pyspark.sql.functions import col, explode, split, pandas_udf
 from pyspark.sql.types import StringType
 from nltk.corpus import stopwords
@@ -33,12 +32,10 @@ def write_company_word_counts(df, spark):
     logger.info("[WordCount] Entered write_company_word_counts.")
 
     # Check if the DF is empty
-    total_rows = df.count()  # forces an action
-    logger.info(f"[WordCount] df.count() => {total_rows}")
-    if total_rows == 0:
+    if not df.head(1):
         logger.warning("[WordCount] DataFrame is empty. Nothing to process.")
         return
-
+    
     # Log some sample rows to confirm we have text and company
     df.select("company", "text").show(5, truncate=False)
 
@@ -53,56 +50,54 @@ def write_company_word_counts(df, spark):
     logger.info("[WordCount] Exploded DF => row count: {}".format(words_df.count()))
 
     # Filter out empty strings
-    words_df = words_df.filter(col("word") != "")
+    # words_df = words_df.filter(col("word") != "")
 
-    # (Optional) remove stopwords
-    # words_df = words_df.filter(~col("word").isin([w.lower() for w in STOPWORDS]))
+    # remove stopwords
+    words_df = words_df.filter(~col("word").isin([w for w in STOPWORDS]))
 
     # Group by (company, word), count occurrences
     word_counts = words_df.groupBy("company", "word").count()
     logger.info("[WordCount] groupBy => row count: {}".format(word_counts.count()))
-
-    # Collect results
-    results = word_counts.collect()
-    if not results:
-        logger.warning("[WordCount] No word counts found after grouping. Exiting.")
-        return
-
+    
     # Connect to Mongo
     mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
     client = MongoClient(mongo_uri)
-    db = client["word_count"]  # your requested DB name
-
-    # Prepare upserts
-    company_updates = defaultdict(list)
-    for row in results:
-        comp = row["company"]
-        word = row["word"]
-        count_value = row["count"]
-
-        # We'll store one doc per (word), upserting count
-        # For each company, we have a separate collection
-        company_updates[comp].append(
-            UpdateOne(
-                {"word": word}, 
-                {
-                    "$inc": {"count": count_value},
-                    "$setOnInsert": {"company": comp}
-                },
-                upsert=True
-            )
-        )
-
-    # Bulk write to each collection
-    for comp, update_ops in company_updates.items():
-        collection = db[comp]
-        logger.info(f"[WordCount] Writing {len(update_ops)} updates to '{comp}' collection.")
-        if update_ops:
-            res = collection.bulk_write(update_ops)
-            logger.info(f"[WordCount] Upserted: {res.upserted_count}, Matched: {res.matched_count}, Modified: {res.modified_count}")
+    db = client["word_count"]  # requested DB 
+    
+    companies = df.select("company").distinct().rdd.flatMap(lambda x: x).collect()
+    
+    # Iterate over collections and load each into a Spark DataFrame
+    for company in companies:
+        
+        # for the first iteration, need to create the collection
+        try:
+            # Read the collection dynamically using Spark
+            old_df = spark.read \
+                .format("mongodb") \
+                .option("uri", mongo_uri) \
+                .option("database", "word_count") \
+                .option("collection", company) \
+                .load()
             
-            # Index on "word" for uniqueness
-            collection.create_index([("word", 1)], unique=True)
+            word_counts = word_counts.orderBy(col("count").desc()).limit(100)
+            logger.info("[WordCount] Top 100 words => row count: {}".format(word_counts.count()))
+                
+            word_counts_company = word_counts.filter(col("company") == company)
+            
+            merged_df = old_df.union(word_counts_company)
+        
+            new_df = merged_df.groupBy("company", "word").sum("count")
+            logger.info("[WordCount] groupBy => row count: {}".format(new_df.count()))
+        except:
+            new_df = word_counts.filter(col("company") == company)
+            logger.info("[WordCount] groupBy => row count: {}".format(new_df.count()))
+
+        new_df.write \
+            .format("mongo") \
+            .mode("overwrite") \
+            .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/word_count.{company}") \
+            .save()
+        logger.info(f"[WordCount] Wrote {new_df.count()} word counts to MongoDB collection '{company}'")
 
     client.close()
     logger.info("[WordCount] Done writing word counts.")

@@ -108,7 +108,7 @@ def search_videos(query,
                             extra_keys.pop(0)
                             video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
                         print("Quota exceeded. Please try again tomorrow.")
-                        return "quota exceeded", None, None, None
+                        return "quota exceeded", None, next_page_token_search, None
                     else:
                         print(f"An error occurred: {error_message}")
                         break
@@ -263,11 +263,10 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
             developerKey=DEVELOPER_KEY
         )
     
-    try:
-        with open(output_file, 'r') as file:
-            stored_comments = json.load(file)
-    except FileNotFoundError:
-        stored_comments = {}
+    if not os.path.exists(output_file):
+        output_data = {}
+        with open(output_file, 'w') as file:
+            json.dump(output_data, file, indent=4)
 
     for company, config in company_configs.items():
         print(f"Processing company: {company}")
@@ -289,16 +288,12 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
                 next_token_page_search=next_page_token_search
             )
 
-            if videos == "quota exceeded" or next_page_token_search == None:
-                stored_comments[company] = stored_comments.get(company, []) + new_comments
-                print(f"Fetched {len(new_comments)} comments for {company}.")
-                with open(output_file, 'w') as file:
-                    json.dump(stored_comments, file, indent=4)
-                print(f"Comments stored in {output_file}.")
-                return 
+            if videos == "quota exceeded":
+                return  
 
             for video in videos:
                 if total_comments >= config["num_comments_to_fetch"]:
+                    print("Fetched enough comments.")
                     break
 
                 next_page_token = config["videos"].get(video, {}).get("next_page_token", "None")
@@ -315,10 +310,20 @@ def fetch_and_store_comments(company_configs, output_file="youtube_comments.json
                 total_comments += len(comments)
                 new_comments.extend(comments)
 
-        stored_comments[company] = stored_comments.get(company, []) + new_comments
-        print(f"Fetched {len(new_comments)} comments for {company}.")
+            print(f"Fetched {len(new_comments)} comments for {company}.")
+            if new_comments:
+                print("Saving new comments...")
+                with open(output_file, 'r+') as file:
+                    prev_comments = json.load(file)
+                    prev_comments[company] = prev_comments.get(company, []) + new_comments
+                    file.seek(0)
+                    json.dump(prev_comments, file, indent=4)
+                new_comments.clear()
 
-    with open(output_file, 'w') as file:
-        json.dump(stored_comments, file, indent=4)
+            if next_page_token_search == None:
+                print(f"No next page token for company {company}.")
+                break
+            else:
+                print(f"Searching new videos for company {company}")
 
-    print(f"Comments stored in {output_file}.")
+    print(f"Fetched all requested comments. Comments stored in {output_file}.")

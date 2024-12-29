@@ -149,3 +149,17 @@ services:
       - "3000:80"  
     depends_on:
       - backend    
+
+  rag:
+    container_name: rag
+    build:
+      context: rag
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+    volumes:
+      - ./rag/main.py:/app/main.py

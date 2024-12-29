@@ -7,5 +7,6 @@ comandipostgres.txt
 /data/make_dataset/youtube/*dataset*
 /training/*dataset*
 /training/experiments/*/best_checkpoint.pth
+/training/final_experiments/*/best_checkpoint.pth
 /giuse_torch/
 /training/experiments_new_yt/*/best_checkpoint.pth

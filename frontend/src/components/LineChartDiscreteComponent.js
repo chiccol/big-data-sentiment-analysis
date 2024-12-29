@@ -26,80 +26,41 @@ const MenuProps = {
   },
 };
 
-/**
- * This component:
- *  1) Fetches daily aggregated sentiment data (with +1/-1 logic) from the new endpoint.
- *  2) Allows you to pick a company from a dropdown.
- *  3) Allows multi-selection of sources to display multiple lines in the same chart.
- */
-const LineChartDiscreteComponent = () => {
-  // State to hold the fetched data
+const LineChartDiscreteComponent = ({ companyName }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSources, setSelectedSources] = useState(['reddit', 'trustpilot', 'youtube']); // Default to all sources
 
-  // Available sentiment sources
-  const allSources = ['reddit', 'trustpilot', 'youtube'];
+  const allSources = ['reddit', 'trustpilot', 'youtube']; // Available sentiment sources
 
-  // Dynamically populated list of companies
-  const [companies, setCompanies] = useState([]);
-
-  // User selections
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedSources, setSelectedSources] = useState(['reddit']); // multi-select sources
-
-  /**
-   * Fetch the daily +1/-1 aggregated data from the new endpoint.
-   */
+  // Fetch aggregated data for the selected company
   const fetchData = async () => {
     try {
-      // IMPORTANT: Adjust the URL as needed for your environment (Docker, etc.)
-      const response = await axios.get('http://127.0.0.1:8000/aggregated-postgres-data-discrete');
+      const response = await axios.get(`http://127.0.0.1:8000/aggregated-postgres-data/${companyName}`);
       const aggregatedData = response.data.aggregated_data;
 
-      // Extract unique companies from the data
-      const uniqueCompanies = [...new Set(aggregatedData.map(entry => entry.company))];
-      setCompanies(uniqueCompanies);
-
-      // Format the date so that we have a consistent string format (optional)
-      const formattedData = aggregatedData.map(item => ({
+      // Format dates in the data for consistency
+      const formattedData = aggregatedData.map((item) => ({
         ...item,
-        // If "date" is already a string, parseISO might be optional 
-        // but if it's a Date object, format accordingly.
-        date: format(parseISO(item.date), 'yyyy-MM-dd')
+        date: format(parseISO(item.date), 'yyyy-MM-dd'),
       }));
 
       setData(formattedData);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching daily aggregated data:", error);
+      console.error('Error fetching daily aggregated data:', error);
       setLoading(false);
     }
   };
 
-  // On component mount, fetch data + refresh every 30s if desired
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(() => {
+    if (companyName) {
       fetchData();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    }
+  }, [companyName]); // Refetch data when companyName changes
 
-  // Filter data based on selected company
-  const filteredData = data.filter(
-    (entry) => entry.company === selectedCompany
-  );
-
-  // Handler for selecting a company
-  const handleCompanyChange = (event) => {
-    setSelectedCompany(event.target.value);
-  };
-
-  // Handler for selecting multiple sources
   const handleSourcesChange = (event) => {
-    const {
-      target: { value },
-    } = event;
+    const { value } = event.target;
     setSelectedSources(typeof value === 'string' ? value.split(',') : value);
   };
 
@@ -111,31 +72,34 @@ const LineChartDiscreteComponent = () => {
     );
   }
 
+  if (!companyName) {
+    return (
+      <Box m={4}>
+        <Typography variant="h6" color="error">
+          No company selected. Please select a company to view the data.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Box m={4}>
+        <Typography variant="h6" color="textSecondary">
+          No data available for the selected company: {companyName}.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box m={4}>
       <Typography variant="h5" gutterBottom>
-        Daily Aggregated Sentiment (+1 / -1)
+        Daily Aggregated Sentiment Scores for {capitalize(companyName)}
       </Typography>
 
-      {/* Company Dropdown */}
+      {/* Multi-select for sources */}
       <FormControl sx={{ minWidth: 200, marginBottom: 2 }}>
-        <InputLabel id="company-select-label">Select Company</InputLabel>
-        <Select
-          labelId="company-select-label"
-          value={selectedCompany}
-          onChange={handleCompanyChange}
-          label="Select Company"
-        >
-          {companies.map((company) => (
-            <MenuItem key={company} value={company}>
-              {company}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      {/* Multi-select for Sources */}
-      <FormControl sx={{ minWidth: 200, marginBottom: 2, marginLeft: 2 }}>
         <InputLabel id="source-select-label">Select Source(s)</InputLabel>
         <Select
           labelId="source-select-label"
@@ -154,42 +118,33 @@ const LineChartDiscreteComponent = () => {
         </Select>
       </FormControl>
 
-      {selectedCompany && (
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart
-            data={filteredData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(dateStr) => format(parseISO(dateStr), 'MM-dd')}
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart
+          data={data}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="date"
+            tickFormatter={(dateStr) => format(parseISO(dateStr), 'MM-dd')}
+          />
+          <YAxis domain={[-1, 1]} /> {/* Updated domain */}
+          <Tooltip />
+          <Legend />
+
+          {selectedSources.map((source) => (
+            <Line
+              key={source}
+              type="monotone"
+              dataKey={source}
+              stroke={getColor(source)}
+              activeDot={{ r: 8 }}
+              connectNulls
+              name={capitalize(source)}
             />
-            <YAxis domain={[-1, 1]} />
-            <Tooltip />
-            <Legend />
-
-            {/* Render one Line per selected source */}
-            {selectedSources.map((source) => (
-              <Line
-                key={source}
-                type="monotone"
-                dataKey={source}
-                stroke={getColor(source)}
-                activeDot={{ r: 8 }}
-                connectNulls
-                name={capitalize(source)}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-
-      {!selectedCompany && (
-        <Typography variant="body1" color="textSecondary" mt={2}>
-          Please select a company to view the daily sentiment chart.
-        </Typography>
-      )}
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
     </Box>
   );
 };
@@ -197,11 +152,11 @@ const LineChartDiscreteComponent = () => {
 // Helper function for line colors
 const getColor = (source) => {
   const colorMap = {
-    reddit: '#FF4500',
-    trustpilot: '#1E90FF',
-    youtube: '#FF0000',
+    reddit: '#FF4500',       // OrangeRed
+    trustpilot: '#1E90FF',   // DodgerBlue
+    youtube: '#FF0000',      // Red
   };
-  return colorMap[source] || '#8884d8';
+  return colorMap[source] || '#8884d8'; // Default color
 };
 
 // Helper function to capitalize source labels

@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from database import mongo_db, pg_pool
+from database import mongo_db, pg_pool, mongo_wc
 import psycopg2.extras
 from typing import List, Dict
 from pydantic import BaseModel, Field
@@ -12,10 +12,8 @@ from typing import Optional
 from nltk.corpus import stopwords
 import re
 from collections import Counter
+from pymongo import DESCENDING
 
-# JUST TO GENERATE SAMPLE WORD CLOUD DATA
-from generate_wordcloud_data import seed_word_count_db
-seed_word_count_db()
 
 # Configure Logging
 logging.basicConfig(
@@ -46,16 +44,11 @@ app.add_middleware(
 )
 
 # Define Pydantic models
-class MongoData(BaseModel):
-    source: str
-    text: str
-    date: datetime
-    company: str
-    sentiment: str
+
 
 class AggregatedPostgresData(BaseModel):
     date: datetime
-    company: str
+    # company: str
     reddit: Optional[float] = None
     trustpilot: Optional[float] = None
     youtube: Optional[float] = None
@@ -63,30 +56,6 @@ class AggregatedPostgresData(BaseModel):
 class AggregatedPostgresResponse(BaseModel):
     aggregated_data: List[AggregatedPostgresData]
 
-class PostgresData(BaseModel):
-    id: int
-    source: str
-    date: datetime
-    company: str
-    sentiment: str
-    negative_probability: Optional[float] = None
-    neutral_probability: Optional[float] = None
-    positive_probability: Optional[float] = None
-    tp_stars: Optional[int] = None
-    tp_location: Optional[str] = None
-    yt_video_id: Optional[str] = None
-    yt_likes: Optional[int] = None
-    yt_reply_count: Optional[int] = None
-    re_id: Optional[str] = None
-    re_vote: Optional[int] = None
-    re_reply_count: Optional[int] = None
-    re_subreddit: Optional[str] = None
-
-class MongoResponse(BaseModel):
-    mongo_data: List[MongoData]
-
-class PostgresResponse(BaseModel):
-    postgres_data: List[PostgresData]
     
 class WordCloudItem(BaseModel):
     company: str
@@ -96,6 +65,18 @@ class WordCloudItem(BaseModel):
     
 class AllWordCloudData(BaseModel):
     data: List[WordCloudItem]
+    
+class Companies(BaseModel):
+    companies: List[str]
+    
+    
+class WordCount(BaseModel):
+    word: str
+    count: int
+
+class TopWordsResponse(BaseModel):
+    company: str
+    top_words: List[WordCount]
 
 
 @app.get("/", response_model=Dict[str, str])
@@ -115,111 +96,27 @@ def get_pg_connection() -> psycopg2.extensions.connection:
         logger.error(f"Database connection error: {e}")
         raise HTTPException(status_code=500, detail="Database connection error")
 
-@app.get("/mongo-data", response_model=MongoResponse)
-def get_mongo_data():
-    logger.debug("Fetching data from MongoDB.")
+    
+@app.get("/companies", response_model=Companies)
+def get_companies():
     try:
-        all_data = []
-        for collection_name in mongo_db.list_collection_names():
-            logger.debug(f"Processing collection: {collection_name}")
-            if collection_name.startswith("system."):
-                logger.debug(f"Skipping system collection: {collection_name}")
-                continue
-
-            collection = mongo_db[collection_name]
-            data = list(collection.find({}, {"_id": 0}))
-            # logger.debug(f"Fetched {len(data)} documents from collection: {collection_name}")
-            all_data.extend(data)
-
-        logger.info(f"Successfully fetched {len(all_data)} total documents from MongoDB.")
-        return {"mongo_data": all_data}
+        return {"companies": mongo_db.list_collection_names()}
     except Exception as e:
-        logger.error(f"Error fetching MongoDB data: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch data from MongoDB")
-
-@app.get("/postgres-data", response_model=PostgresResponse)
-def get_postgres_data(pg_conn: psycopg2.extensions.connection = Depends(get_pg_connection)):
-    logger.debug("Fetching data from PostgreSQL.")
-    try:
-        cursor = pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        logger.debug("Executing SQL query: SELECT * FROM predictions;")
-        cursor.execute("SELECT * FROM predictions;")
-        rows = cursor.fetchall()
-        logger.debug(f"Fetched {len(rows)} rows from PostgreSQL.")
-        cursor.close()
-        pg_pool.putconn(pg_conn)
-        logger.debug("PostgreSQL connection returned to pool.")
-        return {"postgres_data": rows}
-    except Exception as e:
-        pg_pool.putconn(pg_conn)
-        logger.error(f"Error fetching PostgreSQL data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/aggregated-postgres-data", response_model=AggregatedPostgresResponse)
-def get_aggregated_postgres_data(pg_conn: psycopg2.extensions.connection = Depends(get_pg_connection)):
-    logger.debug("Fetching aggregated data from PostgreSQL.")
-    try:
-        cursor = pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        query = """
-            SELECT
-                CAST(
-                    CASE 
-                        WHEN date LIKE '%T%Z' THEN date::timestamp 
-                        ELSE date::date                                  
-                    END AS date
-                ) AS normalized_date,
-                source,
-                company,
-                AVG(COALESCE(positive_probability,0) - COALESCE(negative_probability,0)) AS average_sentiment_score
-            FROM
-                predictions
-            GROUP BY
-                source, company, date
-            ORDER BY
-                date ASC;
-        """
-        logger.debug(f"Executing SQL query: {query}")
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        logger.debug(f"Aggregated {len(rows)} rows from PostgreSQL.")
-        cursor.close()
-        pg_pool.putconn(pg_conn)
-
-        aggregation = {}
-        for row in rows:
-            date = row['normalized_date'].strftime("%Y-%m-%d")
-            source = row['source'].lower()
-            company = row['company']
-            avg_score = float(row['average_sentiment_score'])
-
-            key = f"{date}-{company}"
-            if key not in aggregation:
-                aggregation[key] = {
-                    "date": date,
-                    "company": company,
-                    "reddit": None,
-                    "trustpilot": None,
-                    "youtube": None
-                }
-            aggregation[key][source] = avg_score
-
-        aggregated_data = sorted(aggregation.values(), key=lambda x: x['date'])
-        logger.info("Successfully processed aggregated data.")
-        return {"aggregated_data": aggregated_data}
-    except Exception as e:
-        pg_pool.putconn(pg_conn)
-        logger.error(f"Error fetching aggregated Postgres data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/aggregated-postgres-data-discrete", response_model=AggregatedPostgresResponse)
-def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connection = Depends(get_pg_connection)):
+
+@app.get("/aggregated-postgres-data/{company}",
+         response_model=AggregatedPostgresResponse)
+def get_aggregated_postgres_data_discrete(company: str, 
+                                          pg_conn: psycopg2.extensions.connection = Depends(get_pg_connection)):
     """
     Returns an object in the form of AggregatedPostgresResponse,
     where each record's sentiment is calculated as +1 (positive) or -1 (negative),
     then averaged for each date/source/company.
     """
     logger.debug("Fetching daily aggregated data (+1/-1) from PostgreSQL.")
+    logger.debug(f"Company ID: {company}")
     try:
         cursor = pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -229,8 +126,8 @@ def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connectio
             SELECT
                 CAST(
                     CASE 
-                        WHEN date LIKE '%T%Z' THEN date::timestamp 
-                        ELSE date::date                                  
+                        WHEN "date" LIKE '%%T%%Z' THEN "date"::timestamp 
+                        ELSE "date"::date                                  
                     END AS date
                 ) AS normalized_date,
                 source,
@@ -244,15 +141,19 @@ def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connectio
                 ) AS daily_sentiment_score
             FROM
                 predictions
+            WHERE
+                company = %s
             GROUP BY
-                source, company, date
+                source, company, normalized_date
             ORDER BY
-                date ASC;
+                normalized_date ASC;
         """
 
         logger.debug(f"Executing SQL query (daily +1/-1): {query}")
-        cursor.execute(query)
+        cursor.execute(query, (company,))
+        logger.debug(f"Company passed to query: {company}")
         rows = cursor.fetchall()
+        logger.debug(f"Rows fetched: {rows}")
         logger.debug(f"Fetched {len(rows)} rows from PostgreSQL (daily +1/-1).")
         cursor.close()
         pg_pool.putconn(pg_conn)  # or however you return the conn to the pool
@@ -263,14 +164,14 @@ def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connectio
         for row in rows:
             date_str = row['normalized_date'].strftime("%Y-%m-%d")
             source = row['source'].lower()  # ensure consistent naming
-            company = row['company']
+            # db_company = row['company']
             daily_score = float(row['daily_sentiment_score'])  # average of +1/-1
 
-            key = f"{date_str}-{company}"
+            key = f'{date_str}' #f"{date_str}-{db_company}"
             if key not in aggregation:
                 aggregation[key] = {
                     "date": row['normalized_date'],  # keep it as datetime
-                    "company": company,
+                    # "company": db_company,
                     "reddit": None,
                     "trustpilot": None,
                     "youtube": None
@@ -288,33 +189,8 @@ def get_aggregated_postgres_data_discrete(pg_conn: psycopg2.extensions.connectio
         logger.error(f"Error fetching daily +1/-1 Postgres data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-from pymongo import MongoClient
-mongo_client = MongoClient("mongodb://mongo:27017/")
-mongo_db = mongo_client["word_count"]
 
-
-@app.get("/companies")
-def get_companies():
-    try:
-        all_collections = mongo_db.list_collection_names()
-        valid_companies = []
-        logging.info(f"Found collections: {all_collections}")
-
-        for collection_name in all_collections:
-            # Only consider collections that end with "_word_count"
-            if collection_name.endswith("_word_count"):
-                # Remove the suffix "_word_count"
-                base_name = collection_name[:-11]  # e.g., "apple" from "apple_word_count"
-                # You could also do base_name.capitalize() or .title() if desired
-                valid_companies.append(base_name)
-
-        # Return as a JSON list
-        return {"companies": valid_companies}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/word-cloud-data", response_model=AllWordCloudData)  # Or remove if you prefer no validation
+@app.get("/word-cloud-data", response_model=AllWordCloudData) 
 def get_all_word_cloud_data():
     """
     Return *all* word-count data for *all* companies, no filtering.
@@ -323,31 +199,23 @@ def get_all_word_cloud_data():
     
     try:
         # List all collections in MongoDB
-        all_collections = mongo_db.list_collection_names()
+        all_collections = mongo_wc.list_collection_names()
         logger.debug(f"List of all collections in MongoDB: {all_collections}")
 
         all_data = []
         # Filter for collections that end with "_word_count"
-        for collection_name in all_collections:
-            logger.info(f"Processing word_count collection: {collection_name}")
-            
-            # Extract the company name from the collection, e.g. "apple" from "apple_word_count"
-            company_name = collection_name
-            
-            collection = mongo_db[collection_name]
+        for company_name in all_collections:
+            logger.info(f"Processing word_count collection: {company_name}")
+    
+            collection = mongo_wc[company_name]
             docs = list(collection.find({}))
-            logger.debug(f"Found {len(docs)} documents in collection '{collection_name}'.")
+            logger.debug(f"Found {len(docs)} documents in collection '{company_name}'.")
 
             for doc in docs:
-                date_value = doc.get("date")
-                if isinstance(date_value, datetime):
-                    date_value = date_value.isoformat()
-
                 all_data.append({
                     "company": company_name,
                     "word": doc["word"],
                     "count": doc["count"],
-                    "date": date_value
                 })
 
         logger.info(f"Finished processing all word_count collections. Total data items: {len(all_data)}")
@@ -356,3 +224,55 @@ def get_all_word_cloud_data():
     except Exception as e:
         logger.error(f"An error occurred while fetching word cloud data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/top_words/{company}", response_model=TopWordsResponse)
+def get_top_words(company: str):
+    """
+    Retrieve the top 20 words for a specified company based on their count.
+    """
+    logger.info(f"Fetching top 20 words for company: {company}")
+
+    try:
+        # List all collections in MongoDB
+        all_collections = mongo_wc.list_collection_names()
+        logger.debug(f"Available collections: {all_collections}")
+
+        # Check if the specified company has a corresponding collection
+        if company not in all_collections:
+            logger.error(f"Collection for company '{company}' does not exist.")
+            raise HTTPException(status_code=404, detail=f"Company '{company}' not found.")
+
+        # Access the company's word count collection
+        collection = mongo_wc[company]
+        logger.debug(f"Accessing collection: {company}")
+
+        # Query to get top 20 words sorted by count in descending order
+        top_words_cursor = collection.find().sort("count", DESCENDING).limit(20)
+        top_words = []
+
+        for doc in top_words_cursor:
+            # Validate that 'word' and 'count' fields exist
+            word = doc.get("word")
+            count = doc.get("count")
+
+            if word is not None and count is not None:
+                top_words.append(WordCount(word=word, count=int(count)))
+            else:
+                logger.warning(f"Document missing 'word' or 'count' fields: {doc}")
+
+        if not top_words:
+            logger.warning(f"No word data found for company '{company}'.")
+            raise HTTPException(status_code=404, detail=f"No word data found for company '{company}'.")
+
+        logger.info(f"Retrieved {len(top_words)} top words for company '{company}'.")
+
+        return TopWordsResponse(company=company, top_words=top_words)
+
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions to be handled by FastAPI
+        raise http_exc
+
+    except Exception as e:
+        logger.error(f"Error fetching top words for company '{company}': {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")

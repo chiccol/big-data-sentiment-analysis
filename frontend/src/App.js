@@ -1,35 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from './components/Header';
-import LineChartComponent from './components/LineChartComponent';
-// import MongoDataComponent from './components/RawDataComponent';
-import { Container } from '@mui/material';
-// import PostgresDataComponent from './components/ProcessedDataComponent';
-// import WordCloudComponent from './components/WordCloudComponent';
+// import LineChartComponent from './components/LineChartComponent';
 import BarChartComponent from './components/BarChartComponent';
 import LineChartDiscreteComponent from './components/LineChartDiscreteComponent';
+import CompanySelector from './components/CompanySelector';
+import { Container, Box } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers';
+import TopWordsBarChartComponent from './components/TopWordsBarChartComponent';
 
 function App() {
+  const [selectedCompany, setSelectedCompany] = useState('');
 
-    return (
-      <div>
-        <Header />
-        <Container>
-          <LineChartDiscreteComponent />
-          <LineChartComponent />
-          {/* <MongoDataComponent /> */}
-          {/* <PostgresDataComponent /> */}
-          {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <WordCloudComponent />
-          </LocalizationProvider> */}
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <BarChartComponent />
-          </LocalizationProvider>
-        </Container>
-      </div>
-    );
+  const handleCompanyChange = (companyName) => {
+    setSelectedCompany(companyName);
+  };
+
+  return (
+    <div>
+      <Header />
+      <Container>
+        {/* Company Selector */}
+        <Box my={4}>
+          <CompanySelector onCompanyChange={handleCompanyChange} />
+        </Box>
+
+        {/* Pass the selectedCompany name as a prop to each chart component */}
+        <LineChartDiscreteComponent companyName={selectedCompany} />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <TopWordsBarChartComponent companyName={selectedCompany} />
+        </LocalizationProvider>
+      </Container>
+    </div>
+  );
 }
-
 
 export default App;

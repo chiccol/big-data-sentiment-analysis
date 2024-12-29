@@ -10,6 +10,7 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "reviews")
 
 mongo_client = MongoClient(MONGO_URI)
 mongo_db = mongo_client[MONGO_DB_NAME]
+mongo_wc = mongo_client["word_count"]
 
     
 # PostgreSQL Connection Pool

@@ -1,16 +1,12 @@
 import React from 'react';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
+import { AppBar, Toolbar, Typography, Box } from '@mui/material';
 
 const Header = () => {
   return (
     <AppBar position="static">
-      <Toolbar>
-        <Typography variant="h6">
-          Sentiment Analysis Dashboard
-        </Typography>
-      </Toolbar>
+      <Typography variant="h6" style={{ flexGrow: 1 }}>
+        Sentiment Analysis Dashboard
+      </Typography>
     </AppBar>
   );
 };

@@ -27,7 +27,7 @@ const MenuProps = {
   },
 };
 
-const LineChartComponent = () => {
+const LineChartComponent = (companyId) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 

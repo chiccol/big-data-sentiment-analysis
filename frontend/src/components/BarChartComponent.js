@@ -16,7 +16,7 @@ import {
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import dayjs from 'dayjs';
 
-const BarChartComponent = () => {
+const BarChartComponent = (companyId) => {
   // All data from the server (unfiltered)
   const [allData, setAllData] = useState([]);
   // Loading state for the initial fetch

@@ -14,7 +14,9 @@ def main():
         
         mongo_wc = WordCountDB()
         mongo_wc.create_db('word_count')
-        logging.info("Databases created: 'reviews' and 'word_count'")
+        mongo_wc.create_db('bigrams')
+        mongo_wc.create_db('trigrams')
+        logging.info("Databases created: 'reviews', 'word_count', bigrams and trigrams.")
         
         mongo_consumer = KafkaConsumer()
         mongo_consumer.consume_messages_mongo(mongo_manager=mongo)

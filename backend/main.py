@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from database import mongo_db, pg_pool, mongo_wc
+from database import mongo_db, pg_pool, mongo_wc, mongo_couples, mongo_triples
 import psycopg2.extras
 from typing import List, Dict
 from pydantic import BaseModel, Field
@@ -77,6 +77,22 @@ class WordCount(BaseModel):
 class TopWordsResponse(BaseModel):
     company: str
     top_words: List[WordCount]
+    
+class BigramCount(BaseModel):
+    bigram: str
+    count: int
+
+class TopBigramsResponse(BaseModel):
+    company: str
+    top_bigrams: List[BigramCount]
+
+class TrigramCount(BaseModel):
+    trigram: str
+    count: int
+
+class TopTrigramsResponse(BaseModel):
+    company: str
+    top_trigrams: List[TrigramCount]
 
 
 @app.get("/", response_model=Dict[str, str])
@@ -275,4 +291,106 @@ def get_top_words(company: str):
 
     except Exception as e:
         logger.error(f"Error fetching top words for company '{company}': {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+
+@app.get("/top_couples/{company}", response_model=TopBigramsResponse)
+def get_top_couples(company: str):
+    """
+    Retrieve the top 20 bigrams for a specified company based on their count.
+    """
+    logger.info(f"Fetching top 20 bigrams for company: {company}")
+
+    try:
+        # List all collections in the `couples_count` database
+        all_collections = mongo_couples.list_collection_names()
+        logger.debug(f"Available bigram collections: {all_collections}")
+
+        # Check if the specified company has a corresponding collection
+        if company not in all_collections:
+            logger.error(f"Collection for company '{company}' does not exist in couples_count.")
+            raise HTTPException(status_code=404, detail=f"Company '{company}' not found in couples_count.")
+
+        # Access the company's bigram collection
+        collection = mongo_couples[company]
+        logger.debug(f"Accessing bigram collection: {company}")
+
+        # Query top 20 bigrams sorted by count (descending)
+        # Note: If your code saves bigram counts under "count" or "sum(count)",
+        # adjust this find().sort(...) call accordingly.
+        top_bigrams_cursor = collection.find().sort("count", DESCENDING).limit(20)
+        
+        top_bigrams = []
+        for doc in top_bigrams_cursor:
+            bigram = doc.get("bigram")
+            count = doc.get("count")
+
+            if bigram is not None and count is not None:
+                top_bigrams.append(BigramCount(bigram=bigram, count=int(count)))
+            else:
+                logger.warning(f"Document missing 'bigram' or 'count' fields: {doc}")
+
+        if not top_bigrams:
+            logger.warning(f"No bigram data found for company '{company}'.")
+            raise HTTPException(status_code=404, detail=f"No bigram data found for company '{company}'.")
+
+        logger.info(f"Retrieved {len(top_bigrams)} top bigrams for company '{company}'.")
+
+        return TopBigramsResponse(company=company, top_bigrams=top_bigrams)
+
+    except HTTPException as http_exc:
+        raise http_exc
+
+    except Exception as e:
+        logger.error(f"Error fetching top bigrams for company '{company}': {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+    
+@app.get("/top_triples/{company}", response_model=TopTrigramsResponse)
+def get_top_triples(company: str):
+    """
+    Retrieve the top 20 trigrams for a specified company based on their count.
+    """
+    logger.info(f"Fetching top 20 trigrams for company: {company}")
+
+    try:
+        # List all collections in the `triples_count` database
+        all_collections = mongo_triples.list_collection_names()
+        logger.debug(f"Available trigram collections: {all_collections}")
+
+        # Check if the specified company has a corresponding collection
+        if company not in all_collections:
+            logger.error(f"Collection for company '{company}' does not exist in triples_count.")
+            raise HTTPException(status_code=404, detail=f"Company '{company}' not found in triples_count.")
+
+        # Access the company's trigram collection
+        collection = mongo_triples[company]
+        logger.debug(f"Accessing trigram collection: {company}")
+
+        # Query top 20 trigrams sorted by count (descending)
+        top_trigrams_cursor = collection.find().sort("count", DESCENDING).limit(20)
+        
+        top_trigrams = []
+        for doc in top_trigrams_cursor:
+            trigram = doc.get("trigram")
+            count = doc.get("count")
+
+            if trigram is not None and count is not None:
+                top_trigrams.append(TrigramCount(trigram=trigram, count=int(count)))
+            else:
+                logger.warning(f"Document missing 'trigram' or 'count' fields: {doc}")
+
+        if not top_trigrams:
+            logger.warning(f"No trigram data found for company '{company}'.")
+            raise HTTPException(status_code=404, detail=f"No trigram data found for company '{company}'.")
+
+        logger.info(f"Retrieved {len(top_trigrams)} top trigrams for company '{company}'.")
+
+        return TopTrigramsResponse(company=company, top_trigrams=top_trigrams)
+
+    except HTTPException as http_exc:
+        raise http_exc
+
+    except Exception as e:
+        logger.error(f"Error fetching top trigrams for company '{company}': {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

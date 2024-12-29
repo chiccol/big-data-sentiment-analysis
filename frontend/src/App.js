@@ -8,6 +8,8 @@ import { Container, Box } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import TopWordsBarChartComponent from './components/TopWordsBarChartComponent';
+import TopBigramsBarChartComponent from './components/TopBigramsBarChartComponent';
+import TopTrigramsBarChartComponent from './components/TopTrigramsBarChartComponent';
 
 function App() {
   const [selectedCompany, setSelectedCompany] = useState('');
@@ -29,6 +31,8 @@ function App() {
         <LineChartDiscreteComponent companyName={selectedCompany} />
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <TopWordsBarChartComponent companyName={selectedCompany} />
+          <TopBigramsBarChartComponent companyName={selectedCompany} />
+          <TopTrigramsBarChartComponent companyName={selectedCompany} />
         </LocalizationProvider>
       </Container>
     </div>

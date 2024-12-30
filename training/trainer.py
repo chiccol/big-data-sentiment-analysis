@@ -4,19 +4,43 @@ from transformers import DistilBertTokenizer, DistilBertForSequenceClassificatio
 
 from utils import compute_metrics, compute_label_wise_metrics, compute_source_wise_metrics, log_metrics
 from tqdm import tqdm
+from typing import Dict, Optional, Tuple, List, Any
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 def run_epoch(
-    model, 
-    dataloader, 
-    loss_config,
-    optimizer=None, 
-    device="cuda", 
-    desc="Training", 
-    label_names=None,
-    writer=None,
-    step=None,
-    prefix="",
-):
+    model: nn.Module,
+    dataloader: DataLoader,
+    loss_config: Dict[str, Any],
+    label_names: List[str],
+    writer: SummaryWriter,
+    device: str,
+    desc: str,
+    step: int,
+    prefix: str,
+    optimizer: Optional[torch.optim.Optimizer] = None,
+    ) -> Tuple[float, Dict[str, float], Dict[str, Dict[str, float]], Dict[str, Dict[str, float]]]:
+    """
+    Runs a single epoch of training or evaluation and saves all the metrics in using tensorboard.
+    Args:
+        model (nn.Module): The model to train or evaluate.
+        dataloader (DataLoader): The data loader for training or validation data.
+        loss_config (Dict[str, Any]): Configuration for loss functions and weights (e.g., `tp_loss`, `yt_loss`, etc.).
+        label_names (List[str]): List of label names for calculating label-wise metrics.
+        writer (SummaryWriter): TensorBoard writer for logging metrics.
+        device (str): The device to run the model on ("cuda" or "cpu").
+        desc (str): Description for the progress bar.
+        step (int): The current step (used for TensorBoard logging).
+        prefix (str): Prefix for TensorBoard metric names.
+        optimizer (Optional[torch.optim.Optimizer], optional): The optimizer used for training. If `None`, the model is in evaluation mode.
+
+    Returns:
+        Tuple[float, Dict[str, float], Dict[str, Dict[str, float]], Dict[str, Dict[str, float]]]:
+            - avg_loss (float): The average loss for the epoch.
+            - metrics (Dict[str, float]): Global evaluation metrics (accuracy, precision, etc.).
+            - label_metrics (Dict[str, Dict[str, float]]): Label-wise metrics (accuracy, precision, etc.).
+            - source_metrics (Dict[str, Dict[str, float]]): Source-wise metrics (accuracy, precision, etc.).
+    """
     is_train = optimizer is not None
     model.train() if is_train else model.eval()
 
@@ -65,7 +89,7 @@ def run_epoch(
         loop.set_postfix({
             "Batch Loss": f"{loss.item():.4f}",
             "Batch Accuracy": f"{batch_accuracy:.4f}"
-            })
+        })
 
     avg_loss = total_loss / len(dataloader)
     metrics = compute_metrics(y_true, y_pred)
@@ -84,15 +108,31 @@ def run_epoch(
 
     return avg_loss, metrics, label_metrics, source_metrics
 
-def get_model(path, trainable_layers):
-  tokenizer = DistilBertTokenizer.from_pretrained(path)
-  model = DistilBertForSequenceClassification.from_pretrained(path)
-  model.classifier = nn.Linear(768, 3, bias=True)
-  # Freeze all layers except the classification head
-  for param in model.base_model.parameters():
-      param.requires_grad = False
-  # Unfreeze the last `trainable_layers` layers
-  if trainable_layers > 0:
-    for param in model.base_model.transformer.layer[-trainable_layers:].parameters():
-        param.requires_grad = True
-  return model, tokenizer
+def get_model(
+    path: str,
+    trainable_layers: int
+    ) -> Tuple[nn.Module, DistilBertTokenizer]:
+    """
+    Loads and customizes a DistilBERT model for sequence classification.
+    Args:
+        path (str): The path to the pre-trained DistilBERT model.
+        trainable_layers (int): The number of layers to unfreeze from the pre-trained transformer.
+                               All layers before these will be frozen.
+    Returns:
+        Tuple[nn.Module, DistilBertTokenizer]: 
+            - model (nn.Module): The modified DistilBERT model with a custom classifier head.
+            - tokenizer (DistilBertTokenizer): The tokenizer corresponding to the model.
+    """
+    # Load pre-trained DistilBERT model and tokenizer
+    tokenizer = DistilBertTokenizer.from_pretrained(path)
+    model = DistilBertForSequenceClassification.from_pretrained(path)
+    # Change the output layer to match the number of classes (3 for this case)
+    model.classifier = nn.Linear(768, 3, bias=True)
+    # Freeze all layers except the classification head
+    for param in model.base_model.parameters():
+        param.requires_grad = False
+    # Unfreeze the last `trainable_layers` layers
+    if trainable_layers > 0:
+        for param in model.base_model.transformer.layer[-trainable_layers:].parameters():
+            param.requires_grad = True
+    return model, tokenizer

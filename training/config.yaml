@@ -6,9 +6,9 @@ data:
   yt_train_path: "training/yt_train_dataset_balanced.json"
 model_params:
   trainable_transformer_layers: 1 # max is 6 for distilbert
-  hf_model: "distilbert-base-uncased-finetuned-sst-2-english"
+  hf_model: "training/distilbert_base_sst2_finetuned"
 experiments:
-  path: "training/final_experiments"
+  path: "training/experiments"
 training:
   batch_size: 256
   lr: 2e-4

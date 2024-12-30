@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 import torch 
+from torch.utils.tensorboard import SummaryWriter
 
 from transformers import PreTrainedTokenizerBase
 from typing import List, Union, Tuple, Dict, Any
@@ -226,10 +227,10 @@ def compute_label_wise_metrics(
 
         # Store metrics for the label
         metrics[label] = {
-            "accuracy": round(label_accuracy, round_digits),
-            "precision": round(precision[i], round_digits),
-            "recall": round(recall[i], round_digits),
-            "f1": round(f1[i], round_digits),
+            "accuracy": round(label_accuracy.item(), round_digits),
+            "precision": round(precision[i].item(), round_digits),
+            "recall": round(recall[i].item(), round_digits),
+            "f1": round(f1[i].item(), round_digits),
         }
 
     return metrics
@@ -329,7 +330,7 @@ def print_epoch_metrics(
     print("-" * 50)
 
 def log_metrics(
-        writer: torch.utils.tensorboard.SummaryWriter, 
+        writer: SummaryWriter, 
         metrics: Dict[str, Dict[str, Any]],
         step:int, 
         prefix: str=""):

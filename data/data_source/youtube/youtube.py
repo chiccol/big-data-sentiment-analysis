@@ -175,7 +175,7 @@ def search_videos(query,
   max_comments: int of the maximum number of comments to get
   """
   num_videos = 0
-  youtube_comapanies_videos_path = "youtube_companies_videos.json"
+  youtube_comapanies_videos_path = "companies.json"
   date_format = "%Y-%m-%dT%H:%M:%SZ"
 
   max_batch_videos = 50
@@ -208,7 +208,7 @@ def search_videos(query,
                 video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
                 duration = iso8601_to_seconds(video_info['items'][0]['contentDetails']['duration'])
                 view_count = int(video_info['items'][0]["statistics"]["viewCount"])
-                comment_count = int(video_info['items'][0]["statistics"]["commentCount"])
+                comment_count = int(video_info['items'][0]["statistics"].get("commentCount", 0)) # assign 0 if comment count is missing 
                 if duration < min_duration:
                     youtube_comapanies_videos[company]["videos"][videoId] = "too_short"
                     logger.info(f"Video {videoId} is too short")

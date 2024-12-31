@@ -7,6 +7,7 @@ WORKDIR /app
 # Copy the folder containing the scraper's Python files into the container
 COPY reddit /app
 COPY kafka_producer.py /app
+COPY companies.json /app
 
 # Install the Python dependencies from the requirements.txt file
 RUN pip install --no-cache-dir -r requirements.txt

@@ -1,7 +1,16 @@
-import React, { useEffect, useState } from 'react';
+// src/components/LineChartDiscreteComponent.js
+
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from 'recharts';
 import {
   CircularProgress,
@@ -11,9 +20,18 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  OutlinedInput
+  OutlinedInput,
+  Grid,
+  TextField // Corrected: Import TextField
 } from '@mui/material';
-import { format, parseISO } from 'date-fns';
+import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+
+// MUI x-date-pickers
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+
+// Extend dayjs with the isBetween plugin
+dayjs.extend(isBetween);
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -29,40 +47,80 @@ const MenuProps = {
 const LineChartDiscreteComponent = ({ companyName }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSources, setSelectedSources] = useState(['reddit', 'trustpilot', 'youtube']); // Default to all sources
+  const [selectedSources, setSelectedSources] = useState(['reddit', 'trustpilot', 'youtube']);
 
-  const allSources = ['reddit', 'trustpilot', 'youtube']; // Available sentiment sources
+  // For date range filtering
+  const [startDate, setStartDate] = useState(null); // dayjs object
+  const [endDate, setEndDate] = useState(null);     // dayjs object
+
+  const allSources = ['reddit', 'trustpilot', 'youtube'];
 
   // Fetch aggregated data for the selected company
-  const fetchData = async () => {
-    try {
-      const response = await axios.get(`http://127.0.0.1:8000/aggregated-postgres-data/${companyName}`);
-      const aggregatedData = response.data.aggregated_data;
-
-      // Format dates in the data for consistency
-      const formattedData = aggregatedData.map((item) => ({
-        ...item,
-        date: format(parseISO(item.date), 'yyyy-MM-dd'),
-      }));
-
-      setData(formattedData);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching daily aggregated data:', error);
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    // Define fetchData inside useEffect to avoid dependency issues
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/aggregated-postgres-data/${companyName}`);
+        const aggregatedData = response.data.aggregated_data;
+
+        // Convert date strings to 'YYYY-MM-DD' format
+        const formattedData = aggregatedData.map((item) => ({
+          ...item,
+          date: dayjs(item.date).format('YYYY-MM-DD'), // Keep as string for Recharts
+        }));
+
+        setData(formattedData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching daily aggregated data:', error);
+        setLoading(false);
+      }
+    };
+
     if (companyName) {
       fetchData();
+    } else {
+      // If no company is selected, reset data
+      setData([]);
+      setLoading(false);
     }
-  }, [companyName]); // Refetch data when companyName changes
+  }, [companyName]); // Only re-run when companyName changes
+
+  // After data is fetched, determine the min and max possible dates
+  useEffect(() => {
+    if (data.length > 0) {
+      // Convert date strings to dayjs objects
+      const dates = data.map(item => dayjs(item.date, 'YYYY-MM-DD'));
+
+      // Find the earliest date
+      const minDate = dates.reduce((a, b) => (a.isBefore(b) ? a : b));
+
+      // Find the latest date
+      const maxDate = dates.reduce((a, b) => (a.isAfter(b) ? a : b));
+
+      setStartDate(minDate);
+      setEndDate(maxDate);
+    } else {
+      // If data is empty, reset date filters
+      setStartDate(null);
+      setEndDate(null);
+    }
+  }, [data]);
 
   const handleSourcesChange = (event) => {
     const { value } = event.target;
     setSelectedSources(typeof value === 'string' ? value.split(',') : value);
   };
+
+  // Filter data based on the selected date range
+  const filteredData = useMemo(() => {
+    if (!startDate || !endDate) return data;
+    return data.filter((item) => {
+      const itemDate = dayjs(item.date, 'YYYY-MM-DD');
+      return itemDate.isBetween(startDate, endDate, 'day', '[]'); // Inclusive
+    });
+  }, [data, startDate, endDate]);
 
   if (loading) {
     return (
@@ -99,7 +157,7 @@ const LineChartDiscreteComponent = ({ companyName }) => {
       </Typography>
 
       {/* Multi-select for sources */}
-      <FormControl sx={{ minWidth: 200, marginBottom: 2 }}>
+      <FormControl sx={{ minWidth: 200, marginBottom: 2, marginRight: 2 }}>
         <InputLabel id="source-select-label">Select Source(s)</InputLabel>
         <Select
           labelId="source-select-label"
@@ -118,18 +176,44 @@ const LineChartDiscreteComponent = ({ companyName }) => {
         </Select>
       </FormControl>
 
+      {/* Date range pickers */}
+      <Grid container spacing={2} sx={{ marginBottom: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <DatePicker
+            label="Start Date"
+            value={startDate}
+            onChange={(newValue) => {
+              if (newValue && newValue.isValid()) setStartDate(newValue);
+            }}
+            maxDate={endDate || undefined} // Prevent picking a start date after end date
+            renderInput={(params) => <TextField {...params} fullWidth />}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <DatePicker
+            label="End Date"
+            value={endDate}
+            onChange={(newValue) => {
+              if (newValue && newValue.isValid()) setEndDate(newValue);
+            }}
+            minDate={startDate || undefined} // Prevent picking an end date before start date
+            renderInput={(params) => <TextField {...params} fullWidth />}
+          />
+        </Grid>
+      </Grid>
+
       <ResponsiveContainer width="100%" height={400}>
         <LineChart
-          data={data}
+          data={filteredData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
-            tickFormatter={(dateStr) => format(parseISO(dateStr), 'MM-dd')}
+            tickFormatter={(dateStr) => dayjs(dateStr, 'YYYY-MM-DD').format('MM-DD')}
           />
-          <YAxis domain={[-1, 1]} /> {/* Updated domain */}
-          <Tooltip />
+          <YAxis domain={[-1, 1]} />
+          <Tooltip labelFormatter={(label) => dayjs(label, 'YYYY-MM-DD').format('MMMM DD, YYYY')} />
           <Legend />
 
           {selectedSources.map((source) => (
@@ -152,9 +236,9 @@ const LineChartDiscreteComponent = ({ companyName }) => {
 // Helper function for line colors
 const getColor = (source) => {
   const colorMap = {
-    reddit: '#FF4500',       // OrangeRed
-    trustpilot: '#1E90FF',   // DodgerBlue
-    youtube: '#FF0000',      // Red
+    reddit: '#FF4500',      // OrangeRed
+    trustpilot: '#1E90FF',  // DodgerBlue
+    youtube: '#FF0000',     // Red
   };
   return colorMap[source] || '#8884d8'; // Default color
 };

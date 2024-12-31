@@ -42,12 +42,12 @@ if __name__ == "__main__":
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id = client_id)
     logger.info(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}") 
     # Load companies and dates of the last scraping
-    companies_videos_path = "youtube_companies_videos.json"
+    companies_videos_path = "companies.json"
     with open(companies_videos_path, 'r') as file:
         companies_videos = json.load(file)
     logger.info(f"Companies and videos of the last scraping loaded from {companies_videos_path}")
     for company in companies_videos.keys():
-        logger.info(f"Company: {company}, Last scraping: {companies_videos[company]}")
+        logger.info(f"Company: {company}, Last scraping: {companies_videos[company]['search_from_date']}")
     date_format = "%Y-%m-%dT%H:%M:%SZ"
     
     while True:

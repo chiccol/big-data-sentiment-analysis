@@ -28,7 +28,7 @@ if __name__ == "__main__":
         'Apple', 'Google', 'Microsoft', 'Amazon', 'Facebook', 
         'Tesla', 'Netflix', 'Spotify', 'Uber', 'Airbnb'
     ]
-    companies = ['Apple', 'Google']
+    companies = ['apple', 'google']
     for company in companies:
         logger.info(f"Sending fake data for {company}")
         data = data_gen(company = company, producer = producer, num_entries= 500)

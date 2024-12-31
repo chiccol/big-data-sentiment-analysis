@@ -117,7 +117,7 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                 full_review["text"] = text[num_review]
                 full_review["tp_stars"] = int(ratings[num_review]["data-service-review-rating"])
                 full_review["date"] = dates[num_review]
-                full_review["company"] = company
+                full_review["company"] = company[:-4]
                 # check if the review is older than the specified date
                 if datetime.strptime(full_review["date"],date_format) < from_date:
                     logger.info(f"Reached reviews older than {from_date}. Stopping scraping for {company}.") 
@@ -140,5 +140,5 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
         num_reviews += len(review_list)
         logger.info(f"Scraped {num_reviews} reviews for {company} so far.")
         review_list_serialized = encode_message_to_parquet(review_list)
-        producer.produce(record = review_list_serialized, topic=company)
+        producer.produce(record = review_list_serialized, topic=company[:-4])
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

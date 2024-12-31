@@ -58,7 +58,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Load companies and scraping info
-    companies_path = "reddit_companies.json"
+    companies_path = "companies.json"
     try:
         with open(companies_path, 'r') as file:
             companies = json.load(file)
@@ -77,8 +77,9 @@ if __name__ == "__main__":
             logger.info(f"Searching for new submissions for '{company}'")
             try:
                 new_submissions, companies_submissions = search_posts(
-                    query=companies[company].get("query", ""),
-                    after_date=companies[company].get("from_date", "2023-01-01T00:00:00Z"),
+                    query=companies[company].get("search_query", ""),
+                    after_date=companies[company].get("search_from_date", "2023-01-01T00:00:00Z"),
+                    comments_after_date=companies[company].get("get_comments_from_date", "2023-01-01T00:00:00Z"),
                     reddit_client=reddit_scraper,
                     company=company,
                     max_posts=companies[company].get("max_submissions", 10),

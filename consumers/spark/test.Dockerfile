@@ -7,7 +7,6 @@ FROM bitnami/spark:3.4.0
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the folder containing the scraper's Python files into the container
 COPY spark/main.py /app
 COPY spark/requirements_test.txt /app
 COPY kafka_consumer.py /app

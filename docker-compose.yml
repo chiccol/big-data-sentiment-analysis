@@ -22,7 +22,6 @@ services:
     depends_on:
       - zookeeper
   
-  
   youtube-producer:
     container_name: youtube-producer
     build:

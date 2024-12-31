@@ -19,7 +19,7 @@ def main():
   use_trustpilot = "yes" if config["data"]["tp_train_path"] != "None" else "no"
   param_path = (
     f"_lr_{config['training']['lr']}_wd_{config['training']['weight_decay']}_bs_{config['training']['batch_size']}"
-    f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}_yt_{use_trustpilot}"
+    f"_layers_{config['model_params']['trainable_transformer_layers']}_tp_simple_{config['data']['tp_simple']}_yt_{use_yotube}_tp_{use_trustpilot}"
     f"_yt_weight{config["training"]["yt_weight"]}_tp_weight{config["training"]["tp_weight"]}_yt_smoothing{config["training"]["yt_label_smoothing"]}"
     f"_tp_weight{config["training"]["tp_label_smoothing"]}"
     )

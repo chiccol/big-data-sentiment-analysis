@@ -24,7 +24,6 @@ class KafkaConsumer:
     Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrive topics, partitions and messages.
     On instantiation, it will call the initialize_consumer() function in order to contact the kafka broker inside docker and
     establish a connection. 
-    TODO pass bootstrap_servers, group_id, auto_offset_reset etc as environment parameters in the docker compose.
     """
     def __init__(self,
                  bootstrap_servers: str = 'kafka:9092',

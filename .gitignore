@@ -5,3 +5,9 @@ comandipostgres.txt
 *.ipynb
 /data/make_dataset/trustpilot/*dataset*
 /data/make_dataset/youtube/*dataset*
+/training/data
+/training/distilbert_base_sst2_finetuned
+/training/experiments/*/best_checkpoint.pth
+/training/final_experiments/*/best_checkpoint.pth
+/giuse_torch/
+/training/experiments_new_yt/*/best_checkpoint.pth

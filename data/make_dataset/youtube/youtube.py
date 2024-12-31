@@ -3,15 +3,21 @@ import json
 from datetime import datetime
 import re
 
+import googleapiclient.discovery
+from dotenv import load_dotenv
+import os
+
 def search_videos(query, 
                   publishedAfter,
-                  youtube_scraper, 
+                  youtube_scraper,
+                  extra_keys,
                   company,
                   max_videos,
                   relevanceLanguage = "en",
                   min_duration = 240,
                   min_comment = 10,
-                  min_view = 1000
+                  min_view = 1000,
+                  next_token_page_search = None
                     ):
   """
   query: str of the search query
@@ -37,15 +43,46 @@ def search_videos(query,
             maxResults=max_batch_videos,
             q=query, 
             publishedAfter=publishedAfter,
-            relevanceLanguage=relevanceLanguage
+            relevanceLanguage=relevanceLanguage,
+            pageToken=next_token_page_search,
+            order="viewCount"
         )
   
   while True:
-    
-    response_search_videos = request_search_videos.execute()
+    print(f"Looking for videos for {company}")
+    try:
+        response_search_videos = request_search_videos.execute()
+    except Exception as e:
+        error_message = str(e)
+        if "quotaExceeded" in error_message:
+            if extra_keys:
+                youtube_scraper = googleapiclient.discovery.build(
+                    "youtube", 
+                    "v3", 
+                    developerKey=extra_keys[0]
+                )
+                request_search_videos = youtube_scraper.search().list(
+                    part="snippet",
+                    maxResults=max_batch_videos,
+                    q=query, 
+                    publishedAfter=publishedAfter,
+                    relevanceLanguage=relevanceLanguage
+                    )
+                extra_keys.pop(0)
+                print("Using extra key")
+                continue
+            print("Quota exceeded. Please try again tomorrow.")
+            return new_videos, youtube_comapanies_videos, next_page_token_search, None
+        else:
+            print(f"An error occurred: {error_message}")
+            return new_videos, youtube_comapanies_videos, next_page_token_search, youtube_scraper
+
     next_page_token_search = response_search_videos.get('nextPageToken',None)
     regionCode = response_search_videos['regionCode']
-    videoIds = [item["id"]["videoId"] for item in response_search_videos['items']]
+    videoIds = [
+        item["id"]["videoId"] for item in response_search_videos["items"]
+        if item["id"]["kind"] == "youtube#video"
+        ]
     num_videos += len(videoIds)
     new_videos = []
 
@@ -55,7 +92,26 @@ def search_videos(query,
     for videoId in videoIds:
             if videoId not in youtube_comapanies_videos[company]["videos"]:
                 print(f"Checking video {videoId}")
-                video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
+                try:
+                    video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
+                except Exception as e:
+                    error_message = str(e)
+                    print(error_message)
+                    if "quotaExceeded" in error_message:
+                        if extra_keys:
+                            youtube_scraper = googleapiclient.discovery.build(
+                                "youtube", 
+                                "v3", 
+                                developerKey=extra_keys[0]
+                            )
+                            print(f"Using extra key")
+                            extra_keys.pop(0)
+                            video_info = youtube_scraper.videos().list(part="contentDetails, statistics", id=videoId).execute()
+                        print("Quota exceeded. Please try again tomorrow.")
+                        return "quota exceeded", None, next_page_token_search, None
+                    else:
+                        print(f"An error occurred: {error_message}")
+                        break
                 duration = iso8601_to_seconds(video_info['items'][0]['contentDetails'].get('duration',"0"))
                 view_count = int(video_info['items'][0]["statistics"].get("viewCount",0))
                 comment_count = int(video_info['items'][0]["statistics"].get("commentCount",0))
@@ -82,7 +138,6 @@ def search_videos(query,
         json.dump(youtube_comapanies_videos, file, indent=4)
 
     if not next_page_token_search or num_videos >= max_videos:
-        print("No more videos to fetch", flush=True)
         break
     else:
         print(f"Fetching next batch of videos", flush=True)
@@ -95,21 +150,28 @@ def search_videos(query,
             relevanceLanguage=relevanceLanguage,
             pageToken=next_page_token_search
         )
-  return new_videos, youtube_comapanies_videos
+  return new_videos, youtube_comapanies_videos, next_page_token_search, youtube_scraper
 
 def iso8601_to_seconds(duration):
     if duration == "0":
         return 0
+    # Define a regular expression to extract hours, minutes, and seconds
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(duration)
+
     if not match:
-        return None
+        return 0  # If the format is invalid
+
+    # Extract hours, minutes, and seconds from the match groups (or 0 if not available)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
-    return hours * 3600 + minutes * 60 + seconds
 
-def getcomments_video(video, youtube_scraper, from_date, company, max_num_comments, next_page_token):
+    # Convert everything to seconds
+    total_seconds = hours * 3600 + minutes * 60 + seconds
+    return total_seconds
+
+def getcomments_video(video, youtube_scraper, extra_keys, from_date, company, max_num_comments, next_page_token):
     request = youtube_scraper.commentThreads().list(
         part="snippet",
         videoId=video,
@@ -124,11 +186,32 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
 
     while True:
         print(f"Fetching comments for video {video} of company {company}...")
+
         try:
             response = request.execute()
         except Exception as e:
-            print(f"Error fetching comments: {e}")
-            return None, comments
+            error_message = str(e)
+            if "quotaExceeded" in error_message:
+                if extra_keys:
+                    youtube_scraper = googleapiclient.discovery.build(
+                        "youtube", 
+                        "v3", 
+                        developerKey=extra_keys[0]
+                    )
+                    request = youtube_scraper.commentThreads().list(
+                        part="snippet",
+                        videoId=video,
+                        maxResults=100,
+                        pageToken=next_page_token
+                        )
+                    extra_keys.pop(0)
+                    print("Using extra key")
+                    continue
+                print("Quota exceeded. Please try again tomorrow.")
+                return None, comments, None
+            else:
+                print(f"An error occurred: {error_message}")
+                return None, comments, youtube_scraper  # Exit the loop for other errors
 
         for item in response['items']:
             comment = item['snippet']['topLevelComment']['snippet']
@@ -139,7 +222,7 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
                     continue
                 else:
                     print(f"Comment is older than {from_date}")
-                    return None, comments
+                    return None, comments, youtube_scraper
 
             extracted_comment = {
                 "text": comment.get("textOriginal", None),
@@ -163,53 +246,84 @@ def getcomments_video(video, youtube_scraper, from_date, company, max_num_commen
         )
         sleep(5)
 
-    return next_page_token, comments
+    return next_page_token, comments, youtube_scraper
 
-def fetch_and_store_comments(company_configs, youtube_scraper, output_file="youtube_comments.json"):
-    try:
-        with open(output_file, 'r') as file:
-            stored_comments = json.load(file)
-    except FileNotFoundError:
-        stored_comments = {}
+def fetch_and_store_comments(company_configs, output_file="youtube_comments.json", next_page_token_search=None):
+
+    api_service_name = "youtube"
+    api_version = "v3"
+    load_dotenv(dotenv_path=os.path.join(os.getcwd(), "youtube.env"))
+    DEVELOPER_KEY = os.getenv("DEVELOPER_KEY")
+    DEVELOPER_KEY_2 = os.getenv("DEVELOPER_KEY_2")
+    extra_keys = [DEVELOPER_KEY_2]
+
+    youtube_scraper = googleapiclient.discovery.build(
+            api_service_name, 
+            api_version, 
+            developerKey=DEVELOPER_KEY
+        )
+    
+    if not os.path.exists(output_file):
+        output_data = {}
+        with open(output_file, 'w') as file:
+            json.dump(output_data, file, indent=4)
 
     for company, config in company_configs.items():
         print(f"Processing company: {company}")
         total_comments = 0
         new_comments = []
 
-        videos, _ = search_videos(
-            query=config["query"],
-            publishedAfter=config["search_from_date"],
-            youtube_scraper=youtube_scraper,
-            company=company,
-            max_videos=config["max_videos"],
-            relevanceLanguage=config["relevance_language"],
-            min_duration=config["min_duration"],
-            min_comment=config["min_comment"],
-            min_view=config["min_view"]
-        )
-
-        for video in videos:
-            if total_comments >= config["num_comments_to_fetch"]:
-                break
-
-            next_page_token = config["videos"].get(video, {}).get("next_page_token", "None")
-            next_page_token, comments = getcomments_video(
-                video=video,
+        while total_comments < config["num_comments_to_fetch"]:
+            videos, _, next_page_token_search, youtube_scraper = search_videos(
+                query=config["query"],
+                publishedAfter=config["search_from_date"] if config["search_from_date"] != "None" else None,
                 youtube_scraper=youtube_scraper,
-                from_date=config["get_comments_from_date"],
+                extra_keys=extra_keys,
                 company=company,
-                max_num_comments=config["max_num_comments_per_scraping"],
-                next_page_token=next_page_token
+                max_videos=config["max_videos"],
+                relevanceLanguage=config["relevance_language"],
+                min_duration=config["min_duration"],
+                min_comment=config["min_comment"],
+                min_view=config["min_view"],
+                next_token_page_search=next_page_token_search
             )
 
-            total_comments += len(comments)
-            new_comments.extend(comments)
+            if videos == "quota exceeded":
+                return  
 
-        stored_comments[company] = stored_comments.get(company, []) + new_comments
-        print(f"Fetched {len(new_comments)} comments for {company}.")
+            for video in videos:
+                if total_comments >= config["num_comments_to_fetch"]:
+                    print("Fetched enough comments.")
+                    break
 
-    with open(output_file, 'w') as file:
-        json.dump(stored_comments, file, indent=4)
+                next_page_token = config["videos"].get(video, {}).get("next_page_token", "None")
+                next_page_token, comments, youtube_scraper = getcomments_video(
+                    video=video,
+                    youtube_scraper=youtube_scraper,
+                    extra_keys=extra_keys,
+                    from_date=config["get_comments_from_date"] if config["get_comments_from_date"] != "None" else None,
+                    company=company,
+                    max_num_comments=config["max_num_comments_per_scraping"],
+                    next_page_token=next_page_token
+                )
 
-    print(f"Comments stored in {output_file}.")
+                total_comments += len(comments)
+                new_comments.extend(comments)
+
+            print(f"Fetched {len(new_comments)} comments for {company}.")
+            if new_comments:
+                print("Saving new comments...")
+                with open(output_file, 'r+') as file:
+                    prev_comments = json.load(file)
+                    prev_comments[company] = prev_comments.get(company, []) + new_comments
+                    file.seek(0)
+                    json.dump(prev_comments, file, indent=4)
+                new_comments.clear()
+
+            if next_page_token_search == None:
+                print(f"No next page token for company {company}.")
+                break
+            else:
+                print(f"Searching new videos for company {company}")
+
+    print(f"Fetched all requested comments. Comments stored in {output_file}.")

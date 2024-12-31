@@ -65,7 +65,7 @@ def iso8601_to_seconds(duration):
     match = pattern.match(duration)
 
     if not match:
-        return None  # If the format is invalid
+        return 0  # If the format is invalid
 
     # Extract hours, minutes, and seconds from the match groups (or 0 if not available)
     hours = int(match.group(1)) if match.group(1) else 0
@@ -197,7 +197,10 @@ def search_videos(query,
     response_search_videos = request_search_videos.execute()
     next_page_token_search = response_search_videos.get('nextPageToken',None)
     regionCode = response_search_videos['regionCode']
-    videoIds = [item["id"]["videoId"] for item in response_search_videos['items']]
+    videoIds = [
+        item["id"]["videoId"] for item in response_search_videos["items"]
+        if item["id"]["kind"] == "youtube#video"
+        ]
     num_videos += len(videoIds)
     new_videos = []
 

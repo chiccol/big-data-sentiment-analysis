@@ -15,13 +15,14 @@ The data is obtained through the official APIs of Youtube and Reddit, a custom-m
 
 ### Training and Testing
 
-Download the trustpilot dataset: 
+First, let's create a venv with all the requirements needed: 
 ```
-gdown https://drive.google.com/uc?id=1wPJC00XvvTJ0wqQry0EmDG0hRmy7-pcd # test
-gdown https://drive.google.com/uc?id=1oXOdq8x4NuqAfbaR2ak8n4atclAlHxdz # train
+python -m venv training_venv
+source training_venv/bin/activate
+pip install -r training/requirements.txt
 ```
-Download the youtube dataset:
+Then the following script will download the datasets, train the model and store the weights as well as the diagnostics:
 ```
-gdown https://drive.google.com/uc?id=1ij9G4y2MqRuP1-s0KEcBSwGtimWz6uyf # test
-gdown https://drive.google.com/uc?id=13OCC_WsLB2Vwt3pz2nm_hEFjNszfLV15 # train
+chmod +x training/train.sh
+./training/train.sh
 ```

@@ -1,9 +1,7 @@
 import torch
 
 from pymongo.database import Database
-from pymongo.collection import Collection
 from typing import List
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text import CharacterTextSplitter
 from transformers import AutoModelForCausalLM, AutoTokenizer
 

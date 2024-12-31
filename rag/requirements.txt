@@ -5,4 +5,3 @@ langchain_text_splitters==0.3.4
 langchain_community==0.3.13
 transformers==4.46.1
 faiss-cpu==1.9.0
-faiss-gpu==1.9.0

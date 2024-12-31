@@ -1,65 +1,36 @@
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+import torch
+from utils import get_reviews, summarizer
+
 from pymongo import MongoClient
 
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch 
-
-import os
 from time import sleep
+import os
 
-def get_reviews(db, sentiment, company):
-    comapny_reviews = db[company]
-    reviews = comapny_reviews.find({"sentiment": sentiment})
-    reviews = [review["text"] for review in reviews]
-    text_splitter = CharacterTextSplitter(
-        separator=" ",   # Split by spaces
-        chunk_size=100,  # Maximum size of each chunk
-        chunk_overlap=20  # Overlap between chunks
-        )
-    splitted_reviews = [text_splitter.split_text(review)[0] for review in reviews]
-    return splitted_reviews
-
-def summarizer(text, sentiment, topic, model, tokenizer, device):
-
-    instruction = f"""You are given {sentiment} product reviews about {topic}. 
-                  Summarize the complaints in bullet points. Do not simply copy-paste the reviews."""
-    messages = [
-         {"role": "system", "content":instruction},
-         {"role": "user", "content":f"{text}"},
-         ]
-
-    with torch.no_grad():   
-        input_text = tokenizer.apply_chat_template(messages, tokenize=False)
-        inputs = tokenizer.encode_plus(input_text, return_tensors="pt").to(device)
-        input_ids = inputs['input_ids']
-        attention_mask = inputs['attention_mask']
-        # Generate output with the attention mask passed
-        outputs = model.generate(
-            input_ids, 
-            attention_mask=attention_mask, 
-            max_new_tokens=100, 
-            temperature=0.2, 
-            top_p=0.9, 
-            do_sample=True
-            )
-        summary = tokenizer.decode(outputs[0]).split("<|im_start|>assistant")[-1].replace("<|im_end|>", "")
-    return summary 
+model = "HuggingFaceTB/SmolLM2-360M-Instruct"
+embeddings_model = "BAAI/bge-large-en"
+device = "gpu" if torch.cuda.is_available() else "cpu" 
+mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017")
+db_name = "reviews"
 
 def main():
+    """
+    Main function to retrieve reviews from MongoDB, process them, and generate summaries.
+    Connects to MongoDB, retrieves reviews, summarizes them, and prints the results.
+    In the future it shoudl connect to the UI and send the results back.
+    """
     print("Wait for mongodb to start and to have some data...", flush=True)
     sleep(30) 
     print("Loading embeddings...", flush=True)
     embeddings = HuggingFaceEmbeddings(
-        model_name = "BAAI/bge-large-en"
+        model_name = embeddings_model
         )
     # MongoDB connection URI (from environment variables or default)
-    mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017")
     print("Connecting to MongoDB...", flush=True)
     client = MongoClient(mongo_uri)
-    # Access the database and collection
-    db_name = "reviews"  # Replace with your database name
+    # Access the database and collection  
     db = client[db_name]
     # Get the names of all collections in the "reviews" database
     topics = [
@@ -74,23 +45,28 @@ def main():
             "negative": dict()
         }
     print("Loading model...", flush=True)
-    checkpoint = "HuggingFaceTB/SmolLM2-360M-Instruct"
-    device = "cpu" # for GPU usage or "cpu" for CPU usage
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    tokenizer = AutoTokenizer.from_pretrained(model)
     # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
-    model = AutoModelForCausalLM.from_pretrained(checkpoint).to(device)
+    model = AutoModelForCausalLM.from_pretrained(model).to(device)
     
     while True:
         print("Retrieving reviews from MongoDB...", flush=True)
-        collections = db.list_collection_names() # to be relace with company asking for reviews through UI
+        collections = db.list_collection_names()
         print(f"Got Collections: {collections}", flush=True)
-        company = "nordvpn.com"
+        company = "nordvpn.com" # to be replaced with company asking for reviews through UI
+        while company not in collections:
+            print(f"Company: {company} not found in the database. Waiting for 5 seconds for data to come...", flush=True)
+            sleep(10)
+            collections = db.list_collection_names()
         # Get all reviews for the current company
         print(f"Company: {company}", flush=True)
         for sentiment in answers:
             print(f"Extracting info for Sentiment: {sentiment}", flush=True)
             reviews = get_reviews(db, sentiment, company)
-            if len(reviews) == 0: continue
+            if len(reviews) == 0: 
+                for topic in topics:
+                    answers[sentiment][topic] = "No reviews found"
+                continue
             vectorstore = FAISS.from_texts(reviews, embeddings)
             for topic in topics:
                 print(f"Topic: {topic}", flush=True)

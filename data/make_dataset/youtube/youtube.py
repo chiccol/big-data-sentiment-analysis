@@ -31,6 +31,7 @@ def search_videos(query,
   max_comments: int of the maximum number of comments to get
   """
   num_videos = 0
+  new_videos = []
   youtube_comapanies_videos_path = "youtube_companies_videos.json"
   date_format = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -47,7 +48,7 @@ def search_videos(query,
             pageToken=next_token_page_search,
             order="viewCount"
         )
-  
+
   while True:
     print(f"Looking for videos for {company}")
     try:
@@ -84,7 +85,6 @@ def search_videos(query,
         if item["id"]["kind"] == "youtube#video"
         ]
     num_videos += len(videoIds)
-    new_videos = []
 
     with open(youtube_comapanies_videos_path, 'r') as file:
             youtube_comapanies_videos = json.load(file)

@@ -1,4 +1,5 @@
 from time import sleep
+from datetime import datetime, timedelta
 import json
 from datetime import datetime
 from dotenv import load_dotenv
@@ -28,6 +29,8 @@ if __name__ == "__main__":
     api_version = "v3"
     load_dotenv(dotenv_path=os.path.join(os.getcwd(), "youtube.env"))
     DEVELOPER_KEY = os.getenv("DEVELOPER_KEY")
+    DEVELOPER_KEY_2 = os.getenv("DEVELOPER_KEY_2")
+    extra_keys = [DEVELOPER_KEY_2]
 
     youtube_scraper = googleapiclient.discovery.build(
         api_service_name, 
@@ -56,30 +59,31 @@ if __name__ == "__main__":
         for company in companies_videos.keys():
             company_msg[company] = 0
             logger.info(f"Searching for new videos for {company}")
-            new_videos, companies_videos = search_videos(query = companies_videos[company]["query"],
-                                                         publishedAfter = companies_videos[company]["search_from_date"],
-                                                         youtube_scraper = youtube_scraper,
-                                                         company = company,
-                                                         max_videos = companies_videos[company]["max_videos"],
-                                                         relevanceLanguage = companies_videos[company]["relevance_language"],
-                                                         min_duration = companies_videos[company]["min_duration"],
-                                                         min_comment = companies_videos[company]["min_comment"],
-                                                         min_view = companies_videos[company]["min_view"])
-            
+            new_videos, companies_videos, youtube_scraper = search_videos(query = companies_videos[company]["query"],
+                                                                          publishedAfter = companies_videos[company]["search_from_date"],
+                                                                          youtube_scraper = youtube_scraper,
+                                                                          extra_keys = extra_keys,
+                                                                          company = company,
+                                                                          max_videos = companies_videos[company]["max_videos"],
+                                                                          relevanceLanguage = companies_videos[company]["relevance_language"],
+                                                                          min_duration = companies_videos[company]["min_duration"],
+                                                                          min_comment = companies_videos[company]["min_comment"],
+                                                                          min_view = companies_videos[company]["min_view"])
+            logger.info(f"Found {len(new_videos)} new videos for {company}")
             for video in companies_videos[company]["videos"]:
                 if companies_videos[company]["videos"][video] not in ["too_short", "currently_irrelevant"] and\
                     (companies_videos[company]["videos"][video] in new_videos or \
                         companies_videos[company]["videos"][video].get("next_page_token", None) != None):
                     info = companies_videos[company]["videos"][video]
                     logger.info(f"Currenty checking {info}")
-
-                    next_page_token, num_comments = getcomments_video(video = video,
-                                                                      youtube_scraper = youtube_scraper,
-                                                                      company = company,
-                                                                      producer = producer,
-                                                                      max_num_comments = companies_videos[company]["max_num_comments_per_scraping"],
-                                                                      next_page_token = companies_videos[company]["videos"][video]["next_page_token"],
-                                                                      from_date = companies_videos[company]["videos"][video]["date_last_scrape"])
+                    next_page_token, num_comments, youtube_scraper = getcomments_video(video = video,
+                                                                                       youtube_scraper = youtube_scraper,
+                                                                                       extra_keys = extra_keys,
+                                                                                       company = company,
+                                                                                       producer = producer,
+                                                                                       max_num_comments = companies_videos[company]["max_num_comments_per_scraping"],
+                                                                                       next_page_token = companies_videos[company]["videos"][video]["next_page_token"],
+                                                                                       from_date = companies_videos[company]["videos"][video]["date_last_scrape"])
                     logger.info(f"Collected {num_comments} comments from video {video}")
                     company_msg[company] += num_comments
                     total_comments_scraped += num_comments
@@ -97,6 +101,32 @@ if __name__ == "__main__":
         for company, count in company_msg.items():
             logger.info(f"{company}: {count}") 
 
-        sleep(600)  
+        if not youtube_scraper:
+            logger.error(f"Quota exceeded for company {company}. Stopping the scraping.")
+                
+            # Calculate the time remaining until the next day
+            now = datetime.now()
+            next_day = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            time_until_next_day = (next_day - now).total_seconds()
+
+            # Convert seconds into hours, minutes, and seconds
+            hours, remainder = divmod(time_until_next_day, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            logger.info(
+                f"Sleeping until the next day: {int(hours)} hours, {int(minutes)} minutes, and {int(seconds)} seconds."
+                )
+            sleep(time_until_next_day)
+            
+            logger.info("Restarting the scraping.")
+            extra_keys = [DEVELOPER_KEY_2]
+            youtube_scraper = googleapiclient.discovery.build(
+                api_service_name, 
+                api_version, 
+                developerKey=DEVELOPER_KEY
+            )
+        else:
+            logger.info("Sleeping for 10 minutes")
+            sleep(600)  
+
         with open(companies_videos_path, 'r') as file:
             companies_videos = json.load(file)

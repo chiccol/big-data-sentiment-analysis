@@ -11,7 +11,7 @@ import os
 
 model = "HuggingFaceTB/SmolLM2-360M-Instruct"
 embeddings_model = "BAAI/bge-large-en"
-device = "gpu" if torch.cuda.is_available() else "cpu" 
+device = "cuda" if torch.cuda.is_available() else "cpu" 
 mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017")
 db_name = "reviews"
 

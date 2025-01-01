@@ -9,7 +9,7 @@ from youtube import fetch_and_store_comments
 import json
 import os
 
-def comment_classification(data, candidate_labels, model, tokenizer, classification, threshold=0.45):
+def comment_classification(data, candidate_labels, model, tokenizer, device, classification, threshold=0.45):
     """
     Classify comments into specific categories or sentiments using a sequence classification model.
 
@@ -27,6 +27,8 @@ def comment_classification(data, candidate_labels, model, tokenizer, classificat
     model : transformers.PreTrainedModel
         A sequence classification model that outputs logits corresponding to 
         [contradiction, neutral, entailment] for input text-label pairs.
+    device: str
+        The device to run the model on (e.g., 'cuda' for GPU or 'cpu' for CPU).
     classification : str
         The type of classification to perform (e.g., 'sentiment', 'topic', etc.). This determines 
         how specific scenarios are handled (e.g., hard-coded rules for specific topics).
@@ -88,7 +90,7 @@ def comment_classification(data, candidate_labels, model, tokenizer, classificat
             padding=True,
             max_length=512,
             return_tensors="pt"
-        ).to("cuda")  # Move inputs to GPU
+        ).to(device)  # Move inputs to GPU
 
         # Get logits and compute probabilities
         with torch.no_grad():
@@ -184,9 +186,11 @@ if __name__ == "__main__":
         print("Using existing dataset.")
     
     # Load the zero-shot classification model and tokenizer
-    zero_shot_model = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli')
-    zero_shot_model = zero_shot_model.to("cuda")
-    tokenizer = AutoTokenizer.from_pretrained('facebook/bart-large-mnli')
+    zero_shot_model_path = "facebook/bart-large-mnli" # Replace with more powerful models to improve the final results
+    zero_shot_model = AutoModelForSequenceClassification.from_pretrained(zero_shot_model_path)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    zero_shot_model = zero_shot_model.to(device)
+    tokenizer = AutoTokenizer.from_pretrained(zero_shot_model_path)
 
     # Load the JSON file containing comments
     with open(scraped_comments, "r") as file:
@@ -198,7 +202,7 @@ if __name__ == "__main__":
     # Process topic analysis for each company
     for company, comments in comments_data.items():
         print(f"Processing topic analysis for company: {company}")
-        comments_data[company] = comment_classification(comments, candidate_labels, zero_shot_model, tokenizer, "topic", threshold = 0.45)
+        comments_data[company] = comment_classification(comments, candidate_labels, zero_shot_model, tokenizer, device, "topic", threshold = 0.45)
 
     # Candidate labels for sentiment analysis
     candidate_labels = ['positive', 'neutral', 'negative']
@@ -206,7 +210,7 @@ if __name__ == "__main__":
     # Process sentiment analysis for each company
     for company, comments in comments_data.items():
         print(f"Processing sentiment analysis for company: {company}")
-        comments_data[company] = comment_classification(comments, candidate_labels, zero_shot_model, tokenizer, "sentiment", threshold = 0)
+        comments_data[company] = comment_classification(comments, candidate_labels, zero_shot_model, tokenizer, device, "sentiment", threshold = 0)
 
     # Save the updated JSON with sentiment and topic field
     with open(scraped_comments, "w") as file:

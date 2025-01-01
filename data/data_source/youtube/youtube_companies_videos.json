@@ -2,8 +2,8 @@
     "nordvpn.com": {
         "query": "NordVPN review",
         "search_from_date": "2024-01-01T00:00:00Z",
-        "get_comments_from_date": "2024-06-01T00:00:00Z",
-        "max_videos": 5,
+        "get_comments_from_date": "2024-01-01T00:00:00Z",
+        "max_videos": 50,
         "relevance_language": "en",
         "max_num_comments_per_scraping": 100,
         "min_duration": 240,
@@ -14,8 +14,8 @@
     "www.motorola.com": {
         "query": "Motorola review",
         "search_from_date": "2024-01-01T00:00:00Z",
-        "get_comments_from_date": "2024-08-01T00:00:00Z",
-        "max_videos": 5,
+        "get_comments_from_date": "2024-01-01T00:00:00Z",
+        "max_videos": 50,
         "relevance_language": "en",
         "max_num_comments_per_scraping": 50,
         "min_duration": 240,

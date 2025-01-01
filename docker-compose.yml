@@ -78,10 +78,17 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
       - CLIENT_ID=spark_consumer
       - GROUP_ID=spark_group
+      - NVIDIA_VISIBLE_DEVICES=0 # only use GPU 0
       - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it 
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI
+    runtime: nvidia 
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu] # allows access to GPU resources
     volumes: 
       - ./consumers/spark/main.py:/app/main.py 
       - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
@@ -103,6 +110,13 @@ services:
       #- SPARK_DYNAMIC_ALLOCATION_ENABLED=true # controls how many executors to request but operates within the worker resource limits
       - SPARK_WORKER_CORES=2 
       - SPARK_WORKER_MEMORY=2g # resource limit per worker
+      - NVIDIA_VISIBLE_DEVICES=0 # only use GPU 0
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
     depends_on:
       - spark-master
   

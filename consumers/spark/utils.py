@@ -75,8 +75,8 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
         logger.info(f"Processing {len(text_series)} messages")
         for i in range(0, len(text_series), batch_size):
             batch = list(text_series[i:i + batch_size])
-            inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True)
-                
+            inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True).to(device)
+            
             outputs = model(**inputs)
             probabilities = torch.softmax(outputs.logits, dim=1)  # Keep as tensor
                 

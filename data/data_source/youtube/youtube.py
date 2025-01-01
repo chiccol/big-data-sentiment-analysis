@@ -290,8 +290,8 @@ def search_videos(query,
                         return new_videos, youtube_comapanies_videos, youtube_scraper
                     
                 duration = iso8601_to_seconds(video_info['items'][0]['contentDetails'].get('duration',"0"))
-                view_count = int(video_info['items'][0]["statistics"]["viewCount"])
-                comment_count = int(video_info['items'][0]["statistics"]["commentCount"])
+                view_count = int(video_info['items'][0]["statistics"].get("viewCount", 0))
+                comment_count = int(video_info['items'][0]["statistics"].get("commentCount",0))
                 if duration < min_duration:
                     youtube_comapanies_videos[company]["videos"][videoId] = "too_short"
                     logger.info(f"Video {videoId} is too short")

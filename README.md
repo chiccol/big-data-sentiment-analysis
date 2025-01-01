@@ -4,7 +4,7 @@
 
 - [How it Works](#How-it-Works)
 - [How to Run](#How-to-Run)
-    - [Nvidia Runtime (Using GPU)](#Nvidia-Runtime-(Using-Gpu))
+    - [Nvidia Runtime (Using GPU)](#Nvidia-Runtime-(Using-GPU))
     - [Using CPU](#Using-CPU)
     - [Youtube and Reddit API Keys](#Youtube-and-Reddit-Api-Keys)
         - [How to Get the Keys](#How-to-Get-the-Keys)

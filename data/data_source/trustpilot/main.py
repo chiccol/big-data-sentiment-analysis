@@ -4,6 +4,7 @@ from datetime import datetime
 from trustpilot import scrape_and_send_reviews
 from kafka_producer import KafkaProducer
 import logging
+from config import CONFIG
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -17,43 +18,62 @@ logging.basicConfig(
 logger = logging.getLogger("trustpilot-producer")
 logger.info("Started logging")
 
-if __name__ == "__main__":
-    client_id = "trustpilot-producer"
-    bootstrap_servers = "kafka:9092"
-    source = "trustpilot"
-    producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id = client_id)
-    logger.info(f"Kafka producer {client_id} connected to {bootstrap_servers} for {source}")
+def main():
+    """
+    Main function to initialize the Kafka producer, load company scraping metadata, 
+    and orchestrate the scraping and sending of Trustpilot reviews in a continuous loop.
+    Steps:
+        1. Initialize the Kafka producer.
+        2. Load the JSON file (CONFIG["companies_date_path"]) containing the companies and their last scraping dates.
+        3. Scrape reviews for each company in the JSON.
+        4. Serialize and send reviews to Kafka.
+        5. Update the last scraping date and save it to the JSON file.
+        6. Repeat the process in a continuous loop with a pause to avoid being blocked by Trustpilot.
+    Notes:
+        - The name of the companies and the start date for scraping is defined by urls-trustpilot.json.
+        - The producer configuration and other parameters are defined in the confi.py.
+        - Dates are expected to follow the format defined in `CONFIG["date_format"]`.
+    """
+    # Initialize Kafka producer
+    producer = KafkaProducer(
+        bootstrap_servers = CONFIG["bootstrap_servers"], 
+        client_id = CONFIG["client_id"]
+        )
+    logger.info(f"Kafka producer {CONFIG['client_id']} connected to {CONFIG['bootstrap_servers']} for trustpilot")
+    
     # Load companies and dates of the last scraping
-    companies_from_date_path = "urls-trustpilot.json"
-    with open(companies_from_date_path, 'r') as file:
+    with open(CONFIG["companies_date_path"], 'r') as file:
         companies_date = json.load(file)
-    logger.info(f"Companies and dates of the last scraping loaded from {companies_from_date_path}") 
+    logger.info(f"Companies and dates of the last scraping loaded from {CONFIG["companies_date_path"]}") 
     for company in companies_date.keys():
         logger.info(f"Company: {company}, Last scraping: {companies_date[company]}")
-
-    date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
                     
     while True:
         for company in companies_date.keys():
-            
             try:
-                from_date = datetime.strptime(companies_date[company], date_format)
+                from_date = datetime.strptime(companies_date[company], CONFIG["date_format"])
             except:
-                raise AssertionError(f"The date '{companies_date[company]}' does NOT match the format '{date_format}'")
-            
+                raise AssertionError(f"The date '{companies_date[company]}' does NOT match the format '{CONFIG["date_format"]}'")
+        
             scrape_and_send_reviews(company=company, 
                                     from_date = from_date,
-                                    date_format = date_format,
+                                    date_format = CONFIG["date_format"],
                                     producer = producer,
                                     language="en")
             
             # Update the date of the last scraping
-            companies_date[company] = datetime.now().strftime(date_format)
-            with open(companies_from_date_path, 'w') as file:
+            companies_date[company] = datetime.now().strftime(CONFIG["date_format"])
+            with open(CONFIG["companies_date_path"], 'w') as file:
                 json.dump(companies_date, file)
 
-        sleep(30)  
+        # Sleep to avoid being blocked by Trustpilot
+        sleep(CONFIG["sleep_time"])  
 
         # Update dates of the last scraping
-        with open(companies_from_date_path, 'r') as file:
+        with open(CONFIG["companies_date_path"], 'r') as file:
             companies_date = json.load(file)
+
+if __name__ == "__main__":
+    main()
+    
+    

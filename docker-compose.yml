@@ -37,6 +37,8 @@ services:
     build:
       context: data/data_source/
       dockerfile: youtube/youtube.Dockerfile
+    environment:
+      - KAFKA_ADVERTISED_LISTENERS=kafka:9092
     depends_on:
       - kafka
     volumes: 
@@ -48,6 +50,8 @@ services:
     build:
       context: data/data_source/
       dockerfile: trustpilot/trustpilot.Dockerfile
+    environment:
+      - KAFKA_ADVERTISED_LISTENERS=kafka:9092
     depends_on:
       - kafka
     volumes: 

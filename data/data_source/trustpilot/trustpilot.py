@@ -1,12 +1,15 @@
-from time import sleep
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 from io import BytesIO
 import pandas as pd
+
 import logging
+from typing import List, Dict, Optional
+from datetime import datetime
+from time import sleep
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -20,15 +23,13 @@ logging.basicConfig(
 logger = logging.getLogger("trustpilot-producer")
 logger.info("Started logging")
 
-def encode_message_to_parquet(data: list[dict]) -> bytes: 
+def encode_message_to_parquet(data: List[Dict[str, str]]) -> bytes:
     """
-    Encodes a list of dictionaries into a in-memory parquet table.
-
+    Encodes a list of dictionaries into an in-memory Parquet table.
     Args:
-        data -> list of dicts
-
+        data (List[Dict[str, str]]): The data to encode as a list of dictionaries.
     Returns:
-        bytes
+        bytes: The Parquet-encoded data as a byte array.
     """
     # Infer the schema from the data
     schema = pa.Table.from_pandas(pd.DataFrame(data)).schema
@@ -43,17 +44,22 @@ def encode_message_to_parquet(data: list[dict]) -> bytes:
     # Return the Parquet bytes for saving or sending
     return buffer.getvalue()
 
-# Function to scrape Trustpilot reviews for a specific company
-def scrape_and_send_reviews(company, from_date, date_format, producer, from_page=1, to_page=999999, language="en"):
+def scrape_and_send_reviews(
+    company: str,
+    from_date: datetime,
+    date_format: str,
+    producer,
+    from_page: int = 1,
+    to_page: int = 999999,
+    language: str = "en"
+    ) -> int:
     """
     Scrape reviews from Trustpilot for a specific company within a specified date range.
 
     This function retrieves reviews from Trustpilot's website for a given company, collecting user information,
     ratings, locations, review dates, and review text. It continues scraping until it reaches either the specified 
     number of pages or reviews older than a specified date. 
-
     Produces a list of byte encoded json. 
-
     Args:
         company (str): The Trustpilot company identifier for which reviews are being scraped in the format company.com.
         from_date (datetime): The minimum date for reviews to be collected. Reviews older than this date will 
@@ -65,7 +71,6 @@ def scrape_and_send_reviews(company, from_date, date_format, producer, from_page
                                  by date, not by page.
         language (str, optional): The language in which the reviews should be scraped. Defaults to "en". 
                                   If "en", it is converted to "www" for the URL.
-
     Returns:
         int: Returns 0 if an error occurs (e.g., a 404 error), 1 if scraping completes successfully, 
              or returns 1 if no new reviews are found after the specified date.

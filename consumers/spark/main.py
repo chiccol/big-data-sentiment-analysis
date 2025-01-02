@@ -87,7 +87,6 @@ def main():
                                      "yt_videoid", "yt_like_count", "yt_reply_count", "re_id", "re_subreddit",
                                      "re_vote", "re_reply_count"])
             write_postgres(df_postgres)
-            print(df_postgres.schema["date"].dataType, "QUIQUIQUI", flush=True)
 
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
             write_mongo(df_mongo, topics)

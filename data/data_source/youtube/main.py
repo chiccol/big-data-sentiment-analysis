@@ -32,10 +32,13 @@ if __name__ == "__main__":
     DEVELOPER_KEY_2 = os.getenv("DEVELOPER_KEY_2")
     extra_keys = [DEVELOPER_KEY_2]
 
+    print(DEVELOPER_KEY_2, DEVELOPER_KEY, flush=True)
+
     youtube_scraper = googleapiclient.discovery.build(
         api_service_name, 
         api_version, 
-        developerKey=DEVELOPER_KEY
+        developerKey=DEVELOPER_KEY,
+        static_discovery = False
     )
     
     # this doesn't work yet because I can't connect to the kafka container, probably because need external port

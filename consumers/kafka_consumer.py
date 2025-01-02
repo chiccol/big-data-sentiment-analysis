@@ -186,7 +186,7 @@ class KafkaConsumer:
             
             # Continue polling until no more messages
             while True:
-                msg = self.poll_message(timeout=self.poll_timeout)
+                msg = self.poll_message()
                 
                 # Break if no more messages
                 if msg is None:
@@ -262,11 +262,6 @@ class KafkaConsumer:
 
         logger.info(f"Function decode_parquet worked.")
         
-        # PROBABLY TO REMOVE
-        for index, message in enumerate(decoded_msg):
-            for key, value in message.items():
-                if isinstance(value, float):
-                    print(f"Float detected in message {index} at key '{key}': {value}", flush=True)
         return decoded_msg
     
     def convert_dates_in_dictionaries(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

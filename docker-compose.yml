@@ -18,9 +18,19 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, EXTERNAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-
     depends_on:
       - zookeeper
+
+  kafdrop:  # Kafka UI for monitoring topics and messages.
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    ports:
+      - "9000:9000"  # Exposes the Kafka UI on port 9000.
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+      JVM_OPTS: "-Xms32M -Xmx64M"
+    depends_on:
+      - kafka
   
   youtube-producer:
     container_name: youtube-producer
@@ -79,7 +89,7 @@ services:
       - CLIENT_ID=spark_consumer
       - GROUP_ID=spark_group
       - NVIDIA_VISIBLE_DEVICES=0 # only use GPU 0
-      - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it 
+      - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it. So far 8192 was the biggest I managed 
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI
@@ -127,6 +137,16 @@ services:
       - "27017:27017"  
     restart: always
   
+  mongo-express:
+    image: mongo-express:1.0.0-alpha
+    container_name: mongo-express
+    ports:
+      - "8081:8081"  # Exposes the Mongo Express web interface on port 8081.
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+    depends_on:
+      - mongo
+  
   postgres:
     image: postgres:17.0
     container_name: postgres
@@ -138,6 +158,17 @@ services:
       - "5432:5432"
     volumes:
       - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com  # Default login email for pgAdmin
+      - PGADMIN_DEFAULT_PASSWORD=password # Default login password for pgAdmin
+    ports:
+      - "5050:80"  # Expose pgAdmin on port 5050
+    depends_on:
+      - postgres
 
   backend:
     container_name: fastapi-backend
@@ -176,3 +207,4 @@ services:
       - MONGO_URI=mongodb://mongo:27017
     volumes:
       - ./rag/main.py:/app/main.py
+  

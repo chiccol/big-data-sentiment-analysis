@@ -44,16 +44,21 @@ def main():
     # Load companies and dates of the last scraping
     with open(CONFIG["companies_date_path"], 'r') as file:
         companies_date = json.load(file)
-    logger.info(f"Companies and dates of the last scraping loaded from {CONFIG["companies_date_path"]}") 
+    logger.info(f"Companies and dates of the last scraping loaded from {CONFIG['companies_date_path']}")
     for company in companies_date.keys():
         logger.info(f"Company: {company}, Last scraping: {companies_date[company]}")
+
+    # Sleeping time in hours, minutes, and seconds
+    hours = CONFIG['sleep_time'] // 3600
+    minutes = (CONFIG['sleep_time'] % 3600) // 60
+    remaining_seconds = CONFIG['sleep_time'] % 60
                     
     while True:
         for company in companies_date.keys():
             try:
-                from_date = datetime.strptime(companies_date[company], CONFIG["date_format"])
+                from_date = datetime.strptime(companies_date[company], CONFIG['date_format'])
             except:
-                raise AssertionError(f"The date '{companies_date[company]}' does NOT match the format '{CONFIG["date_format"]}'")
+                raise AssertionError(f"The date '{companies_date[company]}' does NOT match the format '{CONFIG['date_format']}'")
         
             scrape_and_send_reviews(company=company, 
                                     from_date = from_date,
@@ -67,6 +72,7 @@ def main():
                 json.dump(companies_date, file)
 
         # Sleep to avoid being blocked by Trustpilot
+        logger.info(f"Sleeping for {hours} hours, {minutes} minutes, and {remaining_seconds} seconds")
         sleep(CONFIG["sleep_time"])  
 
         # Update dates of the last scraping

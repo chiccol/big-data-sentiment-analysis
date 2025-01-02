@@ -103,14 +103,12 @@ class KafkaConsumer:
 
     def poll_message(self) -> Any:
         """
-        Poll Kafka for messages with a specified timeout.
-        Args:
-            timeout (float): Time in seconds to wait for a message.
+        Poll Kafka for messages.
         Returns:
             Message object (cimpl.Message) or None if no message is retrieved.
         """
         try:
-            msg = self.consumer.poll(self.poll_timeout)
+            msg = self.consumer.poll(timeout=self.poll_timeout)
             if msg is None:
                 return None
                 

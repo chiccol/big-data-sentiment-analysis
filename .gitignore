@@ -11,3 +11,5 @@ comandipostgres.txt
 /training/final_experiments/*/best_checkpoint.pth
 /giuse_torch/
 /training/experiments_new_yt/*/best_checkpoint.pth
+**/youtube.env
+**/reddit.env

@@ -19,7 +19,7 @@ def main():
     """
     Main function to retrieve reviews from MongoDB, process them, and generate summaries.
     Connects to MongoDB, retrieves reviews, summarizes them, and prints the results.
-    In the future it shoudl connect to the UI and send the results back.
+    In the future it should connect to the UI and send the results back.
     """
     print("Wait for mongodb to start and to have some data...", flush=True)
     sleep(30) 

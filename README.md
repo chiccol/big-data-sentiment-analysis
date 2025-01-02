@@ -48,7 +48,7 @@ sudo systemctl restart docker
 **CAVEAT**⚠️: we assume that the user already has the Nvidia drivers installed on the machine. 
 To check that everything works run:
 ```
-sudo dokcer run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
+sudo docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
 ```
 You should see the nvidia-smi interface which looks like the following:
 ```

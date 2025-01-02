@@ -2,7 +2,7 @@ import pyarrow.parquet as pq
 from datetime import datetime
 from confluent_kafka import Consumer, KafkaError, KafkaException
 from io import BytesIO
-from typing import List
+from typing import List, Any, Tuple, Dict
 import time
 import logging
 import pyarrow as pa
@@ -24,6 +24,16 @@ class KafkaConsumer:
     Kafka Consumer class: it has everything needed to interface with the Kafka Broker, retrive topics, partitions and messages.
     On instantiation, it will call the initialize_consumer() function in order to contact the kafka broker inside docker and
     establish a connection. 
+    Args:
+        bootstrap_servers (str): Kafka broker address. Default is 'kafka:9092'.
+        group_id (str): Consumer group id. Default is 'mongo-group'.
+        client_id (str): Consumer client id. Default is 'mongo-consumer'.
+        auto_offset_reset (str): Offset reset policy. Default is 'earliest'.
+    Note:
+        The following configuration parameters are set by default to maximize throughput:
+        heartbeat.interval.ms: 5000 (set it slightly higher than default to limit network overhead)
+        session.timeout.ms: 20000  (provide a cushion for longer processing times and prevent unnecessary rebalances due to delayed heartbeats)
+        poll.timeout.ms (in confluent kafka seconds): 12 (to avoid unnecessary long blocking while ensuring enough time for batch processing)
     """
     def __init__(self,
                  bootstrap_servers: str = 'kafka:9092',
@@ -32,36 +42,38 @@ class KafkaConsumer:
                  auto_offset_reset: str = 'earliest',):
         
         self.config = {
-            'bootstrap.servers': bootstrap_servers,
-            'group.id': group_id,
-            'auto.offset.reset': auto_offset_reset,
-            "client.id" : client_id
+            "bootstrap.servers": bootstrap_servers,
+            "group.id": group_id,
+            "auto.offset.reset": auto_offset_reset,
+            "client.id" : client_id,
+            "heartbeat.interval.ms": 5000, # 5 seconds
+            "session.timeout.ms": 20000,   # 20 seconds
         } 
+
+        # Attributes for managing topics and messages
         self.current_topic_list = []
         self.msg = None
         self.consumer = None
+        self.poll_timeout = 12.0 # seconds 
+
+        # Initialize the consumer on instantiation
         self.initialize_consumer()
         
 
     def get_topics(self) -> List[str]:
         """
-        Uses the kafka consumer to obtain metadata from the broker, then extracts the list of topics available, removes
-        "__consumer_offsets" and uses a set operation to check if there are any new topics, if there are, it subscribes to them.
-        This function is needed for the correct startup of the consumer.
-
-        Args:
-            self
-
+        Uses the Kafka consumer to obtain metadata from the broker, then extracts the list of topics available.
+        Removes internal Kafka topics (like "__consumer_offsets") and subscribes to new topics if found.
+        This function is needed for the correct startup of the consumer, as it will subscribe to all topics available.
         Returns:
-            list of topics extracted from the broker
-
+            List[str]: List of topics extracted from the broker.
         """
         metadata = self.consumer.list_topics(timeout=10.0)
         topics_dict = metadata.topics
         topics = list(topics_dict.keys())
          
         # Remove internal Kafka topic if present
-        if '__consumer_offsets' in topics:  # Note: double underscore
+        if '__consumer_offsets' in topics:
             topics.remove('__consumer_offsets')
              
         # Find new topics that aren't in our current list
@@ -79,7 +91,7 @@ class KafkaConsumer:
 
     def initialize_consumer(self) -> None:
         """
-        Init function to instantiate the consumer.
+        Initializes the Kafka consumer by creating an instance and subscribing to topics.
         """
         try:
             self.consumer = Consumer(self.config)
@@ -89,17 +101,16 @@ class KafkaConsumer:
             logger.error(f"Failed to initialize kafka consumer: {str(e)}")
             raise
 
-    def poll_message(self, timeout: float = 1.0):
-        """Poll Kafka for messages with a timeout.
-        
+    def poll_message(self) -> Any:
+        """
+        Poll Kafka for messages with a specified timeout.
         Args:
-            timeout -> float
-
+            timeout (float): Time in seconds to wait for a message.
         Returns:
-            msg -> cimplMessage or None
+            Message object (cimpl.Message) or None if no message is retrieved.
         """
         try:
-            msg = self.consumer.poll(timeout)
+            msg = self.consumer.poll(self.poll_timeout)
             if msg is None:
                 return None
                 
@@ -118,7 +129,9 @@ class KafkaConsumer:
             raise
 
     def close(self):
-        """Closes the Kafka consumer."""
+        """
+        Closes the Kafka consumer connection.
+        """
         if self.consumer is not None:
             try:
                 self.consumer.close()
@@ -127,22 +140,20 @@ class KafkaConsumer:
                 logger.error(f"Error closing consumer: {str(e)}")
                 raise
     
-    def get_metadata(self, timeout = 10.0):
+    def get_metadata(self):
         """
-        Returns: metadata Kafka object.
+        Retrieves metadata from Kafka.
+        Args:
+            timeout (float): Time in seconds to wait for metadata.
+        Returns:
+            Metadata object with information about topics and partitions.
         """
-        metadata = self.consumer.list_topics(timeout = timeout)
+        metadata = self.consumer.list_topics(timeout = 10.0)
         return metadata
-
-
-# VERIFY THAT timeout for poll aligns with heartbeat.interval.ms and session.timeout.ms
-    def consume_messages_spark(self, timeout=15.0):
+    
+    def consume_messages_spark(self) -> Tuple[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
         """
         Consumes messages from Kafka for Spark processing and writing.
-        
-        Args:
-            timeout (float): Seconds to wait between polls.
-        
         Returns:
             tuple: (
                 all_messages: list of all messages regardless of topic,
@@ -175,7 +186,7 @@ class KafkaConsumer:
             
             # Continue polling until no more messages
             while True:
-                msg = self.poll_message(timeout=timeout)
+                msg = self.poll_message(timeout=self.poll_timeout)
                 
                 # Break if no more messages
                 if msg is None:
@@ -218,15 +229,13 @@ class KafkaConsumer:
         logger.info(f"Finally this is the dictionary of topic messages: {topic_messages}") 
         return all_messages, topic_messages
 
-    def decode_parquet(self, msg):
+    def decode_parquet(self, msg: Any) -> List[Dict[str, Any]]:
         """
         Decodes a parquet-encoded message and returns it.
-
         Args:
-            msg: parquet-encoded messages
-
+            msg (Any): Parquet-encoded Kafka message object. The message value is expected to be in a binary format.
         Returns:
-            decoded_msg: kafka message object
+            List[Dict[str, Any]]: A list of dictionaries representing the decoded message, where each dictionary corresponds to a row of the Parquet data.
         """
         # Use BytesIO to read the binary Parquet data
         buffer = BytesIO(msg)
@@ -252,22 +261,21 @@ class KafkaConsumer:
         decoded_msg = table.to_pylist()
 
         logger.info(f"Function decode_parquet worked.")
-
+        
+        # PROBABLY TO REMOVE
         for index, message in enumerate(decoded_msg):
             for key, value in message.items():
                 if isinstance(value, float):
                     print(f"Float detected in message {index} at key '{key}': {value}", flush=True)
         return decoded_msg
     
-    def convert_dates_in_dictionaries(self, data):
+    def convert_dates_in_dictionaries(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Convert 'date' field in list of dictionaries to datetime objects
-        
+        Convert 'date' field in list of dictionaries to datetime objects.
         Args:
-            data (list): List of dictionaries with potential string dates
-        
+            data (List[Dict[str, Any]]): A list of dictionaries, each containing a 'date' field which is a string representing a date.
         Returns:
-            list: Updated list of dictionaries with datetime dates
+            List[Dict[str, Any]]: The updated list of dictionaries with 'date' fields converted to datetime objects.
         """
         logger.info("Entered conversion function")
         for item in data:
@@ -292,5 +300,4 @@ class KafkaConsumer:
                     else:
                         # If no format works, log or handle as needed
                         logger.error(f"Could not parse date: {item['date']}")
-        
         return data

@@ -2,7 +2,7 @@ import torch
 
 from pymongo.database import Database
 from typing import List
-from langchain.text import CharacterTextSplitter
+from langchain.text_splitter import CharacterTextSplitter
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def get_reviews(

@@ -120,7 +120,7 @@ def scrape_and_send_reviews(
                 full_review["tp_location"] = "N/A"
             try:
                 full_review["text"] = text[num_review]
-                full_review["tp_stars"] = int(ratings[num_review]["data-service-review-rating"])
+                full_review["stars"] = int(ratings[num_review]["data-service-review-rating"])
                 full_review["date"] = dates[num_review]
                 full_review["company"] = company
                 # check if the review is older than the specified date

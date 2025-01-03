@@ -62,10 +62,9 @@ def getcomments_reddit(
             "text": submission.title + ": " + submission.selftext,
             "company": company,
             "date": datetime.fromtimestamp(submission.created_utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "re_id": submission_id,
-            "re_subreddit": str(submission.subreddit),
-            "re_vote": submission.score,
-            "re_reply_count": submission.num_comments
+            "subreddit": str(submission.subreddit),
+            "vote": submission.score,
+            "reddit_reply_count": submission.num_comments
         }
         # Append submission data to record_list
         record_list.append(submission_data)
@@ -121,10 +120,9 @@ def getcomments_reddit(
             "text": comment.body,
             "date": comment_date_str,
             "company": company,
-            "re_id": comment.id,
-            "re_subreddit": str(submission.subreddit),
-            "re_vote": comment.score,
-            "re_reply_count": len(comment.replies)
+            "subreddit": str(submission.subreddit),
+            "vote": comment.score,
+            "reddit_reply_count": len(comment.replies)
         }
         record_list.append(extracted_comment)
         num_comments += 1

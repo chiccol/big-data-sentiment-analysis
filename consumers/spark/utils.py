@@ -1,4 +1,4 @@
-from pyspark.sql.functions import when, col, pandas_udf
+from pyspark.sql.functions import when, col, pandas_udf, udf, expr
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType, TimestampType
 
 import pandas as pd
@@ -9,6 +9,8 @@ import logging
 
 from pyspark.sql import SparkSession, DataFrame
 from typing import List, Dict
+
+import uuid
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -33,15 +35,15 @@ schema = StructType([
         StructField("text", StringType(), nullable = False),
         StructField("company", StringType(), nullable = False),
         StructField("date", TimestampType(), nullable = True),
-        StructField("tp_stars", IntegerType(), nullable = True),
-        StructField("tp_location", StringType(), nullable = True),
-        StructField("yt_videoid", StringType(), nullable = True),
-        StructField("yt_like_count", IntegerType(), nullable = True),
-        StructField("yt_reply_count", IntegerType(), nullable = True),
-        StructField("re_id", StringType(), nullable = True),
-        StructField("re_subreddit", StringType(), nullable = True),
-        StructField("re_vote", IntegerType(), nullable = True),
-        StructField("re_reply_count", IntegerType(), nullable = True)
+        StructField("stars", IntegerType(), nullable = True),
+        StructField("location", StringType(), nullable = True),
+        StructField("videoid", StringType(), nullable = True),
+        StructField("like_count", IntegerType(), nullable = True),
+        StructField("youtube_reply_count", IntegerType(), nullable = True),
+        StructField("id", StringType(), nullable = True),
+        StructField("subreddit", StringType(), nullable = True),
+        StructField("vote", IntegerType(), nullable = True),
+        StructField("reddit_reply_count", IntegerType(), nullable = True)
     ])
 
 checkpoint_path = r"/app/model"
@@ -92,8 +94,8 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
 
 def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
     """
-    Craetes a Spark Dataframe, runs the model and returns a Spark Datafame with the probabilities column.
-    The prediction are performed only for non-Trustpilot sources since Trustpilot has a natural label. 
+    Creates a Spark Dataframe, assigns a UUID to each row, runs the model and returns a Spark Datafame with the probabilities column.
+    The predictions are performed only for non-Trustpilot sources since Trustpilot has a natural label. 
     For Trustpilot, the sentiment is determined as follows:
     - 4 or 5 stars -> positive
     - 3 stars -> neutral
@@ -108,6 +110,12 @@ def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
 
     df = spark.createDataFrame(all_messages, schema)
     # Perform sentiment analysis only for sources without natural labels
+    
+    # Generate UUIDs
+    generate_uuid = udf(lambda: str(uuid.uuid4()), StringType())
+    df = df.withColumn("id", generate_uuid())
+    df.cache()
+
     df_with_sentiment = df.withColumn(
         "sentiment_analysis", 
         when(col("source") != "Trustpilot", get_sentiment_udf(col("text"))).otherwise(None)
@@ -120,8 +128,8 @@ def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
         .withColumn("sentiment", 
                     when(col("source") != "Trustpilot", col("sentiment_analysis.sentiment"))
                     .otherwise(
-                        when(col("tp_stars") > 3, "positive")
-                        .when(col("tp_stars") == 3, "neutral")
+                        when(col("stars") > 3, "positive")
+                        .when(col("stars") == 3, "neutral")
                         .otherwise("negative")
                     )
         ) \
@@ -133,6 +141,7 @@ def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
                                             .withColumn("positive_probability", df_with_sentiment["sentiment_probabilities"].getItem(2)) \
                                             .drop(*["sentiment_probabilities"])
     
+    df_with_sentiment_multi_columns.show()
     return df_with_sentiment_multi_columns
 
 def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
@@ -146,6 +155,7 @@ def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
     """
     for topic in topics:
         filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
+        filtered_df_mongo = df_mongo.drop("company") 
         filtered_df_mongo.write \
             .format("mongo") \
             .mode("append") \
@@ -163,16 +173,38 @@ def write_postgres(df_postgres: DataFrame) -> None:
     Returns:
         None
     """
-    logger.info(f"Writing on postgres")
+    logger.info("Writing to postgres tables")
     url = "jdbc:postgresql://postgres:5432/warehouse"
-
     properties = {
         "user": "admin",
         "password": "password",
         "driver": "org.postgresql.Driver"
     }
 
-    table_name = "predictions"
-    # jdbc is the thing we installed to write directly from the dataframe
-    df_postgres.write.jdbc(url=url, table=table_name, mode="append", properties=properties)
+    df_postgres.show()
+    # Step 1: Write to 'predictions' table first (Ensure that the 'id' exists)
+    df_predictions = df_postgres.select([
+        "id", "source", "date", "company", "sentiment",
+        "negative_probability", "neutral_probability", "positive_probability"
+    ])
+    df_predictions.write.jdbc(url=url, table="predictions", mode="append", properties=properties)
+    
+    # Step 2: Write to 'trustpilot' table
+    df_trustpilot = df_postgres.filter(df_postgres.source == "trustpilot").select([
+        "id", "stars", "location"
+    ])
+    df_trustpilot.write.jdbc(url=url, table="trustpilot", mode="append", properties=properties)
+
+    # Step 3: Write to 'youtube' table
+    df_youtube = df_postgres.filter(df_postgres.source == "youtube").select([
+        "id", "videoid", "like_count", "youtube_reply_count"
+    ])
+    df_youtube.write.jdbc(url=url, table="youtube", mode="append", properties=properties)
+
+    # Step 4: Write to 'reddit' table
+    df_reddit = df_postgres.filter(df_postgres.source == "reddit").select([
+        "id", "subreddit", "vote", "reddit_reply_count"
+    ])
+    df_reddit.write.jdbc(url=url, table="reddit", mode="append", properties=properties)
+
     return None

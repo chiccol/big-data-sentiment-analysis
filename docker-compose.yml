@@ -1,10 +1,10 @@
 services:  
   
   zookeeper:  #Zookeeper, a distributed coordination service used by Kafka.
-    image: wurstmeister/zookeeper  # updated 5 years ago, but video said is stable version (consider bitnami)
-    container_name: zookeeper  # Sets a custom name for the Zookeeper container, making it easier to reference.
+    image: wurstmeister/zookeeper  
+    container_name: zookeeper  
     ports:
-      - "2181:2181"  # Exposes port 2181 on both the host and the container. Port 2181 is used by Zookeeper to handle client connections.
+      - "2181:2181"  
 
   kafka: 
     image: wurstmeister/kafka

@@ -8,6 +8,7 @@
     - [Using CPU](#Using-CPU)
     - [Youtube and Reddit API Keys](#Youtube-and-Reddit-Api-Keys)
         - [How to Get the Keys](#How-to-Get-the-Keys)
+    - [UI Access](#UI-Access)
 - [Reproducibility](#reproducibility)
     - [Training and Testing](#Training-and-Testing)
     - [Create Dataset](#Create-Dataset)
@@ -116,6 +117,14 @@ data/data_source/reddit
 
 - **Any User**: Follow these guides for [youtube](https://www.youtube.com/watch?v=EPeDTRNKAVo) and [reddit](https://www.reddit.com/r/reddit.com/wiki/api/). When generating a Reddit API key, if prompted to provide an 'About URL,' you can simply use the link to this repository.
 - **Big Data Technologies (UNITN Course)**: We remind you that we sent you our credentials via email along with the report. If, for any reason, you can't find the above-mentioned files please readily contact us using any of the emails we provided or through any other available communication channel.
+
+### UI Access
+
+You can visualize the different UIs here:
+- Sentiment Analysis: **INSERT URL**
+- Kakfa: **INSERT URL**
+- Mongo: **INSERT URL**
+- Postgres: **INSERT URL**
 
 ## Reproducibility 
 

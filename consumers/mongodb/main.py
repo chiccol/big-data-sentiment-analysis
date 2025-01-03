@@ -1,5 +1,5 @@
 from time import sleep
-from mongodb_manager import MongoDB, WordCountDB
+from mongodb_manager import MongoDB
 from kafka_consumer import KafkaConsumer
 import logging
 
@@ -12,11 +12,7 @@ def main():
         mongo = MongoDB()
         mongo.create_db('reviews')
         
-        mongo_wc = WordCountDB()
-        mongo_wc.create_db('word_count')
-        mongo_wc.create_db('bigrams')
-        mongo_wc.create_db('trigrams')
-        logging.info("Databases created: 'reviews', 'word_count', bigrams and trigrams.")
+        logging.info("Database created: 'reviews'")
         
         mongo_consumer = KafkaConsumer()
         mongo_consumer.consume_messages_mongo(mongo_manager=mongo)

@@ -90,12 +90,4 @@ class MongoDB:
         except Exception as e:
             logging.error(f"Error reading documents: {e}")
 
-class WordCountDB(MongoDB):
-    def __init__(self, host='mongo', port=27017):
-        super().__init__(host, port)
-        self.user_schema = {
-            "_id": ObjectId(),
-            "company": str,
-            "word": str,
-            "count": int
-        }
+

@@ -5,10 +5,12 @@ import logging
 from pymongo import MongoClient
 from pyspark.sql.functions import (
     col, explode, split, pandas_udf,
-    expr, size, sequence, concat_ws
+    expr, collect_list, struct, map_from_entries
 )
 from pyspark.sql.types import StringType
 from nltk.corpus import stopwords
+from pyspark.sql.window import Window
+from pyspark.sql.functions import row_number
 
 logger = logging.getLogger("spark-wordcount")
 
@@ -35,13 +37,10 @@ def write_company_word_counts(df, spark):
     logger.info("[WordCount] Entered write_company_word_counts.")
 
     # Check if the DF is empty
-    if not df.head(1):
+    if df.head(1) == []:
         logger.warning("[WordCount] DataFrame is empty. Nothing to process.")
         return
-    
-    # Log some sample rows to confirm we have text and company
-    df.select("company", "text").show(5, truncate=False)
-
+        
     # preprocess text
     df_clean = df.withColumn("clean_text", preprocess_pandas_udf(col("text")))
     df_clean = df_clean.withColumn("words_array", split(col("clean_text"), " "))
@@ -60,8 +59,73 @@ def write_company_word_counts(df, spark):
     word_counts = words_df.groupBy("company", "word").count()
     logger.info("[WordCount] groupBy => row count: {}".format(word_counts.count()))
     
-    # bigrams:
-    bigrams_df = df_clean.select(
+    # Connect to Mongo
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
+    # client = MongoClient(mongo_uri)
+    # db = client["reviews"]  # requested DB 
+    
+    companies = df.select("company").distinct().rdd.flatMap(lambda x: x).collect()
+    
+    logger.info(f"[WordCount] Writing on database word counts, bigrams and trigrams for companies: {companies}.")
+    
+    # read the present collection
+    try:
+        spark_word_db = spark.read \
+            .format("mongo") \
+            .option("uri", mongo_uri) \
+            .option("database", "reviews") \
+            .option("collection", "word_count") \
+            .load()
+        logger.info(f"[WordCount] Loaded existing word counts => row count: {spark_word_db.count()}")
+    except:
+        spark_word_db = spark.createDataFrame([], schema=word_counts.schema)
+        logger.info("[WordCount] Created new word counts DataFrame.")
+        
+    
+    # merge the dataframes
+    # if empty, just use the word_counts
+    if spark_word_db.count() == 0:
+        merged_df = word_counts
+    else:
+        logger.info("[WordCount] Dataframe exploding ... ")
+        spark_word_db = spark_word_db.select(
+            col("company"),
+            explode(col("word_counts")).alias("word", "count")
+        )
+        logger.info("[WordCount] Merging dataframes.")
+        spark_word_db.drop("_id")
+        merged_df = spark_word_db.union(word_counts)
+    
+    # aggregate the data
+    merged_df = merged_df.groupBy("company", "word").sum("count")
+    merged_df = merged_df.withColumnRenamed("sum(count)", "count")
+    
+    # take the top 100 words
+    window = Window.partitionBy("company").orderBy(col("count").desc())
+    merged_df = merged_df.withColumn("rank", row_number().over(window))
+    merged_top100 = merged_df.filter(col("rank") <= 100).drop("rank")
+    
+    # Transform to have word_counts as a map
+    grouped_df = merged_top100.groupBy("company") \
+        .agg(collect_list(struct(col("word"), col("count"))).alias("word_counts_list"))
+
+    final_df = grouped_df.withColumn("word_counts", map_from_entries(col("word_counts_list"))) \
+        .drop("word_counts_list")
+        
+    # write the data
+    final_df.write \
+        .format("mongo") \
+        .mode("overwrite") \
+        .option("uri", mongo_uri) \
+        .option("database", "reviews") \
+        .option("collection", "word_count") \
+        .save()
+    
+    logger.info("[WordCount] Done writing word counts.")
+    
+    
+     # bigrams:
+    bigrams_df = df_clean.filter(expr("size(words_array) > 1")).select(
         "company",
         expr("""
             transform(
@@ -74,8 +138,60 @@ def write_company_word_counts(df, spark):
     bigrams_count = bigrams_df.groupBy("company", "bigram").count()
     logger.info("[WordCount] Bigram groupBy => row count: {}".format(bigrams_count.count()))
     
+    try:
+        spark_bigram_db = spark.read \
+            .format("mongo") \
+            .option("uri", mongo_uri) \
+            .option("database", "reviews") \
+            .option("collection", "bigrams") \
+            .load()
+        logger.info(f"[WordCount] Loaded existing bigram counts => row count: {spark_bigram_db.count()}")
+    except:
+        spark_bigram_db = spark.createDataFrame([], schema=bigrams_count.schema)
+        logger.info("[WordCount] Created new bigram counts DataFrame.")
+        
+    # merge the dataframes
+    # if empty, just use the bigrams_count
+    if spark_bigram_db.count() == 0:
+        merged_df = bigrams_count
+    else:
+        logger.info("[WordCount] Dataframe exploding ... ")
+        spark_bigram_db = spark_bigram_db.select(
+            col("company"),
+            explode(col("bigram_count")).alias("word", "count")
+        )
+        logger.info("[WordCount] Merging dataframes.")
+        spark_bigram_db.drop("_id")
+        merged_df = spark_bigram_db.union(bigrams_count)
+    
+    # aggregate the data
+    merged_df = merged_df.groupBy("company", "bigram").sum("count")
+    merged_df = merged_df.withColumnRenamed("sum(count)", "count")
+    
+    # take the top 100 words
+    window = Window.partitionBy("company").orderBy(col("count").desc())
+    merged_df = merged_df.withColumn("rank", row_number().over(window))
+    merged_top100 = merged_df.filter(col("rank") <= 100).drop("rank")
+    
+    # Transform to have word_counts as a map
+    grouped_df = merged_top100.groupBy("company") \
+        .agg(collect_list(struct(col("bigram"), col("count"))).alias("bigram_counts_list"))
+
+    final_df = grouped_df.withColumn("bigram_counts", map_from_entries(col("bigram_counts_list"))) \
+        .drop("bigram_counts_list")
+    
+    # write the data
+    merged_top100.write \
+        .format("mongo") \
+        .mode("overwrite") \
+        .option("uri", mongo_uri) \
+        .option("database", "reviews") \
+        .option("collection", "bigrams") \
+        .save()
+    logger.info("[WordCount] Done writing bigrams.") 
+    
     # trigrams:
-    trigrams_df = df_clean.select(
+    trigrams_df = df_clean.filter(expr("size(words_array) > 2")).select(
         "company",
         expr("""
             transform(
@@ -87,104 +203,58 @@ def write_company_word_counts(df, spark):
     
     trigrams_count = trigrams_df.groupBy("company", "trigram").count()
     logger.info("[WordCount] Trigram groupBy => row count: {}".format(trigrams_count.count()))
-    
-    
-    # Connect to Mongo
-    mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
-    client = MongoClient(mongo_uri)
-    db = client["word_count"]  # requested DB 
-    
-    companies = df.select("company").distinct().rdd.flatMap(lambda x: x).collect()
-    
-    logger.info(f"[WordCount] Writing on database word counts, bigrams and trigrams for companies: {companies}.")
-    
-    # Iterate over collections and load each into a Spark DataFrame
-    for company in companies:
         
-        # for the first iteration, need to create the collection
-        try:
-            # Read the collection dynamically using Spark
-            old_df = spark.read \
-                .format("mongodb") \
-                .option("uri", mongo_uri) \
-                .option("database", "word_count") \
-                .option("collection", company) \
-                .load()
-            
-            word_counts = word_counts.orderBy(col("count").desc()).limit(100)
-            logger.info("[WordCount] Top 100 words => row count: {}".format(word_counts.count()))
-                
-            word_counts_company = word_counts.filter(col("company") == company)
-            
-            merged_df = old_df.union(word_counts_company)
-        
-            new_df = merged_df.groupBy("company", "word").sum("count")
-            logger.info("[WordCount] groupBy => row count: {}".format(new_df.count()))
-        except:
-            new_df = word_counts.filter(col("company") == company)
-            logger.info("[WordCount] groupBy => row count: {}".format(new_df.count()))
-
-        new_df.write \
+    try:
+        spark_trigram_db = spark.read \
             .format("mongo") \
-            .mode("overwrite") \
-            .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/word_count.{company}") \
-            .save()
-        logger.info(f"[WordCount] Wrote {new_df.count()} word counts to MongoDB collection '{company}'")
+            .option("uri", mongo_uri) \
+            .option("database", "reviews") \
+            .option("collection", "trigrams") \
+            .load()
+        logger.info(f"[WordCount] Loaded existing trigram counts => row count: {spark_trigram_db.count()}")
+    except:
+        spark_trigram_db = spark.createDataFrame([], schema=trigrams_count.schema)
+        logger.info("[WordCount] Created new trigram counts DataFrame.")
+        
+    # merge the dataframes
+    # if empty, just use the trigrams_count
+    if spark_trigram_db.count() == 0:
+        merged_df = trigrams_count
+    else:
+        logger.info("[WordCount] Dataframe exploding ... ")
+        spark_trigram_db = spark_trigram_db.select(
+            col("company"),
+            explode(col("trigram_count")).alias("word", "count")
+        )
+        logger.info("[WordCount] Merging dataframes.")
+        spark_trigram_db.drop("_id")
+        merged_df = spark_trigram_db.union(trigrams_count)
     
-        # writing for bigrams
-        try:
-            old_df = spark.read \
-                .format("mongodb") \
-                .option("uri", mongo_uri) \
-                .option("database", "couples_count") \
-                .option("collection", company) \
-                .load()
-            
-            bigrams_company = bigrams_count.filter(col("company") == company)
-            bigrams_top = bigrams_company.orderBy(col("count").desc()).limit(100)
-            
-            merged_df = old_df.union(bigrams_top)
-            new_df = merged_df.groupBy("company", "bigram").sum("count")
-            logger.info(f"[WordCount] Bigram counts merged => row count: {new_df.count()}")
-        except:
-            new_df = bigrams_count.filter(col("company") == company).orderBy(col("count").desc()).limit(100)
-            logger.info(f"[WordCount] Bigram counts created => row count: {new_df.count()}")
-        
-        new_df.write \
-            .format("mongo") \
-            .mode("overwrite") \
-            .option("spark.mongodb.output.uri", f"mongodb://mongo:27017/couples_count.{company}") \
-            .save()
+    # aggregate the data
+    merged_df = merged_df.groupBy("company", "trigram").sum("count")
+    merged_df = merged_df.withColumnRenamed("sum(count)", "count")
+    
+    # take the top 100 words
+    window = Window.partitionBy("company").orderBy(col("count").desc())
+    merged_df = merged_df.withColumn("rank", row_number().over(window))
+    merged_top100 = merged_df.filter(col("rank") <= 100).drop("rank")
+    
+    # Transform to have word_counts as a map
+    grouped_df = merged_top100.groupBy("company") \
+        .agg(collect_list(struct(col("trigram"), col("count"))).alias("trigram_counts_list"))
 
-        logger.info(f"[WordCount] Wrote bigram counts for company '{company}' to MongoDB.")
-        
-        #trigrams writing
-        try:
-            old_df = spark.read \
-                .format("mongodb") \
-                .option("uri", mongo_uri) \
-                .option("database", "triples_count") \
-                .option("collection", company) \
-                .load()
-            
-            trigrams_company = trigrams_count.filter(col("company") == company)
-            trigrams_top = trigrams_company.orderBy(col("count").desc()).limit(100)
-            
-            merged_df = old_df.union(trigrams_top)
-            new_df = merged_df.groupBy("company", "trigram").sum("count")
-            logger.info(f"[WordCount] Trigram counts merged => row count: {new_df.count()}")
-        except:
-            new_df = trigrams_count.filter(col("company") == company).orderBy(col("count").desc()).limit(100)
-            logger.info(f"[WordCount] Trigram counts created => row count: {new_df.count()}")
-            
-        new_df.write \
-            .format("mongo") \
-            .mode("overwrite") \
-            .option("spark.mongodb.output.uri", f"mongodb://mongo:27017/triples_count.{company}") \
-            .save()
-            
-        logger.info(f"[WordCount] Wrote trigram counts for company '{company}' to MongoDB.")
+    final_df = grouped_df.withColumn("trigram_count", map_from_entries(col("trigram_count_list"))) \
+        .drop("trigram_count_list")
+    
+    # write the data
+    merged_top100.write \
+        .format("mongo") \
+        .mode("overwrite") \
+        .option("uri", mongo_uri) \
+        .option("database", "reviews") \
+        .option("collection", "trigrams") \
+        .save()
+    
+    logger.info("[WordCount] Done writing trigrams.")
 
-
-    client.close()
-    logger.info("[WordCount] Done writing word counts.")
+    # client.close()

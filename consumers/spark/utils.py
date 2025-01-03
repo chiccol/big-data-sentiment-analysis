@@ -156,7 +156,7 @@ def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
     for topic in topics:
         print(f"Current topic is {topic}", flush=True)
         filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
-        filtered_df_mongo = df_mongo.drop("company")
+        filtered_df_mongo = filtered_df_mongo.drop("company")
         filtered_df_mongo.write \
             .format("mongo") \
             .mode("append") \

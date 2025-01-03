@@ -82,14 +82,16 @@ def main():
         logger.info(f"Messages consumed with Spark: {len(all_messages)}")
         if all_messages:
             df = process_data(all_messages, spark)
+
+            df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
+            write_mongo(df_mongo, topics)
+
             df_postgres = df.select(["id", "source", "date", "company", "sentiment", "negative_probability", 
                                      "neutral_probability", "positive_probability", "stars", "location", 
                                      "videoid", "youtube_reply_count", "like_count", "subreddit",
                                      "vote", "reddit_reply_count"])
             write_postgres(df_postgres)
 
-            df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
-            write_mongo(df_mongo, topics)
         else:
             logger.info(f"No data was consumed")
             logger.info(f"Sleeping for 15 seconds...")

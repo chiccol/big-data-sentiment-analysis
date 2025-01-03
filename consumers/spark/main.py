@@ -86,7 +86,6 @@ def main():
                                      "neutral_probability", "positive_probability", "stars", "location", 
                                      "videoid", "youtube_reply_count", "like_count", "subreddit",
                                      "vote", "reddit_reply_count"])
-            df_postgres.show() 
             write_postgres(df_postgres)
 
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])

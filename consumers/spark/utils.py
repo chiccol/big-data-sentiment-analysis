@@ -154,8 +154,9 @@ def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
         None
     """
     for topic in topics:
+        print(f"Current topic is {topic}", flush=True)
         filtered_df_mongo = df_mongo.filter(df_mongo.company == topic)
-        filtered_df_mongo = df_mongo.drop("company") 
+        filtered_df_mongo = df_mongo.drop("company")
         filtered_df_mongo.write \
             .format("mongo") \
             .mode("append") \
@@ -190,7 +191,7 @@ def write_postgres(df_postgres: DataFrame) -> None:
     df_predictions.write.jdbc(url=url, table="predictions", mode="append", properties=properties)
     
     # Step 2: Write to 'trustpilot' table
-    df_trustpilot = df_postgres.filter(df_postgres.source == "trustpilot").select([
+    df_trustpilot = df_postgres.filter(df_postgres.source == "Trustpilot").select([
         "id", "stars", "location"
     ])
     df_trustpilot.write.jdbc(url=url, table="trustpilot", mode="append", properties=properties)

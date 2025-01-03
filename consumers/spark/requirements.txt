@@ -6,3 +6,4 @@ pyarrow==18.0.0
 confluent-kafka==2.6.0
 nltk==3.9.1
 pymongo==4.10.1
+gdown==5.2.0

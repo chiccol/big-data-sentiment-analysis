@@ -1,10 +1,14 @@
 from pyspark.sql.functions import when, col, pandas_udf
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType, TimestampType
+
 import pandas as pd
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import os
 import logging
+
+from pyspark.sql import SparkSession, DataFrame
+from typing import List, Dict
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -23,11 +27,12 @@ output_schema = StructType([
         StructField("sentiment", StringType(), True)
         ])
 
+# Schema for postgreSQL
 schema = StructType([
         StructField("source", StringType(), nullable = False),
         StructField("text", StringType(), nullable = False),
         StructField("company", StringType(), nullable = False),
-        StructField("date", StringType(), nullable = True),
+        StructField("date", TimestampType(), nullable = True),
         StructField("tp_stars", IntegerType(), nullable = True),
         StructField("tp_location", StringType(), nullable = True),
         StructField("yt_videoid", StringType(), nullable = True),
@@ -38,18 +43,16 @@ schema = StructType([
         StructField("re_vote", IntegerType(), nullable = True),
         StructField("re_reply_count", IntegerType(), nullable = True)
     ])
-# These paths should be replaced in the future with online registry paths
-model_path = r"/app/model/distilbert-base-uncased"
-tokenizer_path = r"/app/model/tokenizer-distilbert-base-uncased"
+
+checkpoint_path = r"/app/model"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @pandas_udf(output_schema)
 def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
     """
-    Uses DistilBert to tokenize and create predictions based on the input data.
-
+    Uses DistilBert to tokenize and create predictions.
     Args:
         text_series: pd.Series
-
     Returns:
         results: pd.DataFrame 
     """
@@ -57,8 +60,9 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
 
     # Load DistilBERT tokenizer and model
     # This makes each worker load the model and tokenizer, limiting memory usage but increasing latency
-    tokenizer = DistilBertTokenizer.from_pretrained(tokenizer_path)
-    model = DistilBertForSequenceClassification.from_pretrained(model_path)
+    tokenizer = DistilBertTokenizer.from_pretrained(checkpoint_path)
+    model = DistilBertForSequenceClassification.from_pretrained(checkpoint_path)
+    model.to(device)
     try:
         batch_size = int(os.getenv("BATCH_SIZE"))
     except:
@@ -71,8 +75,8 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
         logger.info(f"Processing {len(text_series)} messages")
         for i in range(0, len(text_series), batch_size):
             batch = list(text_series[i:i + batch_size])
-            inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True)
-                
+            inputs = tokenizer(batch, return_tensors='pt', truncation=True, padding=True).to(device)
+            
             outputs = model(**inputs)
             probabilities = torch.softmax(outputs.logits, dim=1)  # Keep as tensor
                 
@@ -86,15 +90,20 @@ def get_sentiment_udf(text_series: pd.Series) -> pd.DataFrame:
         
     return pd.DataFrame(results)
 
-def process_data(all_messages, spark):
+def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
     """
-    Cretes a Spark Dataframe, runs the model and returns a Spark Datafame with the probabilities column.
-    
+    Craetes a Spark Dataframe, runs the model and returns a Spark Datafame with the probabilities column.
+    The prediction are performed only for non-Trustpilot sources since Trustpilot has a natural label. 
+    For Trustpilot, the sentiment is determined as follows:
+    - 4 or 5 stars -> positive
+    - 3 stars -> neutral
+    - 1 or 2 stars -> negative
+
     Args:
         all_messages -> list of dictionaries
-
+        spark -> Spark session
     Returns:
-        df_with_sentiment_multi_columns -> SparkDataFrame 
+        df_with_sentiment_multi_columns -> Spark DataFrame with sentiment probabilities
     """
 
     df = spark.createDataFrame(all_messages, schema)
@@ -117,26 +126,21 @@ def process_data(all_messages, spark):
                     )
         ) \
         .drop("sentiment_analysis")
-    # CHANGED DROP TO DROP(*["sentiment_analysis", "text"]) MAYBE IT WILL WORK
+    
+    # Create separate columns for sentiment probabilities
     df_with_sentiment_multi_columns = df_with_sentiment.withColumn("negative_probability", df_with_sentiment["sentiment_probabilities"].getItem(0)) \
                                             .withColumn("neutral_probability", df_with_sentiment["sentiment_probabilities"].getItem(1)) \
                                             .withColumn("positive_probability", df_with_sentiment["sentiment_probabilities"].getItem(2)) \
                                             .drop(*["sentiment_probabilities"])
-
-    # using df_with_sentiment_multi_columns:
-    # df_mongo: select what you need
-    # df_postgres: drop "text"
     
     return df_with_sentiment_multi_columns
 
-def write_mongo(df_mongo, topics):
+def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
     """
-    Writes on MongoDB's different collections based on the topic the message came from.
-
+    Writes on MongoDB's different collections based on the topic(company) the message came from.
     Args:
         df_mongo -> SparkDataFrame
         topics -> dict with key = topic
-
     Returns:
         None
     """
@@ -147,17 +151,15 @@ def write_mongo(df_mongo, topics):
             .mode("append") \
             .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{topic}") \
             .save()
-        
+        # Note: this is here for logging, but in a real-world scenario would create futile overhead
         logger.info(f"Wrote {filtered_df_mongo.count()} messages from topic {topic} to MongoDB")
     return None
 
-def write_postgres(df_postgres):
+def write_postgres(df_postgres: DataFrame) -> None:
     """
     Writes on Postgres table.
-
     Args:
-        df_postgres -> SparkDataFrame
-
+        df_postgres -> Spark DataFrame
     Returns:
         None
     """

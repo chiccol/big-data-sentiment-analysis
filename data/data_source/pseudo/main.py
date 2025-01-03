@@ -31,5 +31,5 @@ if __name__ == "__main__":
     companies = ['apple', 'google']
     for company in companies:
         logger.info(f"Sending fake data for {company}")
-        data = data_gen(company = company, producer = producer, num_entries= 500)
+        data = data_gen(company = company, producer = producer, num_entries= 10000)
         logger.info(f"Sent fake data for {company}")

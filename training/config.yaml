@@ -1,0 +1,20 @@
+data:
+  tp_train_path: "training/data/tp_train_dataset.json" # "training/tp_training_dataset.json"
+  tp_test_path: "training/data/tp_diff_companies_test_dataset.json" # "training/tp_diff_companies_test_dataset.json"
+  tp_simple: True
+  yt_test_path: "training/data/yt_test_dataset.json"
+  yt_train_path: "training/data/yt_train_dataset_balanced.json"
+model_params:
+  trainable_transformer_layers: 3 # max is 6 for distilbert
+  hf_model: "training/distilbert_base_sst2_finetuned"
+experiments:
+  path: "training/experiments"
+training:
+  batch_size: 64
+  lr: 1e-4
+  weight_decay: 5e-1 # AdamW default: 1e-2
+  epochs: 6
+  tp_weight: 1
+  yt_weight: 0.5
+  tp_label_smoothing: 0.1
+  yt_label_smoothing: 0.2

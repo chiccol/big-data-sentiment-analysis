@@ -2,3 +2,4 @@ __pycache__/
 consumers/spark/model/
 appunti.txt
 comandipostgres.txt
+data/data_source/reddit/reddit.env

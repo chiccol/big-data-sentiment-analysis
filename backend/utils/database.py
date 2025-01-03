@@ -2,7 +2,11 @@ import os
 from pymongo import MongoClient
 import psycopg2
 from psycopg2 import pool
-from psycopg2.extras import RealDictCursor
+
+from fastapi import HTTPException
+from utils.config import logger
+
+logger.info("Importing utils.database - attempting to create PostgreSQL pool now...")
 
 # MongoDB Connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
@@ -23,7 +27,7 @@ PG_PASSWORD = os.getenv("PG_PASSWORD", "password")
 PG_DB_NAME = os.getenv("PG_DB_NAME", "warehouse")
 
 try:
-    pg_pool = psycopg2.pool.SimpleConnectionPool(
+    pg_pool = pool.SimpleConnectionPool(
         1, 20,  # min and max connections
         host=PG_HOST,
         port=PG_PORT,
@@ -32,7 +36,20 @@ try:
         dbname=PG_DB_NAME
     )
     if pg_pool:
-        print("PostgreSQL connection pool created successfully")
+        logger.info("PostgreSQL connection pool created successfully.")
 except (Exception, psycopg2.DatabaseError) as error:
-    print("Error while connecting to PostgreSQL", error)
+    logger.error(f"Error creating PostgreSQL connection pool: {error}")
     pg_pool = None
+
+
+def get_pg_connection() -> psycopg2.extensions.connection:
+    """Get a connection from the Postgres connection pool."""
+    logger.debug("Attempting to obtain a PostgreSQL connection from the pool...")
+    try:
+        conn = pg_pool.getconn()
+        if conn:
+            logger.debug("PostgreSQL connection obtained successfully.")
+            return conn
+    except Exception as e:
+        logger.error(f"Database connection error: {e}")
+        raise HTTPException(status_code=500, detail="Database connection error")

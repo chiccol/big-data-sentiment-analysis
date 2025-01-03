@@ -1,38 +1,17 @@
-.App {
-  text-align: center;
+.charts-container {
+  display: block; /* Use block layout for charts to ensure full width */
+  width: 100%; /* Allow container to span full width */
+  margin: 0 auto; /* Center content if necessary */
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.chart-box {
+  width: 100%; /* Ensure each chart takes the full width of the container */
+  max-width: 100%; /* Prevent unnecessary restrictions */
+  margin-bottom: 16px; /* Add spacing between charts */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+@media (max-width: 768px) {
+  .chart-box {
+    margin-bottom: 12px; /* Slightly reduce spacing on smaller screens */
   }
 }

@@ -248,18 +248,18 @@ def search_posts(
         # Check if the post is already in the data
         existing_posts = list(reddit_companies_posts[company]["posts"].keys())
         if submission.id in existing_posts:
-            logger.info(f"Post {submission.id} is already processed for company '{company}'. Skipping.")
+            # logger.info(f"Post {submission.id} is already processed for company '{company}'. Skipping.")
             continue
 
         # Add the post to the data
         reddit_companies_posts[company]["posts"][submission.id] = {
             "from_date": comments_after_date,
-            "max_num_comments": 10
+            "max_num_comments": 100
         }
         
         new_posts[submission.id] = {    
             "from_date": comments_after_date,
-            "max_num_comments": 10  
+            "max_num_comments": 100  
         }
         num_posts += 1
         logger.info(f"Added post {submission.id} to company '{company}'")

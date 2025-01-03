@@ -59,7 +59,7 @@ def main() -> None:
     DEVELOPER_KEY = os.getenv("DEVELOPER_KEY")
     DEVELOPER_KEY_2 = os.getenv("DEVELOPER_KEY_2")
     extra_keys = [DEVELOPER_KEY_2]
-    
+
     youtube_scraper = googleapiclient.discovery.build(
         CONFIG['api_service_name'], 
         CONFIG['api_version'], 
@@ -67,6 +67,11 @@ def main() -> None:
         static_discovery = False
     )
     
+    # Sleeping time in hours, minutes, and seconds
+    hours = CONFIG['sleep_time'] // 3600
+    minutes = (CONFIG['sleep_time'] % 3600) // 60
+    remaining_seconds = CONFIG['sleep_time'] % 60
+
     # this doesn't work yet because I can't connect to the kafka container, probably because need external port
     producer = KafkaProducer(
         bootstrap_servers=CONFIG['bootstrap_servers'], 
@@ -107,8 +112,8 @@ def main() -> None:
                 if companies_videos[company]["videos"][video] not in ["too_short", "currently_irrelevant"] and\
                     (companies_videos[company]["videos"][video] in new_videos or \
                         companies_videos[company]["videos"][video].get("next_page_token", None) != None):
-                    info = companies_videos[company]["videos"][video]
-                    logger.info(f"Currenty checking {info}")
+
+                    logger.info(f"Currenty checking {video} for {company}")
 
                     next_page_token, num_comments, youtube_scraper = getcomments_video(
                         video = video,
@@ -164,8 +169,8 @@ def main() -> None:
                 developerKey=DEVELOPER_KEY
             )
         else:
-            logger.info("Sleeping for 10 minutes")
-            sleep(600)  
+            logger.info(f"Sleeping for {hours} hours, {minutes} minutes, and {remaining_seconds} seconds.")
+            sleep(CONFIG['sleep_time'])  
 
         # Reload company data to stay updated
         with open(CONFIG['companies_videos_path'], 'r') as file:

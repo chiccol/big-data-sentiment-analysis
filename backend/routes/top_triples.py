@@ -14,41 +14,41 @@ def get_top_triples(company: str):
     logger.info(f"Fetching top 20 trigrams for company: {company}")
 
     try:
-        # List all collections in the `triples_count` database
-        all_collections = mongo_triples.list_collection_names()
-        logger.debug(f"Available trigram collections: {all_collections}")
+        # Access the trigram count collection
+        logger.debug(f"Accessing collection: trigrams")
+        collection = mongo_triples["trigrams"]
+        
+        # check what companies are in the collection
+        companies = collection.distinct("company")
+        logger.debug(f"Companies in collection: {companies}")
 
         # Check if the specified company has a corresponding collection
-        if company not in all_collections:
-            logger.error(f"Collection for company '{company}' does not exist in triples_count.")
-            raise HTTPException(status_code=404, detail=f"Company '{company}' not found in triples_count.")
-
-        # Access the company's trigram collection
-        collection = mongo_triples[company]
-        logger.debug(f"Accessing trigram collection: {company}")
-
-        # Query top 20 trigrams sorted by count (descending)
-        top_trigrams_cursor = collection.find().sort("count", DESCENDING).limit(20)
+        if company not in companies:
+            logger.error(f"Company '{company}' not found.")
+            raise HTTPException(status_code=404, detail=f"Company '{company}' not found.")
         
+        # access the company's document
+        company_doc = collection.find_one({"company": company})
+        
+        # access the company's trigram count map
+        company_count = company_doc.get("trigram_counts")
+        
+        # trigram count map contains the top 100 trigrams for the company, schema is {trigram: count}
+        # take the top 20 trigrams based on their count
         top_trigrams = []
-        for doc in top_trigrams_cursor:
-            trigram = doc.get("trigram")
-            count = doc.get("count")
-
-            if trigram is not None and count is not None:
-                top_trigrams.append(TrigramCount(trigram=trigram, count=int(count)))
-            else:
-                logger.warning(f"Document missing 'trigram' or 'count' fields: {doc}")
-
-        if not top_trigrams:
-            logger.warning(f"No trigram data found for company '{company}'.")
-            raise HTTPException(status_code=404, detail=f"No trigram data found for company '{company}'.")
-
-        logger.info(f"Retrieved {len(top_trigrams)} top trigrams for company '{company}'.")
+        # check if there are less than 20 trigrams
+        if len(company_count) < 20:
+            # take all trigrams
+            for trigram, count in company_count.items():
+                top_trigrams.append(TrigramCount(trigram=trigram, count=count))
+        else:
+            for trigram, count in sorted(company_count.items(), key=lambda x: x[1], reverse=True)[:20]:
+                top_trigrams.append(TrigramCount(trigram=trigram, count=count))
 
         return TopTrigramsResponse(company=company, top_trigrams=top_trigrams)
 
     except HTTPException as http_exc:
+        logger.error(f"Error fetching top trigrams for company '{company}': {http_exc}")
         raise http_exc
 
     except Exception as e:

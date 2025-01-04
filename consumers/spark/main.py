@@ -90,10 +90,11 @@ def main():
                                      "re_vote", "re_reply_count"])
             write_postgres(df_postgres)
             
-            write_company_word_counts(df, spark) 
-
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
             write_mongo(df_mongo, topics)
+            
+            write_company_word_counts(df, spark) 
+
         else:
             logger.info(f"No data was consumed")
             logger.info(f"Sleeping for 15 seconds...")

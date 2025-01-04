@@ -2,10 +2,11 @@ import os
 import re
 import pandas as pd
 import logging
-from pymongo import MongoClient
+# from pymongo import MongoClient
 from pyspark.sql.functions import (
     col, explode, split, pandas_udf,
-    expr, collect_list, struct, map_from_entries
+    expr, collect_list, struct, map_from_entries,
+    map_keys, map_values
 )
 from pyspark.sql.types import StringType
 from nltk.corpus import stopwords
@@ -90,7 +91,10 @@ def write_company_word_counts(df, spark):
         logger.info("[WordCount] Dataframe exploding ... ")
         spark_word_db = spark_word_db.select(
             col("company"),
-            explode(col("word_counts")).alias("word", "count")
+            explode(
+                map_keys(col("word_counts")).alias("word"),
+                map_values(col("word_counts")).alias("count")
+            )
         )
         logger.info("[WordCount] Merging dataframes.")
         spark_word_db.drop("_id")
@@ -158,7 +162,10 @@ def write_company_word_counts(df, spark):
         logger.info("[WordCount] Dataframe exploding ... ")
         spark_bigram_db = spark_bigram_db.select(
             col("company"),
-            explode(col("bigram_count")).alias("word", "count")
+            explode(
+                map_keys(col("bigram_counts")).alias("bigram"),
+                map_values(col("bigram_counts")).alias("count")
+            )
         )
         logger.info("[WordCount] Merging dataframes.")
         spark_bigram_db.drop("_id")
@@ -224,7 +231,8 @@ def write_company_word_counts(df, spark):
         logger.info("[WordCount] Dataframe exploding ... ")
         spark_trigram_db = spark_trigram_db.select(
             col("company"),
-            explode(col("trigram_count")).alias("word", "count")
+            explode(map_keys(col("trigram_counts")).alias("trigram"),
+                   map_values(col("trigram_counts")).alias("count"))
         )
         logger.info("[WordCount] Merging dataframes.")
         spark_trigram_db.drop("_id")

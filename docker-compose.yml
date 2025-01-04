@@ -97,12 +97,12 @@ services:
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI
-    runtime: nvidia 
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu] # allows access to GPU resources
+    # runtime: nvidia 
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu] # allows access to GPU resources
     volumes: 
       - ./consumers/spark/main.py:/app/main.py 
       - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
@@ -125,12 +125,12 @@ services:
       - SPARK_WORKER_CORES=2 
       - SPARK_WORKER_MEMORY=2g # resource limit per worker
       - NVIDIA_VISIBLE_DEVICES=0 # only use GPU 0
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    # runtime: nvidia
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
     depends_on:
       - spark-master
   

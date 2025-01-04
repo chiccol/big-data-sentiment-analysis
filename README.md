@@ -121,10 +121,23 @@ data/data_source/reddit
 ### UI Access
 
 You can visualize the different UIs here:
-- Sentiment Analysis: **INSERT URL**
-- Kakfa: **INSERT URL**
-- Mongo: **INSERT URL**
-- Postgres: **INSERT URL**
+- Sentiment Analysis: [http://localhost:3000](http://localhost:3000)
+- Kakfa: [http://localhost:9000](http://localhost:9000)
+- Mongo: [http://localhost:8081](http://localhost:8081)
+- Postgres: [http://localhost:5050](http://localhost:5050)
+- Spark: [http://localhost:8080](http://localhost:8080)
+
+In order to configure pgadmin:
+1) Login using the following credentials:
+mail: admin@admin.com 
+pwd: password
+
+2) Click Create New Server. Choose whatever name, then switch tab to "Connection".
+3) Set the following paramters:
+- Host name/address: postgres 
+- Port: 5432
+- Username: admin
+- Password: password
 
 ## Reproducibility 
 

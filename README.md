@@ -82,7 +82,7 @@ sudo docker compose up
 
 ### Using CPU
 
-The ```docker-compose.yml``` by default uses Nvidia runtime. To use only the CPU comment the runtime and deploy options of the spark-master and spark-worker-1 i.e. lines 86-91 and 114-119. Once you have modified the file you can run:
+The ```docker-compose.yml``` by default uses Nvidia runtime. To use only the CPU comment the runtime and deploy options of the spark-master,spark-worker-1 and rag i.e. lines 86-91, 114-119 and 210-215. Once you have modified the file you can run:
 ```
 sudo docker compose up 
 ```

@@ -207,8 +207,14 @@ services:
       - "5000:5000"
     depends_on:
       - mongo
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
     environment:
+      - NVIDIA_VISIBLE_DEVICES=0
       - MONGO_URI=mongodb://mongo:27017
     volumes:
       - ./rag/main.py:/app/main.py
-  

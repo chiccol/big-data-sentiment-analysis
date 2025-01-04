@@ -12,6 +12,7 @@ from typing import Optional
 from nltk.corpus import stopwords
 import re
 from collections import Counter
+import ask_summary
 
 # Configure Logging
 logging.basicConfig(
@@ -219,3 +220,6 @@ def get_word_cloud_data():
     except Exception as e:
         logger.error(f"Error generating word cloud data: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate word cloud data")
+
+
+app.include_router(ask_summary.router)

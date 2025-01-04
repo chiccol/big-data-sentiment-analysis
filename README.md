@@ -154,6 +154,7 @@ If you are interested only in replicating the results run (**TO BE ADDED**):
 chmod +x training/test.sh 
 ./training/test.sh
 ```
+All the datasets created are accessible on [GoogleDrive](https://drive.google.com/drive/folders/158Sod_zo_5qNuECP-EJRw-mATPRzdg_B?usp=sharing). We used the ones with the "_final" suffix.
 
 ### Create Dataset
 

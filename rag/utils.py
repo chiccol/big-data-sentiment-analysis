@@ -8,7 +8,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 def get_reviews(
         db: Database, 
         sentiment: str, 
-        company: str
+        company: str, 
+        chunk_size: int,
+        chunk_overlap: int,
+        separator: str = " "
         ) -> List[str]:
     """
     Retrieve and preprocess reviews from a MongoDB collection for a specific company and sentiment.
@@ -16,6 +19,9 @@ def get_reviews(
         db (Database): MongoDB database object.
         sentiment (str): The sentiment to filter reviews by (e.g., "positive", "neutral", "negative").
         company (str): The name of the company whose reviews are to be fetched.
+        chunk_size (int): The maximum size of each chunk.
+        chunk_overlap (int): The overlap between chunks.
+        separator (str): The separator to use for splitting the text.
     Returns:
         List[str]: Preprocessed and chunked reviews.
     """
@@ -23,9 +29,9 @@ def get_reviews(
     reviews = comapny_reviews.find({"sentiment": sentiment})
     reviews = [review["text"] for review in reviews]
     text_splitter = CharacterTextSplitter(
-        separator=" ",   # Split by spaces
-        chunk_size=100,  # Maximum size of each chunk
-        chunk_overlap=20  # Overlap between chunks
+        separator=separator,   # Split by spaces
+        chunk_size=chunk_size,  # Maximum size of each chunk
+        chunk_overlap=chunk_overlap  # Overlap between chunks
         )
     splitted_reviews = [text_splitter.split_text(review)[0] for review in reviews]
     return splitted_reviews

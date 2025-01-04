@@ -7,49 +7,55 @@ from utils import get_reviews, summarizer
 from pymongo import MongoClient
 
 from time import sleep
-import os
+import logging
+from config import CONFIG
 
-model = "HuggingFaceTB/SmolLM2-360M-Instruct"
-embeddings_model = "BAAI/bge-large-en"
-device = "cuda" if torch.cuda.is_available() else "cpu" 
-mongo_uri = os.getenv("MONGO_URI", "mongodb://mongo:27017")
-db_name = "reviews"
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        # Optionally add file logging
+        # logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger("RAG")
+logger.info("Started logging")
 
 def main():
     """
     Main function to retrieve reviews from MongoDB, process them, and generate summaries.
-    Connects to MongoDB, retrieves reviews, summarizes them, and prints the results.
+    Connects to MongoDB, retrieves reviews splitted in chnks, summarizes them, and prints the results.
     In the future it should connect to the UI and send the results back.
     """
-    print("Wait for mongodb to start and to have some data...", flush=True)
+    logger.info("Wait for mongodb to start and to have some data...", flush=True)
     sleep(30) 
-    print("Loading embeddings...", flush=True)
+    logger.info("Loading embeddings...", flush=True)
     embeddings = HuggingFaceEmbeddings(
-        model_name = embeddings_model
+        model_name = CONFIG["embeddings_model"]
         )
     # MongoDB connection URI (from environment variables or default)
-    print("Connecting to MongoDB...", flush=True)
-    client = MongoClient(mongo_uri)
+    logger.info("Connecting to MongoDB...", flush=True)
+    client = MongoClient(CONFIG["mongo_uri"])
     # Access the database and collection  
-    db = client[db_name]
+    db = client[CONFIG["db_name"]]
     # Get the names of all collections in the "reviews" database
-    topics = [
-        "Customer service", 
-        "Product quality", 
-        "Price",
-        "General"
-    ]
-    answers = {
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    logger.info(f"Loading model on {device}", flush=True)
+    tokenizer = AutoTokenizer.from_pretrained(CONFIG["conv_model"])
+    # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
+    model = AutoModelForCausalLM.from_pretrained(CONFIG["conv_model"]).to(device)
+    logger.info("Generation model:", CONFIG["conv_model"], flush=True)
+    logger.info("Embeddings model:", CONFIG["embeddings_model"], flush=True)
+    logger.info("Retrieving by the following topics:", CONFIG["topics"], flush=True)
+    
+    while True:
+        # Dictionary to store the answers
+        answers = {
             "positive": dict(),
             "neutral": dict(),
             "negative": dict()
         }
-    print("Loading model...", flush=True)
-    tokenizer = AutoTokenizer.from_pretrained(model)
-    # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
-    model = AutoModelForCausalLM.from_pretrained(model).to(device)
-    
-    while True:
         print("Retrieving reviews from MongoDB...", flush=True)
         collections = db.list_collection_names()
         print(f"Got Collections: {collections}", flush=True)
@@ -62,13 +68,14 @@ def main():
         print(f"Company: {company}", flush=True)
         for sentiment in answers:
             print(f"Extracting info for Sentiment: {sentiment}", flush=True)
-            reviews = get_reviews(db, sentiment, company)
+            reviews = get_reviews(db, sentiment, company, CONFIG["chunk_size"], CONFIG["chunk_overlap"], CONFIG["separator"])
+            # If no reviews are found, add a message to the answers
             if len(reviews) == 0: 
-                for topic in topics:
+                for topic in CONFIG["topics"]:
                     answers[sentiment][topic] = "No reviews found"
                 continue
             vectorstore = FAISS.from_texts(reviews, embeddings)
-            for topic in topics:
+            for topic in CONFIG["topics"]:
                 print(f"Topic: {topic}", flush=True)
                 retrieved_reviews = vectorstore.similarity_search(topic, k=3)
                 retrieved_reviews = [retrieved_review.page_content for retrieved_review in retrieved_reviews]

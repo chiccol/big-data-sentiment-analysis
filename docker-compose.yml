@@ -1,10 +1,15 @@
 services:  
-  
   zookeeper:  #Zookeeper, a distributed coordination service used by Kafka.
     image: wurstmeister/zookeeper  
     container_name: zookeeper  
     ports:
-      - "2181:2181"  
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   kafka: 
     image: wurstmeister/kafka
@@ -19,18 +24,31 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, EXTERNAL://kafka:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server=localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   kafdrop:  # Kafka UI for monitoring topics and messages.
     image: obsidiandynamics/kafdrop
     container_name: kafdrop
     ports:
       - "9000:9000"  # Exposes the Kafka UI on port 9000.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     environment:
       KAFKA_BROKERCONNECT: kafka:9092
       JVM_OPTS: "-Xms32M -Xmx64M"
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
   
   youtube-producer:
     container_name: youtube-producer
@@ -102,6 +120,12 @@ services:
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/applications || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     runtime: nvidia 
     deploy:
       resources:
@@ -113,9 +137,12 @@ services:
       - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
       - ./consumers/spark/utils.py:/app/utils.py
     depends_on:
-      - kafka
-      - postgres
-      - mongo
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
 
   spark-worker-1:
     build:
@@ -143,7 +170,13 @@ services:
     image: mongo:6.0.5
     container_name: mongo
     ports:
-      - "27017:27017"  
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: always
   
   mongo-express:
@@ -165,6 +198,12 @@ services:
       - POSTGRES_DB=warehouse
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d warehouse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     volumes:
       - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
 
@@ -177,7 +216,8 @@ services:
     ports:
       - "5050:80"  # Expose pgAdmin on port 5050
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   backend:
     container_name: fastapi-backend
@@ -185,10 +225,18 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"   
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     depends_on:
-      - mongo         
-      - postgres      
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://admin:password@postgres:5432/warehouse
       - MONGO_URL=mongodb://mongo:27017
@@ -211,7 +259,8 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     runtime: nvidia
     deploy:
       resources:

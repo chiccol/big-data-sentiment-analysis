@@ -1,4 +1,4 @@
-from pyspark.sql.functions import when, col, pandas_udf, udf, expr
+from pyspark.sql.functions import when, col, pandas_udf, udf
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, DoubleType, TimestampType
 
 import pandas as pd
@@ -141,10 +141,9 @@ def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
                                             .withColumn("positive_probability", df_with_sentiment["sentiment_probabilities"].getItem(2)) \
                                             .drop(*["sentiment_probabilities"])
     
-    df_with_sentiment_multi_columns.show()
     return df_with_sentiment_multi_columns
 
-def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
+def write_mongo(df_mongo: DataFrame, topics: List[str], mongo_uri: str) -> None:
     """
     Writes on MongoDB's different collections based on the topic(company) the message came from.
     Args:
@@ -160,13 +159,13 @@ def write_mongo(df_mongo: DataFrame, topics: List[str]) -> None:
         filtered_df_mongo.write \
             .format("mongo") \
             .mode("append") \
-            .option(f"spark.mongodb.output.uri", f"mongodb://mongo:27017/reviews.{topic}") \
+            .option(f"spark.mongodb.output.uri", f"{mongo_uri}{topic}") \
             .save()
         # Note: this is here for logging, but in a real-world scenario would create futile overhead
         logger.info(f"Wrote {filtered_df_mongo.count()} messages from topic {topic} to MongoDB")
     return None
 
-def write_postgres(df_postgres: DataFrame) -> None:
+def write_postgres(df_postgres: DataFrame, postgres_url: str, postgres_pwd: str, postgres_user: str, postgres_driver: str ) -> None:
     """
     Writes on Postgres table.
     Args:
@@ -175,37 +174,34 @@ def write_postgres(df_postgres: DataFrame) -> None:
         None
     """
     logger.info("Writing to postgres tables")
-    url = "jdbc:postgresql://postgres:5432/warehouse"
-    properties = {
-        "user": "admin",
-        "password": "password",
-        "driver": "org.postgresql.Driver"
-    }
+    postgres_url = postgres_url
+    postgres_properties = {
+        "user": postgres_user,
+        "password": postgres_pwd,
+        "driver": postgres_driver}
+    print("FROM THE WRITE FUNCTION\n", flush = True)
+    print(postgres_url, flush=True) 
+    print(postgres_properties, flush=True)
 
-    df_postgres.show()
-    # Step 1: Write to 'predictions' table first (Ensure that the 'id' exists)
     df_predictions = df_postgres.select([
         "id", "source", "date", "company", "sentiment",
         "negative_probability", "neutral_probability", "positive_probability"
     ])
-    df_predictions.write.jdbc(url=url, table="predictions", mode="append", properties=properties)
+    df_predictions.write.jdbc(url=postgres_url, table="predictions", mode="append", properties=postgres_properties)
     
-    # Step 2: Write to 'trustpilot' table
     df_trustpilot = df_postgres.filter(df_postgres.source == "Trustpilot").select([
         "id", "stars", "location"
     ])
-    df_trustpilot.write.jdbc(url=url, table="trustpilot", mode="append", properties=properties)
+    df_trustpilot.write.jdbc(url=postgres_url, table="trustpilot", mode="append", properties=postgres_properties)
 
-    # Step 3: Write to 'youtube' table
     df_youtube = df_postgres.filter(df_postgres.source == "youtube").select([
         "id", "videoid", "like_count", "youtube_reply_count"
     ])
-    df_youtube.write.jdbc(url=url, table="youtube", mode="append", properties=properties)
+    df_youtube.write.jdbc(url=postgres_url, table="youtube", mode="append", properties=postgres_properties)
 
-    # Step 4: Write to 'reddit' table
     df_reddit = df_postgres.filter(df_postgres.source == "reddit").select([
         "id", "subreddit", "vote", "reddit_reply_count"
     ])
-    df_reddit.write.jdbc(url=url, table="reddit", mode="append", properties=properties)
+    df_reddit.write.jdbc(url=postgres_url, table="reddit", mode="append", properties=postgres_properties)
 
     return None

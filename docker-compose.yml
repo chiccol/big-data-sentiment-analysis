@@ -93,7 +93,12 @@ services:
       - CLIENT_ID=spark_consumer
       - GROUP_ID=spark_group
       - NVIDIA_VISIBLE_DEVICES=0 # only use GPU 0
-      - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it. So far 8192 was the biggest I managed 
+      - BATCH_SIZE=64 # it should be able to handle larger batch sizes, but didn't test it. So far 8192 was the biggest I managed
+      - MONGO_URI=mongodb://mongo:27017/reviews.
+      - POSTGRES_URL=jdbc:postgresql://postgres:5432/warehouse
+      - POSTGRES_USER=admin
+      - POSTGRES_PWD=password
+      - POSTGRES_DRIVER=org.postgresql.Driver
     ports:
       - "7077:7077" # Master port
       - "8080:8080" # Web UI

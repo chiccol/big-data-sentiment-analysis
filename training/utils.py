@@ -300,6 +300,7 @@ def print_epoch_metrics(
     print(f"\nEpoch {epoch}/{epochs}")
 
     # Unpack training results
+    
     train_loss, train_global, train_labels, train_sources = train_results
     print(f"\nTraining Metrics:")
     print(f"  Loss: {train_loss:.4f}")

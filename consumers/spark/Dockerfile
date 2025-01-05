@@ -36,7 +36,7 @@ RUN model_path="/app/model" && \
     if [ ! -d "$model_path" ]; then \
         echo "Downloading DistilBERT weights and tokenizer..." && \
         mkdir -p /app/model && \
-        gdown --no-cookies https://drive.google.com/uc?id=1huZOyETxmPQA8R_EjahEf7y1VAGHnsyb --output /app/model/model.safetensors && \
+        gdown --no-cookies https://drive.google.com/uc?id=193mt22Duu-qSBA16UIyzd8ILSi4v0ZUo --output /app/model/model.safetensors && \
         gdown --no-cookies https://drive.google.com/uc?id=1o1cdVf_CYMqWqch81J0p3S-TECQGd37U --output /app/model/special_tokens_map.json && \
         gdown --no-cookies https://drive.google.com/uc?id=1ZUUpHBFJazgtU6jG1JBJtG-zTlBOvFPs --output /app/model/tokenizer_config.json && \
         gdown --no-cookies https://drive.google.com/uc?id=1k0WCS19GRiEZAC16Jw34sA7EAJUX3lgp --output /app/model/vocab.txt && \

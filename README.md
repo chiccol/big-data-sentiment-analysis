@@ -162,7 +162,7 @@ To visualize all the training diagnostics run:
 ```
 tensorboard --logdir training
 ```
-If you are interested only in replicating the results run (**TO BE ADDED**):
+If you are interested only in replicating the results run:
 ```
 chmod +x training/test.sh 
 ./training/test.sh

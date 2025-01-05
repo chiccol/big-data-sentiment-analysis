@@ -9,7 +9,7 @@ comandipostgres.txt
 /training/distilbert_base_sst2_finetuned
 /training/experiments/*/best_checkpoint.pth
 /training/final_experiments/*/best_checkpoint.pth
-/giuse_torch/
 /training/experiments_new_yt/*/best_checkpoint.pth
 **/reddit.env
 **/youtube.env
+/training/trained_model

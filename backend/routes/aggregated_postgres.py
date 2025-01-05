@@ -30,14 +30,12 @@ def get_aggregated_postgres_data_discrete(company: str,
         raise HTTPException(status_code=500, detail="No PostgreSQL connection available.")
     try:
         cursor = pg_conn.cursor(cursor_factory=extras.RealDictCursor)
-
-        # Notice we use a CASE expression to convert each row to +1 or -1
-        # Then we take the average of those values for each date/company/source
+        # query to fetch daily aggregated data
         query = """
             SELECT
                 CAST(
                     CASE 
-                        WHEN "date" LIKE '%%T%%Z' THEN "date"::timestamp 
+                        WHEN "date"::TEXT LIKE '%%T%%Z' THEN "date"::timestamp 
                         ELSE "date"::date                                  
                     END AS date
                 ) AS normalized_date,
@@ -60,12 +58,12 @@ def get_aggregated_postgres_data_discrete(company: str,
                 normalized_date ASC;
         """
 
-        logger.debug(f"Executing SQL query (daily +1/-1): {query}")
+        logger.debug(f"Executing SQL query: {query}")
         cursor.execute(query, (company,))
         logger.debug(f"Company passed to query: {company}")
         rows = cursor.fetchall()
         logger.debug(f"Rows fetched: {rows}")
-        logger.debug(f"Fetched {len(rows)} rows from PostgreSQL (daily +1/-1).")
+        logger.debug(f"Fetched {len(rows)} rows from PostgreSQL.")
         cursor.close()
         pg_pool.putconn(pg_conn)  # return connection to pool
 
@@ -91,11 +89,11 @@ def get_aggregated_postgres_data_discrete(company: str,
 
         # Sort by date
         aggregated_data = sorted(aggregation.values(), key=lambda x: x['date'])
-        logger.info("Successfully processed daily +1/-1 aggregated data.")
+        logger.info("Successfully processed daily aggregated data.")
 
         return {"aggregated_data": aggregated_data}
 
     except Exception as e:
-        logger.error(f"Error fetching daily +1/-1 Postgres data: {e}")
+        logger.error(f"Error fetching daily  Postgres data: {e}")
         pg_pool.putconn(pg_conn)
         raise HTTPException(status_code=500, detail=str(e))

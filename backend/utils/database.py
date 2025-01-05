@@ -6,7 +6,7 @@ from psycopg2 import pool
 from fastapi import HTTPException
 from utils.config import logger
 
-logger.info("Importing utils.database - attempting to create PostgreSQL pool now...")
+logger.info("Importing utils.database...")
 
 # MongoDB Connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
@@ -26,6 +26,7 @@ PG_USER = os.getenv("PG_USER", "admin")
 PG_PASSWORD = os.getenv("PG_PASSWORD", "password")
 PG_DB_NAME = os.getenv("PG_DB_NAME", "warehouse")
 
+logger.info("Creating PostgreSQL connection pool...")
 try:
     pg_pool = pool.SimpleConnectionPool(
         1, 20,  # min and max connections

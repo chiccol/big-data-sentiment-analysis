@@ -15,18 +15,16 @@ def get_aggregated_postgres_data_discrete(company: str,
     where each record's sentiment is calculated as +1 (positive) or -1 (negative),
     then averaged for each date/source/company.
     """
-    logger.debug("Fetching daily aggregated data (+1/-1) from PostgreSQL.")
+    logger.debug("Fetching daily aggregated data) from PostgreSQL.")
     logger.debug(f"Company ID: {company}")
     try:
         cursor = pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-        # Notice we use a CASE expression to convert each row to +1 or -1
-        # Then we take the average of those values for each date/company/source
+        # query for fetching daily aggregated data
         query = """
             SELECT
                 CAST(
                     CASE 
-                        WHEN "date" LIKE '%%T%%Z' THEN "date"::timestamp 
+                        WHEN "date"::TEXT LIKE '%%T%%Z' THEN "date"::timestamp 
                         ELSE "date"::date                                  
                     END AS date
                 ) AS normalized_date,
@@ -48,12 +46,12 @@ def get_aggregated_postgres_data_discrete(company: str,
                 normalized_date ASC;
         """
 
-        logger.debug(f"Executing SQL query (daily +1/-1): {query}")
+        logger.debug(f"Executing SQL query: {query}")
         cursor.execute(query, (company,))
         logger.debug(f"Company passed to query: {company}")
         rows = cursor.fetchall()
         logger.debug(f"Rows fetched: {rows}")
-        logger.debug(f"Fetched {len(rows)} rows from PostgreSQL (daily +1/-1).")
+        logger.debug(f"Fetched {len(rows)} rows from PostgreSQL.")
         cursor.close()
         pg_pool.putconn(pg_conn)  # or however you return the conn to the pool
 
@@ -63,7 +61,7 @@ def get_aggregated_postgres_data_discrete(company: str,
         for row in rows:
             date_str = row['normalized_date'].strftime("%Y-%m-%d")
             # db_company = row['company']
-            daily_score = float(row['daily_sentiment_score'])  # average of +1/-1
+            daily_score = float(row['daily_sentiment_score'])  # average of
 
             key = f'{date_str}' #f"{date_str}-{db_company}"
             if key not in aggregation:
@@ -82,5 +80,5 @@ def get_aggregated_postgres_data_discrete(company: str,
 
     except Exception as e:
         pg_pool.putconn(pg_conn)
-        logger.error(f"Error fetching daily +1/-1 Postgres data: {e}")
+        logger.error(f"Error fetching daily Postgres data: {e}")
         raise HTTPException(status_code=500, detail=str(e))

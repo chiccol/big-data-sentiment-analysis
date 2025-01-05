@@ -156,7 +156,7 @@ chmod +x training/train.sh
 ```
 **Note**: The file ```training/config.yaml``` controls the training parameters and by default sets the parameters the ones used to obtain the best checkpoint. The corresponding tensorboard is stored at:
 ```
-final_experiments/_lr_1e-4_wd_5e-1_bs_64_layers_3_tp_simple_True_yt_yes_yt_yes_yt_weight0.5_tp_weight1_yt_smoothing0.2_tp_weight0.1
+final_experiments/_lr_2e-4_wd_5e-2_bs_64_layers_3_tp_simple_True_yt_yes_tp_yes_yt_weight0.5_tp_weight1_yt_smoothing0.2_tp_weight0.1
 ```
 To visualize all the training diagnostics run:
 ```

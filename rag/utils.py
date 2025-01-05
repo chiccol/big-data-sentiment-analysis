@@ -1,5 +1,5 @@
 import torch
-
+from datetime import datetime
 from pymongo.database import Database
 from typing import List
 from langchain.text_splitter import CharacterTextSplitter
@@ -9,6 +9,9 @@ def get_reviews(
         db: Database, 
         sentiment: str, 
         company: str, 
+        source: str,
+        from_date: datetime,
+        to_date: datetime,
         chunk_size: int,
         chunk_overlap: int,
         separator: str = " "
@@ -19,14 +22,23 @@ def get_reviews(
         db (Database): MongoDB database object.
         sentiment (str): The sentiment to filter reviews by (e.g., "positive", "neutral", "negative").
         company (str): The name of the company whose reviews are to be fetched.
+        source (str): The source of the reviews (e.g., "Trustpilot", "Reddit", "YouTube").
+        from_date (str): The start date for filtering reviews.
+        to_date (str): The end date for filtering reviews.
         chunk_size (int): The maximum size of each chunk.
         chunk_overlap (int): The overlap between chunks.
         separator (str): The separator to use for splitting the text.
     Returns:
         List[str]: Preprocessed and chunked reviews.
     """
+    # create a query to filter reviews by sentiment, source, and date
+    query = {
+        "sentiment": sentiment,
+        "source": {"$in": source},
+        "date": {"$gte": from_date, "$lte": to_date}
+    }
     comapny_reviews = db[company]
-    reviews = comapny_reviews.find({"sentiment": sentiment})
+    reviews = comapny_reviews.find(query)
     reviews = [review["text"] for review in reviews]
     text_splitter = CharacterTextSplitter(
         separator=separator,   # Split by spaces

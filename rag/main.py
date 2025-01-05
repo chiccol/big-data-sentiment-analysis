@@ -1,4 +1,5 @@
 import socket
+import json
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from langchain.vectorstores import FAISS
@@ -92,7 +93,11 @@ def main():
         
         with conn:
             data = conn.recv(1024)
-            company = data.decode("utf-8") 
+            received_data = json.loads(data.decode("utf-8"))
+            company = received_data["company"]
+            sources = received_data["sources"]
+            start_date = received_data["start_date"]
+            end_date = received_data["end_date"]
             collections = db_reviews.list_collection_names()
             while company not in collections:
                 logger.info(f"Company: {company} not found in the database. Waiting for 5 seconds for data to come...", flush=True)
@@ -103,30 +108,34 @@ def main():
             logger.info("Retrieving reviews from MongoDB...", flush=True)
             for sentiment in answers:
                 logger.info(f"Extracting info for Sentiment: {sentiment}", flush=True)
-                reviews = get_reviews(db_reviews, sentiment, company, CONFIG["chunk_size"], CONFIG["chunk_overlap"], CONFIG["separator"])
-                # If no reviews are found, add a message to the answers
-                if not reviews: 
+                for source in sources:
+                    logger.info(f"Extracting info for Source: {source}", flush=True)
+                    reviews = get_reviews(db_reviews, sentiment, company, source, start_date, end_date, 
+                                          CONFIG["chunk_size"], CONFIG["chunk_overlap"], CONFIG["separator"])
+                    # If no reviews are found, add a message to the answers
+                    if not reviews: 
+                        for topic in CONFIG["topics"]:
+                            answers[sentiment][source][topic] = "No reviews found"
+                        continue
+                    vectorstore = FAISS.from_texts(reviews, embeddings)
                     for topic in CONFIG["topics"]:
-                        answers[sentiment][topic] = "No reviews found"
-                    continue
-                vectorstore = FAISS.from_texts(reviews, embeddings)
-                for topic in CONFIG["topics"]:
-                    logger.info(f"Retrieving {sentiment} reviews for {company} about {topic}", flush=True)
-                    retrieved_reviews = vectorstore.similarity_search(topic, k=3)
-                    retrieved_reviews = [retrieved_review.page_content for retrieved_review in retrieved_reviews]
-                    retrieved_reviews = "\n".join(retrieved_reviews)
-                    summary = summarizer(retrieved_reviews, sentiment, topic, model, tokenizer, device)
-                    answers[sentiment][topic] = summary
-                    logger.info("Summary:", answers[sentiment][topic], flush=True)
-                rag_collection.update_one(
-                    {"_id": company}, 
-                    {"$set": {"answers": answers}},
-                    upsert=True
-                )
-                logger.info(f"Answers for {company} have been stored in 'reviews.rag' with _id '{company}'.")
-                
-                # Send the answers back to the client
-                conn.sendall("Done".encode("utf-8"))
+                        logger.info(f"Retrieving {sentiment} reviews from {source} source for {company} about {topic}", flush=True)
+                        retrieved_reviews = vectorstore.similarity_search(topic, k=3)
+                        retrieved_reviews = [retrieved_review.page_content for retrieved_review in retrieved_reviews]
+                        retrieved_reviews = "\n".join(retrieved_reviews)
+                        summary = summarizer(retrieved_reviews, sentiment, topic, model, tokenizer, device)
+                        answers[sentiment][source][topic] = summary
+                        logger.info("Summary:", answers[sentiment][source][topic], flush=True)
+            rag_collection.update_one(
+                {"company": company}, 
+                {"$set": {"answers": answers}},
+                upsert=True
+                    )
+            logger.info(f"Answers for {company} have been stored in 'reviews.rag'.")
+                    
+            # Send the answers back to the client
+            conn.sendall("Done".encode("utf-8"))
+            logger.info("Answers sent to the client", flush=True)
         
 if __name__ == "__main__":
     main()

@@ -9,7 +9,26 @@ import yaml
 import os 
 
 def main():
+  """
+  Main function to train a transformer-based sentiment analysis model using YouTube and Trustpilot data.
 
+  Worfklow:
+    1. Loads the configuration file for training and data parameters.
+    2. Creates an experiment directory based on training parameters.
+    3. Initializes the model, tokenizer, optimizer, and loss functions.
+    4. Loads pre-existing checkpoints if available, including model weights, optimizer state, and validation metrics.
+    5. Prepares training and validation datasets and their corresponding dataloaders.
+    6. Runs training and validation loops for the specified number of epochs, tracking performance using a TensorBoard SummaryWriter.
+    7. Saves the model checkpoint with the best validation performance.
+
+  Configuration:
+    The function expects a YAML configuration file at `training/config.yaml`.
+
+  Outputs:
+    - Training logs written to TensorBoard.
+    - Checkpoint of the model saved with the lowest validation loss.
+    - Console output of training and validation metrics per epoch.
+  """
   # Load configuration
   with open("training/config.yaml", "r") as file:
     config = yaml.safe_load(file)

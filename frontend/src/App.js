@@ -1,75 +1,31 @@
-import React, { useState } from 'react';
-import { Container, Grid2, Box, CssBaseline } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import Header from './components/Header';
-// import Sidebar from './components/Sidebar';
-import ChartCard from './components/ChartCard';
-import LinearChartScoresComponent from './components/LinearChartScoresComponent';
-import LineChartDiscreteComponent from './components/LineChartDiscreteComponent';
-import TopWordsBarChartComponent from './components/TopWordsBarChartComponent';
-import TopBigramsBarChartComponent from './components/TopBigramsBarChartComponent';
-import TopTrigramsBarChartComponent from './components/TopTrigramsBarChartComponent';
-import CompanySelector from './components/CompanySelector';
-import SummariesButton from './components/SummaryComponent';
+// App.js
+import './App.css'
+import MainDash from './components/MainDash/MainDash';
+import RightSide from './components/RigtSide/RightSide';
+import Sidebar from './components/Sidebar';
+import { Routes, Route } from 'react-router-dom';
 
 function App() {
-  const [selectedCompany, setSelectedCompany] = useState('');
-
-  const handleCompanyChange = (companyName) => {
-    setSelectedCompany(companyName);
-  };
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <CssBaseline />
-      <div style={{ display: 'flex' }}>
-        {/* <Sidebar /> */}
-        <Box sx={{ flexGrow: 1 }}>
-          <Header />
-          <Container>
-            {/* Company Selector */}
-            <Box my={4}>
-              <CompanySelector onCompanyChange={handleCompanyChange} />
-            </Box>
+    <div className="App">
+      <div className="AppGlass">
+        {/* The Sidebar is outside the <Routes> 
+            so it stays visible no matter the route */}
+        <Sidebar />
 
-            {/* Line Charts */}
-            <Grid2 container spacing={4}>
-              <Grid2 item xs={12} >
-                <ChartCard title="Line Chart Scores">
-                  <LinearChartScoresComponent companyName={selectedCompany} />
-                </ChartCard>
-              </Grid2>
-              <Grid2 item xs={12} >
-                <ChartCard title="Line Chart Discrete">
-                  <LineChartDiscreteComponent companyName={selectedCompany} />
-                </ChartCard>
-              </Grid2>
-            </Grid2>
+        {/* The "right side" can be rendered on all pages OR in a route, 
+            depending on your layout preference */}
+        <Routes>
+          {/* Example route: dashboard home (no company param) */}
+          <Route path="/" element={<MainDash />} />
 
-            {/* Bar Charts */}
-            <Grid2 container spacing={4} mt={4}>
-              <Grid2 item xs={12} >
-                <ChartCard title="Top Words">
-                  <TopWordsBarChartComponent companyName={selectedCompany} />
-                </ChartCard>
-              </Grid2>
-              <Grid2 item xs={12} >
-                <ChartCard title="Top Bigrams">
-                  <TopBigramsBarChartComponent companyName={selectedCompany} />
-                </ChartCard>
-              </Grid2>
-              <Grid2 item xs={12} >
-                <ChartCard title="Top Trigrams">
-                  <TopTrigramsBarChartComponent companyName={selectedCompany} />
-                </ChartCard>
-              </Grid2>
-            </Grid2>
-            <SummariesButton companyName={selectedCompany} />
-          </Container>
-        </Box>
+          {/* Dynamic route for each company */}
+          <Route path="/dashboard/:company" element={<MainDash />} />
+        </Routes>
+
+        <RightSide />
       </div>
-    </LocalizationProvider>
+    </div>
   );
 }
 

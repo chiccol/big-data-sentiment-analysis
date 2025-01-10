@@ -241,15 +241,15 @@ def write_company_word_counts(df, spark):
     # aggregate the data
     merged_df = merged_df.groupBy("company", "trigram").sum("count")
     merged_df = merged_df.withColumnRenamed("sum(count)", "count")
-    
+
     # take the top 100 words
     window = Window.partitionBy("company").orderBy(col("count").desc())
     merged_df = merged_df.withColumn("rank", row_number().over(window))
     merged_top100 = merged_df.filter(col("rank") <= 100).drop("rank")
-    
+
     # Transform to have word_counts as a map
     grouped_df = merged_top100.groupBy("company") \
-        .agg(collect_list(struct(col("trigram"), col("count"))).alias("trigram_counts_list"))
+        .agg(collect_list(struct(col("trigram"), col("count"))).alias("trigram_count_list"))
 
     final_df = grouped_df.withColumn("trigram_count", map_from_entries(col("trigram_count_list"))) \
         .drop("trigram_count_list")

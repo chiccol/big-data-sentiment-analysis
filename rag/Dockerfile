@@ -14,5 +14,6 @@ RUN apt-get update && \
 # Copy the rest of the application files
 COPY main.py /app
 COPY utils.py /app 
+COPY config.py /app
 
 CMD ["python3", "main.py"]

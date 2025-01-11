@@ -165,9 +165,9 @@ def getcomments_video(
                 "text": comment.get("textOriginal", None),
                 "date": comment.get("publishedAt", None),
                 "company": company,
-                "yt_videoid": video,
-                "yt_like_count": int(comment.get("likeCount", None)),
-                "yt_reply_count": int(item["snippet"].get("totalReplyCount", 0))
+                "videoid": video,
+                "like_count": int(comment.get("likeCount", None)),
+                "youtube_reply_count": int(item["snippet"].get("totalReplyCount", 0))
             }
             comments.append(extracted_comment)
             flag_pinned_comment = False

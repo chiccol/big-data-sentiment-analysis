@@ -17,7 +17,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("pseudo-producer")
 logger.info("Started logging")
-
 def encode_message_to_parquet(data: list[dict]) -> bytes: 
     """
     Encodes a list of dictionaries into a in-memory parquet table.
@@ -58,7 +57,7 @@ def data_gen(company: str, producer, num_entries: int = 100) -> None:
     fake = Faker()
     
     # List of potential sources
-    sources = ['trustpilot', 'youtube', 'other']
+    sources = ['Trustpilot', 'youtube', 'reddit']
     reviews = []
     logger.info(f"Generating {num_entries} datapoints for {company}")
     for _ in range(num_entries):
@@ -73,31 +72,31 @@ def data_gen(company: str, producer, num_entries: int = 100) -> None:
                 'date': fake.date_between(start_date='-1y', end_date='today').strftime('%Y-%m-%d'),
                 'company': company,
                 'text': fake.paragraph(),
-                'yt_videoid': fake.uuid4(),
-                'yt_like_count': random.randint(1, 5),
-                'yt_reply_count': random.randint(1, 10000)
+                'videoid': fake.uuid4(),
+                'like_count': random.randint(1, 5),
+                'youtube_reply_count': random.randint(1, 10000)
             }
-        elif source == 'trustpilot':
+        elif source == "Trustpilot":
             entry = {
                 'source': source,
                 'date': fake.date_between(start_date='-1y', end_date='today').strftime('%Y-%m-%d'),
                 'company': company,
                 'text': fake.paragraph(),
-                'tp_stars': random.randint(1, 5),  # No need for round
-                'tp_location': fake.city()}
+                'stars': random.randint(1, 5),  # No need for round
+                'location': fake.city()}
         else:
             entry = {
                 'source': source,
                 'date': fake.date_between(start_date='-1y', end_date='today').strftime('%Y-%m-%d'),
                 'company': company,
-                'text': fake.paragraph()
-            }
+                'text': fake.paragraph(),
+                'subreddit': "random",
+                'vote': random.randint(1, 100),
+                'reddit_reply_count': random.randint(1, 1000)  # No need for round
+                }
 
         reviews.append(entry)
-
-    for i in range(5):
-        print(reviews[i])
-
+    
     result_encoded = encode_message_to_parquet(reviews)
     producer.produce(record = result_encoded, topic = company)
     logger.info(f"Sent a pseudo encoded review of length {len(reviews)} for company {company}")

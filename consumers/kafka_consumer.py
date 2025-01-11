@@ -242,15 +242,14 @@ class KafkaConsumer:
                     ('text', pa.string()),
                     ('company', pa.string()),
                     ('date', pa.string()),
-                    ('tp_stars', pa.int32()), 
-                    ('tp_location', pa.string()),
-                    ('yt_videoid', pa.string()),
-                    ('yt_like_count', pa.int32()),
-                    ('yt_reply_count', pa.int32()),
-                    ('re_id', pa.string()),
-                    ('re_subreddit', pa.string()),
-                    ('re_vote', pa.int32()),
-                    ('re_reply_count', pa.int32())
+                    ('stars', pa.int32()), 
+                    ('location', pa.string()),
+                    ('videoid', pa.string()),
+                    ('like_count', pa.int32()),
+                    ('youtube_reply_count', pa.int32()),
+                    ('subreddit', pa.string()),
+                    ('vote', pa.int32()),
+                    ('reddit_reply_count', pa.int32())
                 ])
         # Read the Parquet data back into an Arrow table
         table = pq.read_table(source = buffer, schema = pyarrow_schema)

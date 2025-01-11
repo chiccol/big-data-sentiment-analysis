@@ -47,7 +47,17 @@ def main():
     kafka_adv_external_listener = os.getenv("KAFKA_ADVERTISED_LISTENERS")
     client_id = os.getenv("CLIENT_ID")
     group_id = os.getenv("GROUP_ID")
-
+    mongo_uri = os.getenv("MONGO_URI")
+    postgres_url = os.getenv("POSTGRES_URL")
+    postgres_user = os.getenv("POSTGRES_USER")
+    postgres_pwd = os.getenv("POSTGRES_PWD")
+    postgres_driver = os.getenv("POSTGRES_DRIVER")
+    
+    print("FROM THE MAIN FUNCTION\n", flush = True)
+    print(postgres_url, flush=True) 
+    print(postgres_user, flush=True)
+    print(postgres_pwd, flush=True)
+    print(postgres_driver, flush=True)
     spark = SparkSession.builder \
         .master(f"spark://{spark_master}:{spark_port}") \
         .config("spark.mongodb.output.uri", f"mongodb://mongo:27017/") \
@@ -84,6 +94,7 @@ def main():
         logger.info(f"Messages consumed with Spark: {len(all_messages)}")
         if all_messages:
             df = process_data(all_messages, spark)
+
             df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", 
                                      "neutral_probability", "positive_probability", "tp_stars", "tp_location", 
                                      "yt_videoid", "yt_like_count", "yt_reply_count", "re_id", "re_subreddit",
@@ -91,6 +102,14 @@ def main():
             write_postgres(df_postgres)
             
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
+            write_mongo(df_mongo, topics, mongo_uri)
+
+            df_postgres = df.select(["id", "source", "date", "company", "sentiment", "negative_probability", 
+                                     "neutral_probability", "positive_probability", "stars", "location", 
+                                     "videoid", "youtube_reply_count", "like_count", "subreddit",
+                                     "vote", "reddit_reply_count"])
+            write_postgres(df_postgres, postgres_url, postgres_pwd, postgres_user, postgres_driver)
+
             write_mongo(df_mongo, topics)
             
             write_company_word_counts(df, spark) 

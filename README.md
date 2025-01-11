@@ -82,7 +82,7 @@ sudo docker compose up
 
 ### Using CPU
 
-The ```docker-compose.yml``` by default uses Nvidia runtime. To use only the CPU comment the runtime and deploy options of the spark-master and spark-worker-1 i.e. lines 86-91 and 114-119. Once you have modified the file you can run:
+The ```docker-compose.yml``` by default uses Nvidia runtime. To use only the CPU comment the runtime and deploy options of the spark-master,spark-worker-1 and rag i.e. lines 86-91, 114-119 and 210-215. Once you have modified the file you can run:
 ```
 sudo docker compose up 
 ```
@@ -121,10 +121,23 @@ data/data_source/reddit
 ### UI Access
 
 You can visualize the different UIs here:
-- Sentiment Analysis: **INSERT URL**
-- Kakfa: **INSERT URL**
-- Mongo: **INSERT URL**
-- Postgres: **INSERT URL**
+- Sentiment Analysis: [http://localhost:3000](http://localhost:3000)
+- Kakfa: [http://localhost:9000](http://localhost:9000)
+- Mongo: [http://localhost:8081](http://localhost:8081)
+- Postgres: [http://localhost:5050](http://localhost:5050)
+- Spark: [http://localhost:8080](http://localhost:8080)
+
+In order to configure pgadmin:
+1) Login using the following credentials:
+mail: admin@admin.com 
+pwd: password
+
+2) Click Create New Server. Choose whatever name, then switch tab to "Connection".
+3) Set the following paramters:
+- Host name/address: postgres 
+- Port: 5432
+- Username: admin
+- Password: password
 
 ## Reproducibility 
 
@@ -154,6 +167,7 @@ If you are interested only in replicating the results run (**TO BE ADDED**):
 chmod +x training/test.sh 
 ./training/test.sh
 ```
+All the datasets created are accessible on [GoogleDrive](https://drive.google.com/drive/folders/158Sod_zo_5qNuECP-EJRw-mATPRzdg_B?usp=sharing). We used the ones with the "_final" suffix.
 
 ### Create Dataset
 

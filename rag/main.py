@@ -29,7 +29,7 @@ RAG_SOCKET_PORT = 5000
 def main():
     """
     Main function to retrieve reviews from MongoDB, process them, and generate summaries.
-    Connects to MongoDB, retrieves reviews, summarizes them, and prints the results.
+    Connects to MongoDB, retrieves reviews splitted in chnks, summarizes them, and prints the results.
     In the future it should connect to the UI and send the results back.
     """
     logger.info("Waiting for MongoDB to start and to have some data...")
@@ -42,15 +42,20 @@ def main():
     logger.info("Connecting to MongoDB...")
     client = MongoClient(mongo_uri)
     # Access the database and collection  
-    db = client[db_name]
+    db = client[CONFIG["db_name"]]
     # Get the names of all collections in the "reviews" database
-    topics = [
-        "Customer service", 
-        "Product quality", 
-        "Price",
-        "General"
-    ]
-    answers = {
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    logger.info(f"Loading model on {device}", flush=True)
+    tokenizer = AutoTokenizer.from_pretrained(CONFIG["conv_model"])
+    # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
+    model = AutoModelForCausalLM.from_pretrained(CONFIG["conv_model"]).to(device)
+    logger.info("Generation model:", CONFIG["conv_model"], flush=True)
+    logger.info("Embeddings model:", CONFIG["embeddings_model"], flush=True)
+    logger.info("Retrieving by the following topics:", CONFIG["topics"], flush=True)
+    
+    while True:
+        # Dictionary to store the answers
+        answers = {
             "positive": dict(),
             "neutral": dict(),
             "negative": dict()

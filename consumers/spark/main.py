@@ -94,12 +94,6 @@ def main():
         logger.info(f"Messages consumed with Spark: {len(all_messages)}")
         if all_messages:
             df = process_data(all_messages, spark)
-
-            df_postgres = df.select(["source", "date", "company", "sentiment", "negative_probability", 
-                                     "neutral_probability", "positive_probability", "tp_stars", "tp_location", 
-                                     "yt_videoid", "yt_like_count", "yt_reply_count", "re_id", "re_subreddit",
-                                     "re_vote", "re_reply_count"])
-            write_postgres(df_postgres)
             
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
             write_mongo(df_mongo, topics, mongo_uri)
@@ -110,8 +104,6 @@ def main():
                                      "vote", "reddit_reply_count"])
             write_postgres(df_postgres, postgres_url, postgres_pwd, postgres_user, postgres_driver)
 
-            write_mongo(df_mongo, topics)
-            
             write_company_word_counts(df, spark) 
 
         else:

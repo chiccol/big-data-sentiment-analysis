@@ -1,0 +1,95 @@
+/* --------------------------------------
+   CompactCard (General Container)
+--------------------------------------- */
+.CompactCard {
+    display: flex;
+    flex: 1;
+    height: 7rem !important;
+    border-radius: 0.7rem;
+    color: white;
+    padding: 1rem;
+    position: relative;
+    cursor: pointer;
+  }
+  
+  .CompactCard:hover {
+    box-shadow: none !important;
+  }
+  
+  /* --------------------------------------
+     Detail Section
+     (Used for text details in the Compact View)
+  --------------------------------------- */
+  .detail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  
+  .detail > span:nth-child(2) {
+    font-size: 22px;
+    font-weight: bold;
+  }
+  
+  .detail > span:nth-child(3) {
+    font-size: 12px;
+  }
+  
+  /* --------------------------------------
+     ExpandedCard (Full-View Container)
+  --------------------------------------- */
+  .ExpandedCard {
+    position: absolute;
+    width: 60%;
+    height: 70vh;
+    z-index: 9;
+    left: 13rem;
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    padding: 1rem;
+  }
+  
+  /* Title in ExpandedCard */
+  .ExpandedCard > span:nth-of-type(1) {
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 0px 0px 15px white;
+  }
+  
+  /* Subtitle in ExpandedCard */
+  .ExpandedCard > span:nth-of-type(2) {
+    color: rgb(236, 236, 236);
+    font-size: 15px;
+  }
+  
+  /* Chart Container in ExpandedCard */
+  .chartContainer {
+    width: 70%;
+  }
+  
+  /* --------------------------------------
+     Responsive Media Queries
+  --------------------------------------- */
+  @media screen and (max-width: 1200px) {
+    .ExpandedCard {
+      top: 2rem;
+      height: 45vh;
+      left: 6rem;
+    }
+  }
+  
+  @media screen and (max-width: 768px) {
+    .ExpandedCard {
+      top: 8rem;
+      height: 50%;
+      left: 25px;
+      width: 80%;
+    }
+  }
+  

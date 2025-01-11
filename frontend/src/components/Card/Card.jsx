@@ -33,6 +33,10 @@ const Card = ({ data, title, color, icon: Icon }) => {
       grid: {
         show: true,
       },
+      yaxis: {
+        min: -1,
+        max: 1,
+      },
     },
     series: [
       {

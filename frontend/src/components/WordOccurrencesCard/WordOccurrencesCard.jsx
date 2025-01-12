@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimateSharedLayout } from "framer-motion";
 import Chart from "react-apexcharts";
 import { UilTimes } from "@iconscout/react-unicons";
-import "./Card.css"; // If you need the same styling
+import "./WordOccurrencesCard.css"; // If you need the same styling
 
 const WordOccurrenceCard = ({ data, title, color }) => {
   // This state determines whether the card is in compact or expanded view

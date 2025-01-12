@@ -1,0 +1,485 @@
+ Service backend  Building
+ Service reddit-producer  Building
+ Service rag  Building
+ Service trustpilot-producer  Building
+ Service pseudo-producer  Building
+ Service youtube-producer  Building
+ Service spark-master  Building
+#0 building with "default" instance using docker driver
+
+#1 [spark-master internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.93kB done
+#1 DONE 0.0s
+
+#2 [pseudo-producer internal] load build definition from pseudo.Dockerfile
+#2 transferring dockerfile: 614B done
+#2 DONE 0.0s
+
+#3 [trustpilot-producer internal] load build definition from trustpilot.Dockerfile
+#3 transferring dockerfile: 651B done
+#3 DONE 0.0s
+
+#4 [rag internal] load build definition from Dockerfile
+#4 transferring dockerfile: 518B done
+#4 DONE 0.0s
+
+#5 [backend internal] load build definition from Dockerfile
+#5 transferring dockerfile: 402B done
+#5 DONE 0.0s
+
+#6 [reddit-producer internal] load build definition from reddit.Dockerfile
+#6 transferring dockerfile: 639B done
+#6 DONE 0.0s
+
+#7 [youtube-producer internal] load build definition from youtube.Dockerfile
+#7 transferring dockerfile: 642B done
+#7 DONE 0.1s
+
+#8 [youtube-producer internal] load metadata for docker.io/library/python:3.11.1-slim
+#8 ...
+
+#9 [spark-master internal] load metadata for docker.io/bitnami/spark:3.4.0
+#9 DONE 0.5s
+
+#10 [backend internal] load metadata for docker.io/library/python:3.11-slim
+#10 DONE 0.5s
+
+#8 [reddit-producer internal] load metadata for docker.io/library/python:3.11.1-slim
+#8 DONE 0.5s
+
+#11 [spark-master internal] load .dockerignore
+#11 transferring context: 2B done
+#11 DONE 0.0s
+
+#12 [backend internal] load .dockerignore
+#12 transferring context: 2B done
+#12 DONE 0.0s
+
+#13 [reddit-producer internal] load .dockerignore
+#13 transferring context: 2B done
+#13 DONE 0.0s
+
+#14 [backend 1/6] FROM docker.io/library/python:3.11-slim@sha256:873952659a04188d2a62d5f7e30fd673d2559432a847a8ad5fcaf9cbd085e9ed
+#14 DONE 0.0s
+
+#15 [rag internal] load .dockerignore
+#15 transferring context: 2B done
+#15 DONE 0.0s
+
+#16 [youtube-producer internal] load .dockerignore
+#16 transferring context: 2B done
+#16 DONE 0.0s
+
+#17 [trustpilot-producer internal] load .dockerignore
+#17 transferring context: 2B done
+#17 DONE 0.1s
+
+#18 [spark-master  1/15] FROM docker.io/bitnami/spark:3.4.0@sha256:c7fb9b2eb32ca8b1d8377876e6df93840a63027f97d6fc05d6e3f564827a1e20
+#18 DONE 0.0s
+
+#19 [pseudo-producer 1/8] FROM docker.io/library/python:3.11.1-slim@sha256:33a1008485e1a2dc565be79ece483b240cbc4d6266d6144a57a5a9965ede9bbf
+#19 DONE 0.0s
+
+#20 [pseudo-producer internal] load .dockerignore
+#20 transferring context: 2B done
+#20 DONE 0.1s
+
+#21 [backend internal] load build context
+#21 transferring context: 966B done
+#21 DONE 0.0s
+
+#22 [rag internal] load build context
+#22 transferring context: 122B done
+#22 DONE 0.0s
+
+#23 [backend 5/6] RUN python -m nltk.downloader stopwords
+#23 CACHED
+
+#24 [backend 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#24 CACHED
+
+#25 [backend 2/6] WORKDIR /app
+#25 CACHED
+
+#26 [backend 3/6] COPY requirements.txt .
+#26 CACHED
+
+#27 [backend 6/6] COPY . /app
+#27 CACHED
+
+#28 [reddit-producer internal] load build context
+#28 transferring context: 33.58kB done
+#28 DONE 0.0s
+
+#29 [rag 6/7] COPY utils.py /app
+#29 CACHED
+
+#30 [rag 4/7] RUN apt-get update &&     apt-get install -y gcc &&     pip install --no-cache-dir -r requirements.txt &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#30 CACHED
+
+#31 [rag 2/8] WORKDIR /app
+#31 CACHED
+
+#32 [rag 3/7] COPY requirements.txt /app
+#32 CACHED
+
+#33 [rag 5/7] COPY main.py /app
+#33 CACHED
+
+#34 [rag 7/7] COPY config.py /app
+ Service backend  Built
+ Service frontend  Building
+ Service rag  Built
+#34 CACHED
+
+#35 [backend] exporting to image
+#35 exporting layers done
+#35 writing image sha256:2763afc5308741fed9fc22c2446c3fbe9755f9e2a57c8f12d0cdd3b1a3560f0b done
+#35 naming to docker.io/library/big-data-sentiment-analysis-backend done
+#35 DONE 0.0s
+
+#36 [spark-master internal] load build context
+#36 transferring context: 254B done
+#36 DONE 0.0s
+
+#37 [pseudo-producer internal] load build context
+#37 transferring context: 6.39kB done
+#37 DONE 0.0s
+
+#38 [rag] exporting to image
+#38 exporting layers done
+#38 writing image sha256:45c4757f2cd51d1328fc040bf5a34613ecbf91200183dfdf521f6172ea31e215 done
+#38 naming to docker.io/library/big-data-sentiment-analysis-rag done
+#38 DONE 0.0s
+
+#39 [trustpilot-producer internal] load build context
+#39 transferring context: 13.03kB 0.0s done
+#39 DONE 0.0s
+
+#40 [youtube-producer internal] load build context
+#40 transferring context: 26.98kB done
+#40 DONE 0.0s
+
+#41 [rag] resolving provenance for metadata file
+#41 DONE 0.0s
+
+#42 [backend] resolving provenance for metadata file
+#42 DONE 0.0s
+
+#43 [reddit-producer 5/8] COPY reddit /app
+#43 CACHED
+
+#44 [reddit-producer 4/8] RUN apt-get update &&     pip install --no-cache-dir -r requirements.txt &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#44 CACHED
+
+#45 [reddit-producer 3/8] COPY reddit/requirements.txt .
+#45 CACHED
+
+#31 [reddit-producer 2/8] WORKDIR /app
+#31 CACHED
+
+#46 [reddit-producer 6/8] COPY kafka_producer.py /app
+#46 CACHED
+
+#47 [reddit-producer 7/8] COPY companies.json /app
+#47 CACHED
+
+#48 [reddit-producer 8/8] RUN chmod +x wait.sh
+#48 CACHED
+
+#49 [pseudo-producer 5/7] COPY pseudo /app
+#49 CACHED
+
+#50 [pseudo-producer 6/7] COPY kafka_producer.py /app
+#50 CACHED
+
+#51 [pseudo-producer 3/7] COPY pseudo/requirements.txt .
+#51 CACHED
+
+#52 [pseudo-producer 4/7] RUN apt-get update &&     pip install --no-cache-dir -r requirements.txt &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#52 CACHED
+
+#53 [pseudo-producer 7/7] RUN chmod +x wait.sh
+#53 CACHED
+
+#54 [youtube-producer 7/8] COPY companies.json /app
+#54 CACHED
+
+#55 [youtube-producer 4/8] RUN apt-get update &&     pip install --no-cache-dir -r requirements.txt &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#55 CACHED
+
+#56 [youtube-producer 3/8] COPY youtube/requirements.txt .
+#56 CACHED
+
+#57 [youtube-producer 6/8] COPY kafka_producer.py /app
+#57 CACHED
+
+#58 [youtube-producer 5/8] COPY youtube /app
+#58 CACHED
+
+#59 [youtube-producer 8/8] RUN chmod +x wait.sh
+#59 CACHED
+
+#60 [spark-master  6/15] COPY spark/word_count.py /app
+#60 CACHED
+
+#61 [spark-master  4/15] COPY spark/utils.py /app
+#61 CACHED
+
+#62 [spark-master  7/15] COPY spark/run_spark_job.sh /app
+#62 CACHED
+
+#63 [spark-master  2/15] WORKDIR /app
+#63 CACHED
+
+#64 [spark-master  5/15] COPY kafka_consumer.py /app
+#64 CACHED
+
+#65 [spark-master  3/15] COPY spark/main.py /app
+#65 CACHED
+
+#66 [spark-master  8/15] COPY spark/requirements.txt /app
+#66 CACHED
+
+#67 [trustpilot-producer 7/8] COPY companies.json /app
+#67 CACHED
+
+#68 [trustpilot-producer 4/8] RUN apt-get update &&     pip install --no-cache-dir -r requirements.txt &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#68 CACHED
+
+#69 [trustpilot-producer 5/8] COPY trustpilot /app
+#69 CACHED
+
+#31 [trustpilot-producer 2/8] WORKDIR /app
+#31 CACHED
+
+#70 [trustpilot-producer 6/8] COPY kafka_producer.py /app
+#70 CACHED
+
+#71 [trustpilot-producer 3/8] COPY trustpilot/requirements.txt .
+#71 CACHED
+
+#72 [trustpilot-producer 8/8] RUN chmod +x wait.sh
+#72 CACHED
+
+#73 [reddit-producer] exporting to image
+#73 exporting layers done
+#73 writing image sha256:ac0c6e92595e6943842da873899c34561b71c2077d0673d3b72ad6695120dd79 done
+#73 naming to docker.io/library/big-data-sentiment-analysis-reddit-producer done
+#73 DONE 0.0s
+
+#74 [pseudo-producer] exporting to image
+#74 exporting layers done
+#74 writing image sha256:d33ec8f845dc90ee20ab02d461c412e4af676070d785e20c4afcc3e11c1e8ba9 done
+#74 naming to docker.io/library/big-data-sentiment-analysis-pseudo-producer done
+#74 DONE 0.0s
+
+#75 [youtube-producer] exporting to image
+#75 exporting layers done
+#75 writing image sha256:8b401dab1e5cdfd62179b106d0ce47ce60af68e8f041764f142e0039ffea2a73 done
+#75 naming to docker.io/library/big-data-sentiment-analysis-youtube-producer done
+#75 DONE 0.0s
+
+#76 [trustpilot-producer] exporting to image
+#76 exporting layers done
+#76 writing image sha256:662a855edbcdf9bffd983b89b0448ccfa410fc005475f7acac077d1ce15201cb done
+#76 naming to docker.io/library/big-data-sentiment-analysis-trustpilot-producer done
+#76 DONE 0.0s
+
+#77 [frontend internal] load build definition from Dockerfile
+#77 transferring dockerfile: 517B done
+#77 WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 2)
+#77 DONE 0.0s
+
+#78 [reddit-producer] resolving provenance for metadata file
+ Service pseudo-producer  Built
+ Service trustpilot-producer  Built
+ Service reddit-producer  Built
+ Service youtube-producer  Built
+#78 DONE 0.0s
+
+#79 [pseudo-producer] resolving provenance for metadata file
+#79 DONE 0.0s
+
+#80 [trustpilot-producer] resolving provenance for metadata file
+#80 DONE 0.0s
+
+#81 [youtube-producer] resolving provenance for metadata file
+#81 DONE 0.0s
+
+#82 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#82 ...
+
+#83 [frontend internal] load metadata for docker.io/library/nginx:alpine
+#83 DONE 0.5s
+
+#82 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#82 DONE 0.5s
+
+#84 [frontend internal] load .dockerignore
+#84 transferring context: 2B done
+#84 DONE 0.0s
+
+#85 [frontend stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:9b460c5ee96333b43a92df16351e150af717ad6522101e52d05d255cd7241064
+#85 resolve docker.io/library/nginx:alpine@sha256:9b460c5ee96333b43a92df16351e150af717ad6522101e52d05d255cd7241064 0.0s done
+#85 DONE 0.0s
+
+#86 [frontend build 1/6] FROM docker.io/library/node:20-alpine@sha256:24fb6aa7020d9a20b00d6da6d1714187c45ed00d1eb4adb01395843c338b9372
+#86 resolve docker.io/library/node:20-alpine@sha256:24fb6aa7020d9a20b00d6da6d1714187c45ed00d1eb4adb01395843c338b9372 0.0s done
+#86 DONE 0.0s
+
+#87 [frontend internal] load build context
+#87 transferring context: 3.45MB 4.0s done
+#87 DONE 4.4s
+
+#88 [frontend build 2/6] WORKDIR /app
+#88 CACHED
+
+#89 [frontend build 3/6] COPY package.json yarn.lock ./
+#89 CACHED
+
+#90 [frontend build 4/6] RUN yarn install
+#90 CACHED
+
+#91 [spark-master  9/15] RUN apt-get update &&     apt-get install -y --no-install-recommends wget &&     pip install --no-cache-dir -r requirements.txt &&     apt-get clean &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#91 0.471 Get:1 http://deb.debian.org/debian bullseye InRelease [116 kB]
+#91 0.475 Get:2 http://security.debian.org/debian-security bullseye-security InRelease [27.2 kB]
+#91 0.528 Get:3 http://deb.debian.org/debian bullseye-updates InRelease [44.1 kB]
+#91 0.829 Get:4 http://security.debian.org/debian-security bullseye-security/main amd64 Packages [433 kB]
+#91 1.137 Get:5 http://deb.debian.org/debian bullseye/main amd64 Packages [11.1 MB]
+#91 1.990 Get:6 http://deb.debian.org/debian bullseye-updates/main amd64 Packages [18.8 kB]
+#91 3.230 Fetched 11.7 MB in 3s (4114 kB/s)
+#91 3.230 Reading package lists...
+#91 4.440 Reading package lists...
+#91 5.531 Building dependency tree...
+#91 5.766 Reading state information...
+#91 6.102 The following additional packages will be installed:
+#91 6.103   libpsl5
+#91 6.107 Recommended packages:
+#91 6.107   publicsuffix
+#91 6.191 The following NEW packages will be installed:
+#91 6.192   libpsl5 wget
+#91 6.277 0 upgraded, 2 newly installed, 0 to remove and 31 not upgraded.
+#91 6.277 Need to get 1021 kB of archives.
+#91 6.277 After this operation, 3657 kB of additional disk space will be used.
+#91 6.277 Get:1 http://deb.debian.org/debian bullseye/main amd64 libpsl5 amd64 0.21.0-1.2 [57.3 kB]
+#91 6.311 Get:2 http://deb.debian.org/debian bullseye/main amd64 wget amd64 1.21-1+deb11u1 [964 kB]
+#91 6.682 debconf: delaying package configuration, since apt-utils is not installed
+#91 6.737 Fetched 1021 kB in 0s (4473 kB/s)
+#91 6.772 Selecting previously unselected package libpsl5:amd64.
+#91 6.772 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 7083 files and directories currently installed.)
+#91 6.797 Preparing to unpack .../libpsl5_0.21.0-1.2_amd64.deb ...
+#91 6.803 Unpacking libpsl5:amd64 (0.21.0-1.2) ...
+#91 6.848 Selecting previously unselected package wget.
+#91 6.850 Preparing to unpack .../wget_1.21-1+deb11u1_amd64.deb ...
+#91 6.853 Unpacking wget (1.21-1+deb11u1) ...
+#91 7.054 Setting up libpsl5:amd64 (0.21.0-1.2) ...
+#91 7.062 Setting up wget (1.21-1+deb11u1) ...
+#91 7.071 Processing triggers for libc-bin (2.31-13+deb11u6) ...
+#91 8.190 Collecting transformers
+#91 8.286   Downloading transformers-4.48.0-py3-none-any.whl (9.7 MB)
+#91 9.123 Collecting torch
+#91 9.138   Downloading torch-2.5.1-cp39-cp39-manylinux1_x86_64.whl (906.5 MB)
+#91 ...
+
+#92 [frontend build 5/6] COPY . /app
+#92 DONE 10.0s
+
+#93 [frontend build 6/6] RUN yarn build
+#93 0.363 yarn run v1.22.22
+#93 0.393 $ react-scripts build
+#93 1.652 Creating an optimized production build...
+#93 31.10 Compiled successfully.
+#93 31.10 
+#93 31.10 File sizes after gzip:
+#93 31.10 
+#93 31.13   258.95 kB  build/static/js/main.9df601ee.js
+#93 31.13   1.76 kB    build/static/css/main.468510bf.css
+#93 31.13 
+#93 31.13 The project was built assuming it is hosted at /.
+#93 31.13 You can control this with the homepage field in your package.json.
+#93 31.13 
+#93 31.13 The build folder is ready to be deployed.
+#93 31.14 You may serve it with a static server:
+#93 31.14 
+#93 31.14   yarn global add serve
+#93 31.14   serve -s build
+#93 31.14 
+#93 31.14 Find out more about deployment here:
+#93 31.14 
+#93 31.14   https://cra.link/deployment
+#93 31.14 
+#93 31.44 Done in 31.08s.
+#93 DONE 31.5s
+
+#91 [spark-master  9/15] RUN apt-get update &&     apt-get install -y --no-install-recommends wget &&     pip install --no-cache-dir -r requirements.txt &&     apt-get clean &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#91 ...
+
+#85 [frontend stage-1 1/2] FROM docker.io/library/nginx:alpine@sha256:9b460c5ee96333b43a92df16351e150af717ad6522101e52d05d255cd7241064
+#85 CACHED
+
+#94 [frontend stage-1 2/2] COPY --from=build /app/build /usr/share/nginx/html
+#94 DONE 0.0s
+
+#95 [frontend] exporting to image
+#95 exporting layers 0.0s done
+#95 writing image sha256:b8430c3295c852fb9cc23f2149258bad23a41ff0dfa91a5735a480e348e8a505 done
+#95 naming to docker.io/library/big-data-sentiment-analysis-frontend done
+#95 DONE 0.0s
+
+#96 [frontend] resolving provenance for metadata file
+ Service frontend  Built
+#96 DONE 0.1s
+
+#91 [spark-master  9/15] RUN apt-get update &&     apt-get install -y --no-install-recommends wget &&     pip install --no-cache-dir -r requirements.txt &&     apt-get clean &&     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#91 80.88 Collecting pandas==2.2.3
+#91 80.92   Downloading pandas-2.2.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (13.1 MB)
+#91 82.31 Collecting py4j==0.10.9.7
+#91 82.33   Downloading py4j-0.10.9.7-py2.py3-none-any.whl (200 kB)
+#91 83.63 Collecting pyarrow==18.0.0
+#91 83.77   Downloading pyarrow-18.0.0-cp39-cp39-manylinux_2_28_x86_64.whl (40.0 MB)
+#91 91.27 Collecting confluent-kafka==2.6.0
+#91 91.40   Downloading confluent_kafka-2.6.0-cp39-cp39-manylinux_2_28_x86_64.whl (3.9 MB)
+#91 92.00 Collecting nltk==3.9.1
+#91 92.02   Downloading nltk-3.9.1-py3-none-any.whl (1.5 MB)
+#91 96.36 Collecting pymongo==4.10.1
+#91 96.50   Downloading pymongo-4.10.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.2 MB)
+#91 96.77 Collecting gdown==5.2.0
+#91 96.79   Downloading gdown-5.2.0-py3-none-any.whl (18 kB)
+#91 97.49 Collecting pytz>=2020.1
+#91 97.51   Downloading pytz-2024.2-py2.py3-none-any.whl (508 kB)
+#91 97.66 Collecting python-dateutil>=2.8.2
+#91 97.68   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+#91 97.82 Collecting tzdata>=2022.7
+#91 97.84   Downloading tzdata-2024.2-py2.py3-none-any.whl (346 kB)
+#91 100.7 Collecting numpy>=1.22.4
+#91 100.7   Downloading numpy-2.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (19.5 MB)
+#91 106.2 Collecting regex>=2021.8.3
+#91 106.2   Downloading regex-2024.11.6-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (780 kB)
+#91 106.3 Collecting joblib
+#91 106.3   Downloading joblib-1.4.2-py3-none-any.whl (301 kB)
+#91 106.5 Collecting tqdm
+#91 106.6   Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+#91 106.6 Collecting click
+#91 106.6   Downloading click-8.1.8-py3-none-any.whl (98 kB)
+#91 106.7 Collecting dnspython<3.0.0,>=1.16.0
+#91 106.8   Downloading dnspython-2.7.0-py3-none-any.whl (313 kB)
+#91 106.8 Requirement already satisfied: filelock in /opt/bitnami/python/lib/python3.9/site-packages (from gdown==5.2.0->-r requirements.txt (line 9)) (3.12.2)
+#91 106.9 Collecting beautifulsoup4
+#91 106.9   Downloading beautifulsoup4-4.12.3-py3-none-any.whl (147 kB)
+#91 107.0 Collecting requests[socks]
+#91 107.0   Downloading requests-2.32.3-py3-none-any.whl (64 kB)
+#91 107.6 Collecting packaging>=20.0
+#91 107.7   Downloading packaging-24.2-py3-none-any.whl (65 kB)
+#91 108.5 Collecting safetensors>=0.4.1
+#91 108.6   Downloading safetensors-0.5.2-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (461 kB)
+#91 108.8 Collecting huggingface-hub<1.0,>=0.24.0
+#91 108.8   Downloading huggingface_hub-0.27.1-py3-none-any.whl (450 kB)
+#91 109.1 Collecting pyyaml>=5.1
+#91 109.1   Downloading PyYAML-6.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (737 kB)
+#91 110.8 Collecting tokenizers<0.22,>=0.21
+#91 110.8   Downloading tokenizers-0.21.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.0 MB)
+#91 111.1 Collecting nvidia-cusolver-cu12==11.6.1.9
+#91 111.1   Downloading nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_x86_64.whl (127.9 MB)
+#91 117.3 Collecting nvidia-cudnn-cu12==9.1.0.70
+#91 117.3   Downloading nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl (664.8 MB)

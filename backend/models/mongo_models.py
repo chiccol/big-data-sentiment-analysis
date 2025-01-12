@@ -57,3 +57,9 @@ class SummaryModel(BaseModel):
     youtube: SourceSummary
     reddit: SourceSummary
     trustpilot: SourceSummary
+    
+
+class LastComment(BaseModel):
+    reddit: str
+    trustpilot: str
+    youtube: str

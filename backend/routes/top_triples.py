@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from utils.database import mongo_triples
+from utils.database import mongo_db
 from models.mongo_models import TopTrigramsResponse, TrigramCount
 from utils.config import logger
 from pymongo import DESCENDING
@@ -16,7 +16,7 @@ def get_top_triples(company: str):
     try:
         # Access the trigram count collection
         logger.debug(f"Accessing collection: trigrams")
-        collection = mongo_triples["trigrams"]
+        collection = mongo_db["trigrams"]
         
         # check what companies are in the collection
         companies = collection.distinct("company")
@@ -31,7 +31,7 @@ def get_top_triples(company: str):
         company_doc = collection.find_one({"company": company})
         
         # access the company's trigram count map
-        company_count = company_doc.get("trigram_counts")
+        company_count = company_doc.get("trigram_count")
         
         # trigram count map contains the top 100 trigrams for the company, schema is {trigram: count}
         # take the top 20 trigrams based on their count

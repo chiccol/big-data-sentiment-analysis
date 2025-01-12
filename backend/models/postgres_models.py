@@ -18,3 +18,10 @@ class SuperAggregatedPostgresData(BaseModel):
 
 class SuperAggregatedPostgresResponse(BaseModel):
     aggregated_data: List[SuperAggregatedPostgresData]
+
+class DailyCount(BaseModel):
+    date: datetime
+    count: int
+    
+class DailyCountResponse(BaseModel):
+    daily_counts: List[DailyCount]

@@ -6,7 +6,7 @@ import logging
 from pyspark.sql.functions import (
     col, explode, split, pandas_udf,
     expr, collect_list, struct, map_from_entries,
-    map_keys, map_values
+    map_keys, map_values, map_entries, create_map, lit
 )
 from pyspark.sql.types import StringType
 from nltk.corpus import stopwords
@@ -89,12 +89,17 @@ def write_company_word_counts(df, spark):
         merged_df = word_counts
     else:
         logger.info("[WordCount] Dataframe exploding ... ")
+        field_names = spark_word_db.schema["word_counts"].dataType.fieldNames()
+        key_value_pairs = []
+        for field in field_names:
+            key_value_pairs.extend([lit(field), col(f"word_counts.{field}")])
+        spark_word_db = spark_word_db.withColumn(
+            "word_counts_map",
+            create_map(*key_value_pairs)
+        )
         spark_word_db = spark_word_db.select(
-            col("company"),
-            explode(
-                map_keys(col("word_counts")).alias("word"),
-                map_values(col("word_counts")).alias("count")
-            )
+                col("company"),
+                explode(col("word_counts_map")).alias("word", "count")
         )
         logger.info("[WordCount] Merging dataframes.")
         spark_word_db.drop("_id")
@@ -160,12 +165,18 @@ def write_company_word_counts(df, spark):
         merged_df = bigrams_count
     else:
         logger.info("[WordCount] Dataframe exploding ... ")
+        logger.info(f"Schema: {spark_bigram_db.schema}")
+        field_names = spark_bigram_db.schema["bigram_counts"].dataType.fieldNames()
+        key_value_pairs = []
+        for field in field_names:
+            key_value_pairs.extend([lit(field), col(f"bigram_counts.{field}")])
+        spark_bigram_db = spark_bigram_db.withColumn(
+            "bigram_counts_map",
+            create_map(*key_value_pairs)
+        )
         spark_bigram_db = spark_bigram_db.select(
             col("company"),
-            explode(
-                map_keys(col("bigram_counts")).alias("bigram"),
-                map_values(col("bigram_counts")).alias("count")
-            )
+            explode(col("bigram_counts_map")).alias("bigram", "count")
         )
         logger.info("[WordCount] Merging dataframes.")
         spark_bigram_db.drop("_id")
@@ -188,7 +199,7 @@ def write_company_word_counts(df, spark):
         .drop("bigram_counts_list")
     
     # write the data
-    merged_top100.write \
+    final_df.write \
         .format("mongo") \
         .mode("overwrite") \
         .option("uri", mongo_uri) \
@@ -229,10 +240,17 @@ def write_company_word_counts(df, spark):
         merged_df = trigrams_count
     else:
         logger.info("[WordCount] Dataframe exploding ... ")
+        field_names = spark_trigram_db.schema["trigram_count"].dataType.fieldNames()
+        key_value_pairs = []
+        for field in field_names:
+            key_value_pairs.extend([lit(field), col(f"trigram_count.{field}")])
+        spark_trigram_db = spark_trigram_db.withColumn(
+            "trigram_counts_map",
+            create_map(*key_value_pairs)
+        )
         spark_trigram_db = spark_trigram_db.select(
             col("company"),
-            explode(map_keys(col("trigram_counts")).alias("trigram"),
-                   map_values(col("trigram_counts")).alias("count"))
+            explode(col("trigram_counts_map")).alias("trigram", "count")
         )
         logger.info("[WordCount] Merging dataframes.")
         spark_trigram_db.drop("_id")
@@ -255,7 +273,7 @@ def write_company_word_counts(df, spark):
         .drop("trigram_count_list")
     
     # write the data
-    merged_top100.write \
+    final_df.write \
         .format("mongo") \
         .mode("overwrite") \
         .option("uri", mongo_uri) \

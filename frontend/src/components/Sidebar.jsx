@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // <-- for navigation
 import "./Sidebar.css";
-import Logo from "../imgs/logo.png";
-import { UilSignOutAlt, UilBars, UilEstate } from "@iconscout/react-unicons";
+// import Logo from "../imgs/logo.png";
+import { UilSignOutAlt, UilBars, UilBriefcase } from "@iconscout/react-unicons";
 import { getCompaniesData } from "../Data/Data";
 import { motion } from "framer-motion";
 
@@ -51,13 +51,13 @@ const Sidebar = () => {
         variants={sidebarVariants}
         animate={window.innerWidth <= 768 ? `${expanded}` : ""}
       >
-        {/* logo */}
+        {/* logo
         <div className="logo">
           <img src={Logo} alt="logo" />
           <span>
             Sh<span>o</span>ps
           </span>
-        </div>
+        </div> */}
 
         <div className="menu">
           {/* Dynamically render list of companies */}
@@ -68,7 +68,7 @@ const Sidebar = () => {
               onClick={() => handleMenuClick(index, company)}
             >
               {/* Use a placeholder icon to keep design consistent */}
-              <UilEstate />
+              <UilBriefcase size="24" color="#000" />
               <span>{company}</span>
             </div>
           ))}

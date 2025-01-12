@@ -1,7 +1,7 @@
 // WordOccurrenceCards.jsx
 import React, { useState, useEffect } from "react";
-import "WordOccurrencesCards.css"; // Reuse the same styling used in Cards.jsx
-import WordOccurrenceCard from "../WordOccurrenceCard/WordOccurrenceCard"; 
+import "./WordOccurrencesCards.css"; // Reuse the same styling used in Cards.jsx
+import WordOccurrencesCard from "../WordOccurrencesCard/WordOccurrencesCard"; 
 import {
   fetchTopWords,
   fetchTopBigrams,
@@ -54,8 +54,8 @@ const WordOccurrenceCards = ({ companyName }) => {
       title: "Top Words",
       data: words,
       color: {
-        backGround: "#C8E6C9",
-        boxShadow: "0px 10px 20px 0px #C8E6C9",
+        backGround: "linear-gradient(rgb(248, 212, 154) -146.42%, rgb(255 202 113) -46.42%)",
+        boxShadow: "0px 10px 20px 0px #F9D59B",
         fill: "#388E3C",
         stroke: "#388E3C",
       },
@@ -65,8 +65,8 @@ const WordOccurrenceCards = ({ companyName }) => {
       title: "Top Bigrams",
       data: bigrams,
       color: {
-        backGround: "#FFF9C4",
-        boxShadow: "0px 10px 20px 0px #FFF9C4",
+        backGround: "linear-gradient(180deg, #FF919D 0%, #FC929D 100%)",
+        boxShadow: "0px 10px 20px 0px #FDC0C7",
         fill: "#FBC02D",
         stroke: "#FBC02D",
       },
@@ -76,8 +76,8 @@ const WordOccurrenceCards = ({ companyName }) => {
       title: "Top Trigrams",
       data: trigrams,
       color: {
-        backGround: "#FFE0B2",
-        boxShadow: "0px 10px 20px 0px #FFE0B2",
+        backGround: "linear-gradient(180deg, #bb67ff 0%, #c484f3 100%)",
+        boxShadow: "0px 10px 20px 0px #e0c6f5",
         fill: "#FB8C00",
         stroke: "#FB8C00",
       },
@@ -90,7 +90,7 @@ const WordOccurrenceCards = ({ companyName }) => {
       {cardConfigurations.map((config, index) => 
         // Render the card only if there's data
         config.data && config.data.length > 0 && (
-          <WordOccurrenceCard
+          <WordOccurrencesCard
             key={index}
             title={config.title}
             data={config.data}

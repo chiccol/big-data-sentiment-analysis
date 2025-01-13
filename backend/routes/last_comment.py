@@ -14,26 +14,34 @@ def get_last_comment(company: str):
     logger.info(f"Fetching last comment for company: {company}")
 
     try:
-        # Access the last comment collection
-        logger.debug(f"Accessing collection: last_comment")
-        collection = mongo_db["last_comment"]
+        # Access the MongoDB collection of the company
+        company_collection = mongo_db[company]
+        logger.debug(f"Accessed MongoDB collection for company '{company}'.")
         
-        # check what companies are in the collection
-        companies = collection.distinct("company")
-        logger.debug(f"Companies in collection: {companies}")
+        # Retrieve the last comment for the company from the MongoDB collection for every source
+        pipeline = [
+            {
+                "$sort": {"date": -1}  # Sort documents by date in descending order
+            },
+            {
+                "$group": {
+                    "_id": "$source",  # Group by the source field
+                    "last_comment": {"$first": "$text"},  # Select the most recent comment
+                }
+            }
+        ]
         
-        # Check if the specified company has a corresponding collection
-        if company not in companies:
-            logger.error(f"Company '{company}' not found.")
-            raise HTTPException(status_code=404, detail=f"Company '{company}' not found.")
-        
-        # access the company's document
-        company_doc = collection.find_one({"company": company})
+        result = list(company_collection.aggregate(pipeline))
+        last_comments_data = {}
 
-        # find the last comment for the company for every source
-        # comment is saved in "text" field
-        # source is saved in "source" field
+        for r in result:
+            source = r["_id"].lower()  # Convert source to lowercase to match model fields
+            if source in ["reddit", "trustpilot", "youtube"]:  # Ensure the source matches the model
+                last_comments_data[source] = r["last_comment"]
+
+        last_comment = LastComment(**last_comments_data)
         
+        return last_comment
 
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions to be handled by FastAPI

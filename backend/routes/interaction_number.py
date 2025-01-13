@@ -34,7 +34,12 @@ def get_interaction_number(company: str,
         # query to fetch daily count of interactions
         query = """
             SELECT
-                "date"::date AS normalized_date,
+                CAST(
+                    CASE 
+                        WHEN "date"::TEXT LIKE '%%T%%Z' THEN "date"::timestamp 
+                        ELSE "date"::date                                  
+                    END AS date
+                ) AS normalized_date,
                 COUNT(*) AS daily_count
             FROM
                 predictions

@@ -150,3 +150,23 @@ export const fetchTopTrigrams = async (companyName) => {
     return [];
   }
 };
+
+export const fetchLastComments = async (companyName) => {
+  try {
+    const response = await fetch(`http://localhost:8000/last_comment/${companyName}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch last comments");
+    }
+    const data = await response.json(); 
+    // data => { reddit: '...', trustpilot: '...', youtube: '...' }
+    return data;
+  } catch (error) {
+    console.error("Error fetching last comments:", error);
+    // Return empty or default comments if an error occurs
+    return {
+      reddit: "",
+      trustpilot: "",
+      youtube: "",
+    };
+  }
+};

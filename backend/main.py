@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.config import logger
-from utils.database import pg_pool, get_pg_connection
 
 logger.debug("Setting up FastAPI app.")
 
@@ -25,13 +24,10 @@ app.add_middleware(
 
 logger.debug("FastAPI app setup complete.")
 
-from routes import aggregated_postgres, double_aggregated_postgres, companies, top_words, top_couples, top_triples, ask_summary, avg_sentiment
+from routes import (aggregated_postgres, double_aggregated_postgres, companies,
+                    top_words, top_couples, top_triples, ask_summary, avg_sentiment,
+                    last_comment, interaction_number)
 
-@app.get("/debug_pool")
-def debug_pool_status():
-    if pg_pool is None:
-        return {"status": "pg_pool is None"}
-    return {"status": "pg_pool is OK"}
 
 app.include_router(aggregated_postgres.router)
 app.include_router(double_aggregated_postgres.router)
@@ -41,5 +37,7 @@ app.include_router(top_couples.router)
 app.include_router(top_triples.router)
 app.include_router(ask_summary.router)
 app.include_router(avg_sentiment.router)
+app.include_router(last_comment.router)
+app.include_router(interaction_number.router)
     
 logger.debug("Routes added to FastAPI app.")

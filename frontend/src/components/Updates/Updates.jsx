@@ -1,46 +1,64 @@
+// Updates.jsx
 import React, { useEffect, useState } from "react";
 import "./Updates.css";
-import { fetchDashboardData } from "../../Data/Data";
+import { fetchLastComments } from "../../Data/Data"; // Import the new function
 
 const Updates = ({ companyName }) => {
-  const [updates, setUpdates] = useState([]);
+  const [lastComments, setLastComments] = useState({
+    reddit: "",
+    trustpilot: "",
+    youtube: "",
+  });
 
   useEffect(() => {
-    const loadUpdates = async () => {
+    const loadLastComments = async () => {
       try {
-        // Fetch the data
-        const data = await fetchDashboardData(companyName);
-
-        // Assuming `reddit`, `trustpilot`, and `youtube` have the updates you need
-        const allUpdates = [
-          ...data.reddit,
-          ...data.trustpilot,
-          ...data.youtube,
-        ];
-
-        setUpdates(allUpdates);
+        const data = await fetchLastComments(companyName);
+        setLastComments(data);
       } catch (error) {
-        console.error("Error loading updates:", error);
+        console.error("Error loading last comments:", error);
       }
     };
 
-    loadUpdates();
+    loadLastComments();
   }, [companyName]);
 
   return (
     <div className="Updates">
-      {updates.map((update, index) => (
-        <div className="update" key={index}>
-          <img src={update.img || "placeholder.jpg"} alt="profile" />
-          <div className="noti">
-            <div style={{ marginBottom: "0.5rem" }}>
-              <span>{update.name}</span>
-              <span> {update.noti}</span>
-            </div>
-            <span>{update.time}</span>
+      <h3>Latest Comments</h3>
+      
+      {/* Reddit */}
+      <div className="update">
+        <img src="reddit-icon.png" alt="Reddit" />
+        <div className="noti">
+          <div style={{ marginBottom: "0.5rem" }}>
+            <span>Reddit</span>
           </div>
+          <span>{lastComments.reddit || "No comment yet"}</span>
         </div>
-      ))}
+      </div>
+
+      {/* Trustpilot */}
+      <div className="update">
+        <img src="trustpilot-icon.png" alt="Trustpilot" />
+        <div className="noti">
+          <div style={{ marginBottom: "0.5rem" }}>
+            <span>Trustpilot</span>
+          </div>
+          <span>{lastComments.trustpilot || "No comment yet"}</span>
+        </div>
+      </div>
+
+      {/* YouTube */}
+      <div className="update">
+        <img src="youtube-icon.png" alt="YouTube" />
+        <div className="noti">
+          <div style={{ marginBottom: "0.5rem" }}>
+            <span>YouTube</span>
+          </div>
+          <span>{lastComments.youtube || "No comment yet"}</span>
+        </div>
+      </div>
     </div>
   );
 };

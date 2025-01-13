@@ -20,8 +20,8 @@ class SuperAggregatedPostgresResponse(BaseModel):
     aggregated_data: List[SuperAggregatedPostgresData]
 
 class DailyCount(BaseModel):
-    date: datetime
-    count: int
+    normalized_date: datetime
+    daily_count: int
     
 class DailyCountResponse(BaseModel):
     daily_counts: List[DailyCount]

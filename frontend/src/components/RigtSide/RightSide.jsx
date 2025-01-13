@@ -3,16 +3,16 @@ import Updates from "../Updates/Updates";
 import "./RightSide.css";
 import Interactions from "../Interactions/Interactions";
 
-const RightSide = () => {
+const RightSide = ({ company }) => {
   return (
     <div className="RightSide">
       <div>
         <h3>Updates</h3>
-        <Updates />
+        <Updates companyName={company}/>
       </div>
       <div>
         <h3>Interaction Frequency in the last 30 days</h3>
-        <Interactions />
+        <Interactions company={company}/>
       </div>
     </div>
   );

@@ -1,29 +1,37 @@
-// App.js
-import './App.css'
+import './App.css';
 import MainDash from './components/MainDash/MainDash';
 import RightSide from './components/RigtSide/RightSide';
 import Sidebar from './components/Sidebar';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 
 function App() {
+  // Component to dynamically handle right side content based on route params
+  const RenderWithRightSide = () => {
+    const { company } = useParams();
+
+    return (
+      <>
+        <MainDash />
+        {/* Pass the company name as a prop to RightSide */}
+        {company && <RightSide company={company} />}
+      </>
+    );
+  };
+
   return (
     <div className="App">
       <div className="AppGlass">
-        {/* The Sidebar is outside the <Routes> 
-            so it stays visible no matter the route */}
+        {/* Sidebar stays visible */}
         <Sidebar />
 
-        {/* The "right side" can be rendered on all pages OR in a route, 
-            depending on your layout preference */}
+        {/* Define routes */}
         <Routes>
-          {/* Example route: dashboard home (no company param) */}
+          {/* Default route */}
           <Route path="/" element={<MainDash />} />
 
-          {/* Dynamic route for each company */}
-          <Route path="/dashboard/:company" element={<MainDash />} />
+          {/* Route for company-specific dashboard */}
+          <Route path="/dashboard/:company" element={<RenderWithRightSide />} />
         </Routes>
-
-        <RightSide />
       </div>
     </div>
   );

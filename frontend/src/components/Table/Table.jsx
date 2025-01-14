@@ -1,86 +1,144 @@
-import * as React from "react";
+import React, { useState } from "react";
+import "./Table.css";
+import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import "./Table.css";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 
-function createData(name, trackingId, date, status) {
-  return { name, trackingId, date, status };
-}
+/**
+ * Expects a prop: companyName (string)
+ * Example structure from the server:
+ * {
+ *   summary: {
+ *     positive: {
+ *       reddit: {
+ *         topicA: "summary text",
+ *         topicB: "summary text",
+ *         ...
+ *       },
+ *       trustpilot: { ... },
+ *       youtube: { ... }
+ *     },
+ *     negative: { ... },
+ *     neutral: { ... }
+ *   }
+ * }
+ */
 
-const rows = [
-  createData("Lasania Chiken Fri", 18908424, "2 March 2022", "Approved"),
-  createData("Big Baza Bang ", 18908424, "2 March 2022", "Pending"),
-  createData("Mouth Freshner", 18908424, "2 March 2022", "Approved"),
-  createData("Cupcake", 18908421, "2 March 2022", "Delivered"),
-];
+export default function SummaryTable({ companyName }) {
+  const [summaryData, setSummaryData] = useState(null);
+  const [error, setError] = useState("");
 
+  // Handler for the "Generate Summary" button
+  const handleGenerateSummary = async () => {
+    setError("");
+    setSummaryData(null);
 
-const makeStyle=(status)=>{
-  if(status === 'Approved')
-  {
-    return {
-      background: 'rgb(145 254 159 / 47%)',
-      color: 'green',
+    try {
+      const res = await fetch(`http://localhost:8000/ask_summary/${companyName}`);
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
+      const data = await res.json();
+      setSummaryData(data.summary || {});
+    } catch (err) {
+      setError(err.message);
     }
-  }
-  else if(status === 'Pending')
-  {
-    return{
-      background: '#ffadad8f',
-      color: 'red',
-    }
-  }
-  else{
-    return{
-      background: '#59bfff',
-      color: 'white',
-    }
-  }
-}
+  };
 
-export default function BasicTable() {
+  // Handler for the "Read Summary" button
+  const handleReadSummary = async () => {
+    setError("");
+    setSummaryData(null);
+
+    try {
+      const res = await fetch(`http://localhost:8000/read_summary/${companyName}`);
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
+      const data = await res.json();
+      setSummaryData(data.summary || {});
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Helper function to render rows based on the nested structure
+  const renderSummaryRows = () => {
+    if (!summaryData) return null;
+
+    const rows = [];
+    Object.entries(summaryData).forEach(([sentiment, sources]) => {
+      Object.entries(sources).forEach(([source, topics]) => {
+        Object.entries(topics).forEach(([topic, text]) => {
+          rows.push(
+            <TableRow key={`${sentiment}-${source}-${topic}`}>
+              <TableCell className="custom-table-cell">{sentiment}</TableCell>
+              <TableCell className="custom-table-cell">{source}</TableCell>
+              <TableCell className="custom-table-cell">{topic}</TableCell>
+              <TableCell className="custom-table-cell">{text}</TableCell>
+            </TableRow>
+          );
+        });
+      });
+    });
+    return rows;
+  };
+
   return (
-      <div className="Table">
-      <h3>Recent Orders</h3>
+    <div className="summary-wrapper">
+      <div className="summary-header">
+        <Typography variant="h5" className="summary-title">
+          Summary Dashboard
+        </Typography>
+        <Typography variant="subtitle1" className="summary-subtitle">
+          Showing summary data for: <strong>{companyName}</strong>
+        </Typography>
+      </div>
+
+      <div className="summary-controls">
+        <Button
+          variant="contained"
+          onClick={handleGenerateSummary}
+          style={{ backgroundColor: "#42A5F5", marginRight: "1rem" }}
+        >
+          Generate Summary
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleReadSummary}
+          style={{ backgroundColor: "#AB47BC" }}
+        >
+          Read Summary
+        </Button>
+      </div>
+
+      {error && <div className="error-message">Error: {error}</div>}
+
+      {summaryData && (
         <TableContainer
           component={Paper}
-          style={{ boxShadow: "0px 13px 20px 0px #80808029" }}
+          className="table-container"
+          style={{ marginTop: "1rem" }}
         >
-          <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <Table aria-label="summary table">
             <TableHead>
               <TableRow>
-                <TableCell>Product</TableCell>
-                <TableCell align="left">Tracking ID</TableCell>
-                <TableCell align="left">Date</TableCell>
-                <TableCell align="left">Status</TableCell>
-                <TableCell align="left"></TableCell>
+                <TableCell className="custom-header-cell">Sentiment</TableCell>
+                <TableCell className="custom-header-cell">Source</TableCell>
+                <TableCell className="custom-header-cell">Topic</TableCell>
+                <TableCell className="custom-header-cell">Summary</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody style={{ color: "white" }}>
-              {rows.map((row) => (
-                <TableRow
-                  key={row.name}
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row">
-                    {row.name}
-                  </TableCell>
-                  <TableCell align="left">{row.trackingId}</TableCell>
-                  <TableCell align="left">{row.date}</TableCell>
-                  <TableCell align="left">
-                    <span className="status" style={makeStyle(row.status)}>{row.status}</span>
-                  </TableCell>
-                  <TableCell align="left" className="Details">Details</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+            <TableBody>{renderSummaryRows()}</TableBody>
           </Table>
         </TableContainer>
-      </div>
+      )}
+    </div>
   );
 }

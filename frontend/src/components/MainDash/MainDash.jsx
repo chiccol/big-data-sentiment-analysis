@@ -2,7 +2,7 @@
 import React from "react";
 import { useParams } from "react-router-dom"; // <-- import useParams
 import Cards from "../Cards/Cards";
-import Table from "../Table/Table";
+import SummaryTable from "../Table/Table";
 import WordOccurrencesCards from "../WordOccurrencesCards/WordOccurrencesCards";
 import "./MainDash.css";
 
@@ -17,7 +17,7 @@ const MainDash = () => {
       {/* Pass the company param to the child components */}
       <Cards companyName={company} />
       <WordOccurrencesCards companyName={company} />
-      <Table companyName={company} />
+      <SummaryTable companyName={company} />
     </div>
   );
 };

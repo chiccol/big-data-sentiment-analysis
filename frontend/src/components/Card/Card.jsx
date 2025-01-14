@@ -109,7 +109,7 @@ const ExpandedCard = ({ title, color, chartData, setExpanded }) => (
     <div className="chartContainer">
       <Chart options={chartData.options} series={chartData.series} type="area" />
     </div>
-    <span>Last 24 hours</span>
+    <span>Time Series of Sentiment</span>
   </motion.div>
 );
 

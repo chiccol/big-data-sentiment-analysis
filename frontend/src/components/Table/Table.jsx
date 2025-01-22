@@ -17,9 +17,10 @@ import Typography from "@mui/material/Typography";
  *   summary: {
  *     positive: {
  *       reddit: {
- *         topicA: "summary text",
- *         topicB: "summary text",
- *         ...
+ *         'Customer service': "summary text",
+ *         'Product quality': "summary text",
+ *         'Price': "summary text",
+ *         'General': "summary text",
  *       },
  *       trustpilot: { ... },
  *       youtube: { ... }
@@ -31,7 +32,7 @@ import Typography from "@mui/material/Typography";
  */
 
 export default function SummaryTable({ companyName }) {
-  const [summaryData, setSummaryData] = useState(null);
+  const [summaryData, setSummaryData] = useState({});
   const [error, setError] = useState("");
 
   // Handler for the "Generate Summary" button
@@ -40,7 +41,7 @@ export default function SummaryTable({ companyName }) {
     setSummaryData(null);
 
     try {
-      const res = await fetch(`http://localhost:8000/ask_summary/${companyName}`);
+      const res = await fetch(`http://localhost:8000/trigger_summary/${companyName}`);
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
@@ -68,26 +69,55 @@ export default function SummaryTable({ companyName }) {
     }
   };
 
-  // Helper function to render rows based on the nested structure
-  const renderSummaryRows = () => {
-    if (!summaryData) return null;
+  // Define the "dimensions" of our table data:
+  const sentiments = ["positive", "negative", "neutral"];
+  const sources = ["trustpilot", "reddit", "youtube"];
+  const topics = ["Customer service", "Product quality", "Price", "General"];
 
-    const rows = [];
-    Object.entries(summaryData).forEach(([sentiment, sources]) => {
-      Object.entries(sources).forEach(([source, topics]) => {
-        Object.entries(topics).forEach(([topic, text]) => {
-          rows.push(
-            <TableRow key={`${sentiment}-${source}-${topic}`}>
-              <TableCell className="custom-table-cell">{sentiment}</TableCell>
-              <TableCell className="custom-table-cell">{source}</TableCell>
-              <TableCell className="custom-table-cell">{topic}</TableCell>
-              <TableCell className="custom-table-cell">{text}</TableCell>
+  // Render a separate table for each sentiment
+  const renderTables = () => {
+    return sentiments.map((sentiment) => (
+      <TableContainer
+        component={Paper}
+        className="table-container"
+        style={{ marginTop: "1rem" }}
+        key={sentiment}
+      >
+        <Typography variant="h6" style={{ margin: "1rem" }}>
+          {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)} Sentiment
+        </Typography>
+        <Table aria-label={`${sentiment}-table`}>
+          <TableHead>
+            <TableRow>
+              <TableCell className="custom-header-cell">Topic</TableCell>
+              {sources.map((source) => (
+                <TableCell className="custom-header-cell" key={source}>
+                  {source}
+                </TableCell>
+              ))}
             </TableRow>
-          );
-        });
-      });
-    });
-    return rows;
+          </TableHead>
+          <TableBody>
+            {topics.map((topic) => (
+              <TableRow key={topic}>
+                <TableCell className="custom-table-cell">{topic}</TableCell>
+                {sources.map((source) => (
+                  <TableCell className="custom-table-cell" key={source}>
+                    {
+                      summaryData[sentiment] &&
+                      summaryData[sentiment][source] &&
+                      summaryData[sentiment][source][topic]
+                        ? summaryData[sentiment][source][topic]
+                        : "No data"
+                    }
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    ));
   };
 
   return (
@@ -120,22 +150,24 @@ export default function SummaryTable({ companyName }) {
 
       {error && <div className="error-message">Error: {error}</div>}
 
-      {summaryData && (
-        <TableContainer
-          component={Paper}
-          className="table-container"
-          style={{ marginTop: "1rem" }}
-        >
-          <Table aria-label="summary table">
-            <TableHead>
+      {/* Only render the tables if we have summaryData */}
+      {summaryData && Object.keys(summaryData).length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          {renderTables()}
+        </div>
+      )}
+
+      {/* Show a "no data" message if summaryData is empty */}
+      {summaryData && Object.keys(summaryData).length === 0 && (
+        <TableContainer component={Paper} className="table-container" style={{ marginTop: "1rem" }}>
+          <Table>
+            <TableBody>
               <TableRow>
-                <TableCell className="custom-header-cell">Sentiment</TableCell>
-                <TableCell className="custom-header-cell">Source</TableCell>
-                <TableCell className="custom-header-cell">Topic</TableCell>
-                <TableCell className="custom-header-cell">Summary</TableCell>
+                <TableCell colSpan={4} style={{ textAlign: "center" }}>
+                  No data available
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>{renderSummaryRows()}</TableBody>
+            </TableBody>
           </Table>
         </TableContainer>
       )}

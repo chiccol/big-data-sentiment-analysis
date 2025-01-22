@@ -2,6 +2,7 @@ import os
 import re
 import pandas as pd
 import logging
+from pymongo import MongoClient
 # from pymongo import MongoClient
 from pyspark.sql.functions import (
     col, explode, split, pandas_udf,
@@ -23,12 +24,15 @@ def clean_text(text):
     # Remove punctuation and digits
     text = re.sub(r'[^\w\s]', '', text)
     text = re.sub(r'\d+', '', text)
+    # remove \n
+    text = text.replace('\n', ' ')
     return text.lower()
 
 @pandas_udf(StringType())
 def preprocess_pandas_udf(text_series: pd.Series) -> pd.Series:
     """Applies clean_text to each element of the Series."""
     return text_series.apply(clean_text)
+
 
 def write_company_word_counts(df, spark):
     """
@@ -102,7 +106,7 @@ def write_company_word_counts(df, spark):
                 explode(col("word_counts_map")).alias("word", "count")
         )
         logger.info("[WordCount] Merging dataframes.")
-        spark_word_db.drop("_id")
+        spark_word_db = spark_word_db.drop("_id")
         merged_df = spark_word_db.union(word_counts)
     
     # aggregate the data
@@ -179,7 +183,7 @@ def write_company_word_counts(df, spark):
             explode(col("bigram_counts_map")).alias("bigram", "count")
         )
         logger.info("[WordCount] Merging dataframes.")
-        spark_bigram_db.drop("_id")
+        spark_bigram_db = spark_bigram_db.drop("_id")
         merged_df = spark_bigram_db.union(bigrams_count)
     
     # aggregate the data
@@ -253,7 +257,7 @@ def write_company_word_counts(df, spark):
             explode(col("trigram_counts_map")).alias("trigram", "count")
         )
         logger.info("[WordCount] Merging dataframes.")
-        spark_trigram_db.drop("_id")
+        spark_trigram_db = spark_trigram_db.drop("_id")
         merged_df = spark_trigram_db.union(trigrams_count)
     
     # aggregate the data

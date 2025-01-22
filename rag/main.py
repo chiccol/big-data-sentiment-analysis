@@ -1,11 +1,11 @@
 import socket
 import json
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
-import torch
-from utils import get_reviews, summarizer
+# from transformers import AutoModelForCausalLM, AutoTokenizer
+# from langchain.vectorstores import FAISS
+# from langchain.embeddings import HuggingFaceEmbeddings
+# import torch
+# from utils import get_reviews, summarizer
 import logging
 from pymongo import MongoClient
 
@@ -25,12 +25,12 @@ logging.basicConfig(
 logger = logging.getLogger("RAG")
 logger.info("Started logging")
 
-data = {
-    "company": "Apple",
-    "source" : [], # Trustpilot, Youtube and/or Reddit
-    "start_date" : "2021-01-01",
-    "end_date" : "2021-12-31"
-}
+# data = {
+#     "company": "Apple",
+#     "source" : [], # Trustpilot, Youtube and/or Reddit
+#     "start_date" : "2021-01-01",
+#     "end_date" : "2021-12-31"
+# }
 
 def main():
     """
@@ -41,40 +41,42 @@ def main():
     logger.info("Waiting for MongoDB to start and to have some data...")
     sleep(30) 
     logger.info("Loading embeddings...")
-    embeddings = HuggingFaceEmbeddings(
-        model_name = CONFIG["embeddings_model"]
-        )
+    # embeddings = HuggingFaceEmbeddings(
+    #     model_name = CONFIG["embeddings_model"]
+    #     )
     # MongoDB connection URI (from environment variables or default)
-    logger.info("Connecting to MongoDB...", flush=True)
+    logger.info("Connecting to MongoDB...")
     client = MongoClient(CONFIG["mongo_uri"])
     # Access the database and collection  
     db_reviews = client[CONFIG["db_name"]]
     rag_collection = db_reviews["rag"]
     # Get the names of all collections in the "reviews" database
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    logger.info(f"Loading model on {device}", flush=True)
-    tokenizer = AutoTokenizer.from_pretrained(CONFIG["conv_model"])
-    # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
-    model = AutoModelForCausalLM.from_pretrained(CONFIG["conv_model"]).to(device)
-    logger.info("Generation model:", CONFIG["conv_model"], flush=True)
-    logger.info("Embeddings model:", CONFIG["embeddings_model"], flush=True)
-    logger.info("Retrieving by the following topics:", CONFIG["topics"], flush=True)
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    # logger.info(f"Loading model on {device}", flush=True)
+    # tokenizer = AutoTokenizer.from_pretrained(CONFIG["conv_model"])
+    # # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
+    # model = AutoModelForCausalLM.from_pretrained(CONFIG["conv_model"]).to(device)
+    # logger.info("Generation model:", CONFIG["conv_model"], flush=True)
+    # logger.info("Embeddings model:", CONFIG["embeddings_model"], flush=True)
+    # logger.info("Retrieving by the following topics:", CONFIG["topics"], flush=True)
 
-    logger.info(f"Starting server on {CONFIG['RAG_SOCKET_HOST']}:{CONFIG['RAG_SOCKET_PORT']}", flush=True)
+    logger.info(f"Starting server on {CONFIG['RAG_SOCKET_HOST']}:{CONFIG['RAG_SOCKET_PORT']}")
     for _ in range(CONFIG["connection_attempts"]): 
         try:
             rag_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
             rag_socket.bind((CONFIG["RAG_SOCKET_HOST"], CONFIG["RAG_SOCKET_PORT"]))
             rag_socket.listen()
-            logger.info("RAG server started", flush=True)
+            logger.info("RAG server started")
             break
         except Exception as e:
-            logger.error(f"Error starting socket: {e}", flush=True)
+            logger.error(f"Error starting socket: {e}")
             sleep(5)
     
-    if rag_socket not in locals():
-        logger.error(f"Could not start the socket after {CONFIG['connection_attempts']} attempts. Exiting...", flush=True)
+    else:
+        logger.error(f"Could not start the socket after {CONFIG['connection_attempts']} attempts. Exiting...")
         return 0
+
+    logger.info("Waiting for connection...")
 
     while True:
         
@@ -85,47 +87,53 @@ def main():
             "negative": dict()
         }
         
-        try:
-            conn, addr = rag_socket.accept()
-            logger.info(f"Connected by {addr}", flush=True)
-        except:
-            continue
+        # try:
+        #     conn, addr = rag_socket.accept()
+        #     logger.info(f"Connected by {addr}", flush=True)
+        # except:
+        #     logger.info("connection failed, retrying...")
+        #     sleep(5)
+        #     continue
+        conn, addr = rag_socket.accept()
         
         with conn:
             data = conn.recv(1024)
             received_data = json.loads(data.decode("utf-8"))
+            logger.info(f"Received data: {received_data}")
             company = received_data["company"]
             sources = received_data["sources"]
             start_date = received_data["start_date"]
             end_date = received_data["end_date"]
             collections = db_reviews.list_collection_names()
             while company not in collections:
-                logger.info(f"Company: {company} not found in the database. Waiting for 5 seconds for data to come...", flush=True)
+                logger.info(f"Company: {company} not found in the database. Waiting for 5 seconds for data to come...")
                 sleep(5)
                 collections = db_reviews.list_collection_names()
-            logger.info(f"Using RAG for company: {company}", flush=True)
+            logger.info(f"Using RAG for company: {company}")
             # Get all reviews for the current company
-            logger.info("Retrieving reviews from MongoDB...", flush=True)
+            logger.info("Retrieving reviews from MongoDB...")
             for sentiment in answers:
-                logger.info(f"Extracting info for Sentiment: {sentiment}", flush=True)
+                logger.info(f"Extracting info for Sentiment: {sentiment}")
                 for source in sources:
-                    logger.info(f"Extracting info for Source: {source}", flush=True)
-                    reviews = get_reviews(db_reviews, sentiment, company, source, start_date, end_date, 
-                                          CONFIG["chunk_size"], CONFIG["chunk_overlap"], CONFIG["separator"])
-                    # If no reviews are found, add a message to the answers
-                    if not reviews: 
-                        for topic in CONFIG["topics"]:
-                            answers[sentiment][source][topic] = "No reviews found"
-                        continue
-                    vectorstore = FAISS.from_texts(reviews, embeddings)
+                    answers[sentiment][source] = dict()
+                    logger.info(f"Extracting info for Source: {source}")
+                    # reviews = get_reviews(db_reviews, sentiment, company, source, start_date, end_date, 
+                    #                       CONFIG["chunk_size"], CONFIG["chunk_overlap"], CONFIG["separator"])
+                    # # If no reviews are found, add a message to the answers
+                    # if not reviews: 
+                    #     for topic in CONFIG["topics"]:
+                    #         answers[sentiment][source][topic] = "No reviews found"
+                    #     continue
+                    # vectorstore = FAISS.from_texts(reviews, embeddings)
                     for topic in CONFIG["topics"]:
-                        logger.info(f"Retrieving {sentiment} reviews from {source} source for {company} about {topic}", flush=True)
-                        retrieved_reviews = vectorstore.similarity_search(topic, k=3)
-                        retrieved_reviews = [retrieved_review.page_content for retrieved_review in retrieved_reviews]
-                        retrieved_reviews = "\n".join(retrieved_reviews)
-                        summary = summarizer(retrieved_reviews, sentiment, topic, model, tokenizer, device)
-                        answers[sentiment][source][topic] = summary
-                        logger.info("Summary:", answers[sentiment][source][topic], flush=True)
+                        logger.info(f"Retrieving {sentiment} reviews from {source} source for {company} about {topic}")
+                        # retrieved_reviews = vectorstore.similarity_search(topic, k=3)
+                        # retrieved_reviews = [retrieved_review.page_content for retrieved_review in retrieved_reviews]
+                        # retrieved_reviews = "\n".join(retrieved_reviews)
+                        # summary = summarizer(retrieved_reviews, sentiment, topic, model, tokenizer, device)
+                        # answers[sentiment][source][topic] = summary
+                        answers[sentiment][source][topic] = "Summary"+sentiment+source+topic
+                        logger.info("Summary:", answers[sentiment][source][topic])
             rag_collection.update_one(
                 {"company": company}, 
                 {"$set": {"answers": answers}},
@@ -135,7 +143,7 @@ def main():
                     
             # Send the answers back to the client
             conn.sendall("Done".encode("utf-8"))
-            logger.info("Answers sent to the client", flush=True)
+            logger.info("Answers sent to the client")
         
 if __name__ == "__main__":
     main()

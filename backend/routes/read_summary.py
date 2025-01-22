@@ -32,4 +32,4 @@ def trigger_summary(company: str):
         raise HTTPException(status_code=500, detail=f"MongoDB error: {e}")
 
     # 5. Return the data
-    return {"summary": document}
+    return {"summary": document["answers"]}

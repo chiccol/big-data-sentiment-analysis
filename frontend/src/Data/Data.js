@@ -170,3 +170,46 @@ export const fetchLastComments = async (companyName) => {
     };
   }
 };
+
+
+export const fetchRedditData = async (companyName) => {
+  try {
+    const redditResponse = await fetch (`https://localhost:8000/reddit-data/${companyName}`)
+    if (!redditResponse.ok) {
+      throw new Error("Failed to fetch reddit data")
+    }
+    const data = await redditResponse.json()
+    return data;
+  } catch (error) {
+    console.error("Error fetching reddit data: ", error);
+    return {reddit_data: ""};
+  }
+};
+
+export const fetchTrustpilotData = async (companyName) => {
+  try {
+    const trustpilotResponse = await fetch (`https://localhost:8000/trustpilot-data/${companyName}`)
+    if (!trustpilotResponse.ok) {
+      throw new Error("Failed to fetch Reddit data")
+    }
+    const data = await trustpilotResponse.json()
+    return data;
+  } catch (error) {
+    console.error("Error fetching trustpilot data: ", error);
+    return {trustpilot_data: ""};
+  }
+};
+
+export const fetchYoutubeData = async (companyName) => {
+  try {
+    const youtubeResponse = await fetch (`https://localhost:8000/youtube-data/${companyName}`)
+    if (!youtubeResponse.ok) {
+      throw new Error("Failed to fetch youtube data")
+    }
+    const data = await youtubeResponse.json()
+    return data;
+  } catch (error) {
+    console.error("Error fetching last comments: ", error);
+    return {youtube_data: ""};
+  }
+};

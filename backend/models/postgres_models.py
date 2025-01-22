@@ -25,3 +25,32 @@ class DailyCount(BaseModel):
     
 class DailyCountResponse(BaseModel):
     daily_counts: List[DailyCount]
+    
+class RedditData(BaseModel):
+    date: datetime
+    sentiment: int
+    score: int
+    subreddit: str
+    comments: int
+    
+class RedditResponse(BaseModel):
+    reddit_data: List[RedditData]
+    
+class TrustpilotData(BaseModel):
+    date: datetime
+    sentiment: int
+    stars: int
+    location: str
+
+class TrustpilotResponse(BaseModel):
+    trustpilot_data: List[TrustpilotData]
+    
+class YoutubeData(BaseModel):
+    date: datetime
+    sentiment: int
+    views: int
+    likes: int
+    comments: int
+    
+class YoutubeResponse(BaseModel):
+    youtube_data: List[YoutubeData]

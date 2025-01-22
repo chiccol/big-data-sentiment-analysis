@@ -240,7 +240,7 @@ def search_posts(
             break  # Exit the loop as after_date is invalid
 
         if submission_created < after_date_dt:
-            logger.info(f"Post {submission.id} is older than {after_date}. Skipping.")
+            # logger.info(f"Post {submission.id} is older than {after_date}. Skipping.")
             continue
 
         # Check if the post is already in the data

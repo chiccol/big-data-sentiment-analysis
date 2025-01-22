@@ -26,7 +26,7 @@ logger.debug("FastAPI app setup complete.")
 
 from routes import (aggregated_postgres, double_aggregated_postgres, companies,
                     top_words, top_couples, top_triples, ask_summary, avg_sentiment,
-                    last_comment, interaction_number)
+                    last_comment, interaction_number, reddit_data, trustpilot_data, youtube_data)
 
 
 app.include_router(aggregated_postgres.router)
@@ -39,5 +39,8 @@ app.include_router(ask_summary.router)
 app.include_router(avg_sentiment.router)
 app.include_router(last_comment.router)
 app.include_router(interaction_number.router)
+app.include_router(reddit_data.router)
+app.include_router(trustpilot_data.router)
+app.include_router(youtube_data.router)
     
 logger.debug("Routes added to FastAPI app.")

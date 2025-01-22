@@ -12,7 +12,6 @@
 }
 
 .App {
-  /* padding: 0.5rem 3.5rem; */
   color: var(--black);
   background: linear-gradient(
     106.37deg,
@@ -20,33 +19,46 @@
     #ffcfd1 51.55%,
     #f3c6f1 90.85%
   );
-  height: 100vh;
+  height: 100vh; /* Take the full viewport height */
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Inter', sans-serif;
+  overflow: hidden; /* Prevent scrolling for the parent itself */
 }
 
 .AppGlass {
   display: grid;
-  height: 97%;
-  width: 97%;
+  height: 97%; /* Keep the original height */
+  width: 97%; /* Keep the original width */
   background: var(--glass);
   border-radius: 2rem;
   gap: 16px;
   grid-template-columns: 11rem auto 20rem;
-  overflow: hidden;
+  overflow-y: auto; /* Enable scrolling for content */
+}
+
+.AppGlass::-webkit-scrollbar {
+  width: 8px;
+}
+
+.AppGlass::-webkit-scrollbar-thumb {
+  background-color: var(--gray);
+  border-radius: 8px;
+}
+
+.AppGlass::-webkit-scrollbar-thumb:hover {
+  background-color: var(--black);
 }
 
 @media screen and (max-width: 1200px) {
-  .AppGlass{
+  .AppGlass {
     grid-template-columns: 10% 50% auto;
-    overflow-y: scroll;
-  } 
+  }
 }
 
 @media screen and (max-width: 768px) {
-  .AppGlass{
+  .AppGlass {
     grid-template-columns: 1fr;
-  } 
+  }
 }

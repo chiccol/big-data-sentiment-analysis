@@ -1,8 +1,8 @@
 {
     "nordvpn": {
 
-        "search_from_date": "2024-12-01T00:00:00Z",
-        "get_comments_from_date": "2024-12-01T00:00:00Z",
+        "search_from_date": "2025-01-16T00:00:00Z",
+        "get_comments_from_date": "2025-01-16T00:00:00Z",
         "query": "NordVPN review",
         "max_videos": 5,
         "relevance_language": "en",
@@ -12,13 +12,35 @@
         "min_view": 1000,
         "videos": {},
 
-        "r_search_from_date": "2024-12-01T00:00:00Z",
+        "r_search_from_date": "2025-01-16T00:00:00Z",
         "posts": {},
         "search_query": "nordvpn",
         "subreddits": ["nordvpn", "vpn", "tech"],
         "max_submissions": 10,
 
         "website": "nordvpn.com",
-        "last_scraping": "2024-12-01T00:00:00.000000Z"
+        "last_scraping": "2025-01-16T00:00:00.000000Z"
+    },
+    "google": {
+
+        "search_from_date": "2025-01-16T00:00:00Z",
+        "get_comments_from_date": "2025-01-16T00:00:00Z",
+        "query": "Google review",
+        "max_videos": 5,
+        "relevance_language": "en",
+        "max_num_comments_per_scraping": 100,
+        "min_duration": 240,
+        "min_comment": 10,
+        "min_view": 1000,
+        "videos": {},
+
+        "r_search_from_date": "2025-01-16T00:00:00Z",
+        "posts": {},
+        "search_query": "google",
+        "subreddits": ["google", "browser", "tech", "business"],
+        "max_submissions": 10,
+
+        "website": "google.com",
+        "last_scraping": "2025-01-16T00:00:00.000000Z"
     }
 }

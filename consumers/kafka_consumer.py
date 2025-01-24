@@ -55,10 +55,8 @@ class KafkaConsumer:
         self.msg = None
         self.consumer = None
         self.poll_timeout = 12.0 # seconds 
-
         # Initialize the consumer on instantiation
         self.initialize_consumer()
-        
 
     def get_topics(self) -> List[str]:
         """
@@ -174,34 +172,33 @@ class KafkaConsumer:
             return [], {}
         logger.info(f"Consuming messages from topics: {topics}") 
         
-        # Tracking variables
         total_messages_consumed = 0
         topics_with_messages = set()
         
         try:
-            # Subscribe to all topics
+            # sub to all topics
             self.consumer.subscribe(topics)
             
-            # Continue polling until no more messages
+            # keep polling until no more messages
             while True:
                 msg = self.poll_message()
                 
-                # Break if no more messages
+                # break if no messages
                 if msg is None:
                     break
                 
                 try:
-                    # Decode message 
+                    # decode
                     current_topic = str(msg.topic())
                     msg_data = self.decode_parquet(msg.value())
                     
-                    # Store messages by topic and in all_messages
+                    # store
                     if current_topic not in topic_messages:
                         topic_messages[current_topic] = 0
                     topic_messages[current_topic] += len(msg_data)
                     all_messages.extend(msg_data)
                     
-                    # Update tracking variables
+                    # Update
                     total_messages_consumed += len(msg_data)
                     if topic_messages[current_topic] > 0:
                         topics_with_messages.add(current_topic)
@@ -235,7 +232,7 @@ class KafkaConsumer:
         Returns:
             List[Dict[str, Any]]: A list of dictionaries representing the decoded message, where each dictionary corresponds to a row of the Parquet data.
         """
-        # Use BytesIO to read the binary Parquet data
+
         buffer = BytesIO(msg)
         pyarrow_schema = pa.schema([
                     ('source', pa.string()),
@@ -251,12 +248,8 @@ class KafkaConsumer:
                     ('vote', pa.int32()),
                     ('reddit_reply_count', pa.int32())
                 ])
-        # Read the Parquet data back into an Arrow table
         table = pq.read_table(source = buffer, schema = pyarrow_schema)
-        
-        # Convert the Arrow table to a pandas DataFrame for easier manipulation
         decoded_msg = table.to_pylist()
-
         logger.info(f"Function decode_parquet worked.")
         
         return decoded_msg

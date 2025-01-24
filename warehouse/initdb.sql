@@ -3,10 +3,7 @@ CREATE TABLE IF NOT EXISTS predictions (
     source TEXT NOT NULL,
     date TIMESTAMP, 
     company TEXT,
-    sentiment TEXT NULL, 
-    negative_probability FLOAT NULL,
-    neutral_probability FLOAT NULL,
-    positive_probability FLOAT NULL
+    sentiment TEXT NULL 
 );
 
 CREATE TABLE IF NOT EXISTS trustpilot (
@@ -21,6 +18,9 @@ CREATE TABLE IF NOT EXISTS youtube (
     videoid TEXT,
     like_count INT,
     youtube_reply_count INT,
+    negative_probability FLOAT NULL,
+    neutral_probability FLOAT NULL,
+    positive_probability FLOAT NULL,
     FOREIGN KEY (id) REFERENCES predictions(id)
 );
 
@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS reddit (
     subreddit TEXT,
     vote INT,
     reddit_reply_count INT,
+    negative_probability FLOAT NULL,
+    neutral_probability FLOAT NULL,
+    positive_probability FLOAT NULL,
     FOREIGN KEY (id) REFERENCES predictions(id)
 );
 

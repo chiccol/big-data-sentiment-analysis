@@ -165,7 +165,7 @@ def write_mongo(df_mongo: DataFrame, topics: List[str], mongo_uri: str) -> None:
         logger.info(f"Wrote {filtered_df_mongo.count()} messages from topic {topic} to MongoDB")
     return None
 
-def write_postgres(df_postgres: DataFrame, postgres_url: str, postgres_pwd: str, postgres_user: str, postgres_driver: str ) -> None:
+def write_postgres(df_postgres: DataFrame, postgres_url: str, postgres_pwd: str, postgres_user: str, postgres_driver: str) -> None:
     """
     Writes on Postgres table.
     Args:
@@ -184,23 +184,22 @@ def write_postgres(df_postgres: DataFrame, postgres_url: str, postgres_pwd: str,
     print(postgres_properties, flush=True)
 
     df_predictions = df_postgres.select([
-        "id", "source", "date", "company", "sentiment",
-        "negative_probability", "neutral_probability", "positive_probability"
+        "id", "source", "date", "company", "sentiment" 
     ])
     df_predictions.write.jdbc(url=postgres_url, table="predictions", mode="append", properties=postgres_properties)
     
     df_trustpilot = df_postgres.filter(df_postgres.source == "Trustpilot").select([
-        "id", "stars", "location"
+        "id", "stars", "location" 
     ])
     df_trustpilot.write.jdbc(url=postgres_url, table="trustpilot", mode="append", properties=postgres_properties)
 
     df_youtube = df_postgres.filter(df_postgres.source == "youtube").select([
-        "id", "videoid", "like_count", "youtube_reply_count"
+        "id", "videoid", "like_count", "youtube_reply_count", "negative_probability", "neutral_probability", "positive_probability"
     ])
     df_youtube.write.jdbc(url=postgres_url, table="youtube", mode="append", properties=postgres_properties)
 
     df_reddit = df_postgres.filter(df_postgres.source == "reddit").select([
-        "id", "subreddit", "vote", "reddit_reply_count"
+        "id", "subreddit", "vote", "reddit_reply_count", "negative_probability", "neutral_probability", "positive_probability"
     ])
     df_reddit.write.jdbc(url=postgres_url, table="reddit", mode="append", properties=postgres_properties)
 

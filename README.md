@@ -18,7 +18,8 @@
 This application will scrape data from the internet, run the data through a machine learning model and store the relevant data in various databases. 
 The data is obtained through the official APIs of Youtube and Reddit, a custom-made web scraper for TrustPilot and a random data generator used to test heavier data loads, since every other data producer is limited in throughput (daily rates). \
 More details can be found in the ```report.pdf```. \
-**[INSERT ARCHITECTURE CHART]**
+![Flowchart Light Mode](images/flowchart/flowchart_readme.png)
+![Flowchart Dark Mode](images/flowchart/flowchart_report.png)
 
 ## How to run
 Ensure you have docker installed, if you don't please follow this [guide](https://docs.docker.com/get-started/get-docker/).

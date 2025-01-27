@@ -46,7 +46,7 @@ def main():
         companies_date = json.load(file)
     logger.info(f"Companies and dates of the last scraping loaded from {CONFIG['companies_date_path']}")
     for company in companies_date.keys():
-        logger.info(f"Company: {company}, Last scraping: {companies_date[company]['last_scraping']}")
+        logger.info(f"Company: {company}, Last scraping: {companies_date[company]}")
 
     # Sleeping time in hours, minutes, and seconds
     hours = CONFIG['sleep_time'] // 3600
@@ -56,18 +56,18 @@ def main():
     while True:
         for company in companies_date.keys():
             try:
-                from_date = datetime.strptime(companies_date[company]["last_scraping"], CONFIG['date_format'])
+                from_date = datetime.strptime(companies_date[company], CONFIG['date_format'])
             except:
-                raise AssertionError(f"The date '{companies_date[company]['last_scraping']}' does NOT match the format '{CONFIG['date_format']}'")
+                raise AssertionError(f"The date '{companies_date[company]}' does NOT match the format '{CONFIG['date_format']}'")
         
-            scrape_and_send_reviews(company=companies_date[company]["website"], 
+            scrape_and_send_reviews(company=company, 
                                     from_date = from_date,
                                     date_format = CONFIG["date_format"],
                                     producer = producer,
                                     language="en")
             
             # Update the date of the last scraping
-            companies_date[company]["last_scraping"] = datetime.now().strftime(CONFIG["date_format"])
+            companies_date[company] = datetime.now().strftime(CONFIG["date_format"])
             with open(CONFIG["companies_date_path"], 'w') as file:
                 json.dump(companies_date, file)
 

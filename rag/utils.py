@@ -10,8 +10,8 @@ def get_reviews(
         sentiment: str, 
         company: str, 
         source: str,
-        from_date: datetime,
-        to_date: datetime,
+        from_date: str,
+        to_date: str,
         chunk_size: int,
         chunk_overlap: int,
         separator: str = " "
@@ -31,21 +31,32 @@ def get_reviews(
     Returns:
         List[str]: Preprocessed and chunked reviews.
     """
+    sentiment = sentiment.lower()
+    print(type(from_date), flush=True)
+    print(type(to_date), flush=True)
+    from_date = datetime.strptime(from_date, "%Y-%m-%d")
+    to_date = datetime.strptime(to_date, "%Y-%m-%d")
+
     # create a query to filter reviews by sentiment, source, and date
+    print(sentiment, source, from_date, to_date, flush=True)
+
     query = {
         "sentiment": sentiment,
-        "source": {"$in": source},
+        "source": source,
         "date": {"$gte": from_date, "$lte": to_date}
     }
     comapny_reviews = db[company]
     reviews = comapny_reviews.find(query)
     reviews = [review["text"] for review in reviews]
+    print(f"Vettore pre trasformazione: {reviews}", flush=True)
+
     text_splitter = CharacterTextSplitter(
         separator=separator,   # Split by spaces
         chunk_size=chunk_size,  # Maximum size of each chunk
         chunk_overlap=chunk_overlap  # Overlap between chunks
         )
     splitted_reviews = [text_splitter.split_text(review)[0] for review in reviews]
+    print(f"Vettore2 {splitted_reviews}", flush=True)
     return splitted_reviews
 
 def summarizer(

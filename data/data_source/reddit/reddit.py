@@ -163,6 +163,7 @@ def getcomments_reddit(
 def search_posts(
     query,
     after_date,
+    comments_after_date,
     reddit_client,
     company,
     max_posts,
@@ -176,7 +177,7 @@ def search_posts(
     - reddit_companies_posts: dict, updated posts data
     """
     num_posts = 0
-    reddit_companies_posts_path = "reddit_companies.json"
+    reddit_companies_posts_path = "companies.json"
     date_format = "%Y-%m-%dT%H:%M:%SZ"
     new_posts = {}
 
@@ -192,10 +193,10 @@ def search_posts(
     if company not in reddit_companies_posts:
         reddit_companies_posts[company] = {
             "posts": {},
-            "from_date": "2023-01-01T00:00:00Z",
+            "from_date": "2024-01-01T00:00:00Z",
             "query": query,
             "subreddits": subreddit_list if subreddit_list is not None else [company],
-            "max_posts": max_posts,
+            "max_posts": max_posts
         }
         logger.info(f"Initialized posts data for company '{company}'")
 
@@ -239,24 +240,24 @@ def search_posts(
             break  # Exit the loop as after_date is invalid
 
         if submission_created < after_date_dt:
-            logger.info(f"Post {submission.id} is older than {after_date}. Skipping.")
+            # logger.info(f"Post {submission.id} is older than {after_date}. Skipping.")
             continue
 
         # Check if the post is already in the data
         existing_posts = list(reddit_companies_posts[company]["posts"].keys())
         if submission.id in existing_posts:
-            logger.info(f"Post {submission.id} is already processed for company '{company}'. Skipping.")
+            # logger.info(f"Post {submission.id} is already processed for company '{company}'. Skipping.")
             continue
 
         # Add the post to the data
         reddit_companies_posts[company]["posts"][submission.id] = {
-            "from_date": after_date,
-            "max_num_comments": 10
+            "from_date": comments_after_date,
+            "max_num_comments": 100
         }
         
         new_posts[submission.id] = {    
-            "from_date": after_date,
-            "max_num_comments": 10  
+            "from_date": comments_after_date,
+            "max_num_comments": 100  
         }
         num_posts += 1
         logger.info(f"Added post {submission.id} to company '{company}'")
@@ -265,7 +266,7 @@ def search_posts(
 
     if num_posts == 0:
         logger.info(f"No posts found for company '{company}', new posts will be searched from now")
-        reddit_companies_posts[company]["from_date"] = datetime.now().strftime(date_format)
+        # reddit_companies_posts[company]["from_date"] = datetime.now().strftime(date_format)
     
     # Save the updated data
     try:

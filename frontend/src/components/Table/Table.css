@@ -1,0 +1,99 @@
+/* Wrapper to match the pastel/gradient style */
+.summary-wrapper {
+  background: linear-gradient(to right, #ffefd6, #ffeef0);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1rem auto;
+  max-width: 900px;
+}
+
+/* Heading area */
+.summary-header {
+  margin-bottom: 1rem;
+}
+
+.summary-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-subtitle {
+  color: #555;
+}
+
+/* Controls area */
+.summary-controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Error messages */
+.error-message {
+  color: #e53935; /* red-ish */
+  font-weight: 500;
+}
+
+/* Table custom styling */
+.table-container {
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+/* Cells and headers */
+.custom-table-cell {
+  font-size: 0.95rem;
+  color: #333;
+  padding: 0.75rem;
+}
+
+.custom-header-cell {
+  background-color: #ffe3de; /* pastel header background */
+  font-weight: 600;
+  color: #444;
+  padding: 0.75rem;
+}
+
+
+.MuiTableRow-root > * {
+  padding: 10px;
+}
+
+.MuiTableRow-root.MuiTableRow-head > * {
+  font-weight: bold !important;
+}
+
+.Table td,
+th {
+  border: none !important;
+}
+
+.Table:first-child {
+  border-radius: 0.7rem !important;
+}
+.status {
+  padding: 8px;
+  border-radius: 9px;
+}
+
+.Details {
+  color: #00b5ff !important;
+}
+
+@media screen and (max-width: 1200px) {
+  .Table {
+    width: 170%;
+    margin-top: 2rem;
+  }
+}
+
+
+@media screen and (max-width: 768px) {
+  .Table{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 23rem;
+  }
+}

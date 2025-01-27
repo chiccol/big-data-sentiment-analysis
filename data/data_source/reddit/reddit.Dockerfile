@@ -12,7 +12,8 @@ RUN apt-get update && \
 
 # Copy the rest of the application files
 COPY reddit /app
-COPY kafka_producer.py /app 
+COPY kafka_producer.py /app
+COPY companies.json /app
 
 # Set executable permissions in one layer
 RUN chmod +x wait.sh

@@ -7,6 +7,7 @@ import praw
 from kafka_producer import KafkaProducer
 from reddit import getcomments_reddit, search_posts, encode_message_to_parquet
 import logging
+from config import CONFIG
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -49,8 +50,8 @@ if __name__ == "__main__":
 
     # Initialize Kafka Producer
     try:
-        client_id = "reddit-producer"
-        bootstrap_servers = "kafka:9092" # Kafka broker
+        client_id = CONFIG["client_id"]
+        bootstrap_servers = CONFIG["bootstrap_servers"] # Kafka broker
         producer = KafkaProducer(bootstrap_servers=bootstrap_servers, client_id=client_id)
         logger.info(f"Kafka producer '{client_id}' connected to '{bootstrap_servers}'")
     except Exception as e:
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Load companies and scraping info
-    companies_path = "reddit_companies.json"
+    companies_path = CONFIG["companies_post_path"]
     try:
         with open(companies_path, 'r') as file:
             companies = json.load(file)
@@ -70,15 +71,16 @@ if __name__ == "__main__":
         logger.error(f"Error decoding JSON from {companies_path}: {e}")
         companies = {}
 
-    date_format = "%Y-%m-%dT%H:%M:%SZ"
+    date_format = CONFIG["date_format"]
 
     while True:
         for company in companies.keys():
             logger.info(f"Searching for new submissions for '{company}'")
             try:
                 new_submissions, companies_submissions = search_posts(
-                    query=companies[company].get("query", ""),
-                    after_date=companies[company].get("from_date", "2023-01-01T00:00:00Z"),
+                    query=companies[company].get("search_query", ""),
+                    after_date=companies[company].get("search_from_date", "2023-01-01T00:00:00Z"),
+                    comments_after_date=companies[company].get("get_comments_from_date", "2023-01-01T00:00:00Z"),
                     reddit_client=reddit_scraper,
                     company=company,
                     max_posts=companies[company].get("max_submissions", 10),

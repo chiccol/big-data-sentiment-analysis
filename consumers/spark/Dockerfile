@@ -7,9 +7,13 @@ FROM bitnami/spark:3.4.0
 # Set the working directory in the container
 WORKDIR /app
 
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+
 COPY spark/main.py /app
 COPY spark/utils.py /app
 COPY kafka_consumer.py /app
+COPY spark/word_count.py /app
+
 COPY spark/run_spark_job.sh /app
 COPY spark/requirements.txt /app
 
@@ -23,6 +27,15 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN chmod +x /app/run_spark_job.sh
+
+# Install transformers and torch
+RUN pip install --no-cache-dir -r requirements.txt
+
+# install stopwords for word counting !!!
+RUN python -m nltk.downloader stopwords
+
+# Install wget to download the connectors 
+RUN apt-get update && apt-get install -y wget
 
 # MongoDB Spark Connector, JDBC connector and its dependencies
 RUN wget https://repo1.maven.org/maven2/org/mongodb/spark/mongo-spark-connector_2.12/3.0.2/mongo-spark-connector_2.12-3.0.2.jar -P /opt/bitnami/spark/jars/ && \

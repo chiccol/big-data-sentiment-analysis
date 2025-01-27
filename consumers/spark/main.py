@@ -6,6 +6,8 @@ import time
 import random
 import logging
 from time import sleep
+from word_count import write_company_word_counts
+
 
 def main():
     """
@@ -38,7 +40,7 @@ def main():
     )
     logger = logging.getLogger("spark-master")
     logger.info("Started logging")
-
+    
     # Get venv variables 
     spark_master = os.getenv("SPARK_MASTER_HOST")
     spark_port = os.getenv("SPARK_MASTER_PORT")
@@ -92,7 +94,7 @@ def main():
         logger.info(f"Messages consumed with Spark: {len(all_messages)}")
         if all_messages:
             df = process_data(all_messages, spark)
-
+            
             df_mongo = df.select(["source", "date", "text", "company", "sentiment"])
             write_mongo(df_mongo, topics, mongo_uri)
 
@@ -101,6 +103,8 @@ def main():
                                      "videoid", "youtube_reply_count", "like_count", "subreddit",
                                      "vote", "reddit_reply_count"])
             write_postgres(df_postgres, postgres_url, postgres_pwd, postgres_user, postgres_driver)
+
+            write_company_word_counts(df, spark) 
 
         else:
             logger.info(f"No data was consumed")

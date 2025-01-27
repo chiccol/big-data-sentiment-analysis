@@ -3,6 +3,10 @@ import React, { useEffect, useState } from "react";
 import "./Updates.css";
 import { fetchLastComments } from "../../Data/Data"; // Import the new function
 
+import redditLogo from "../../imgs/reddit_logo.png";
+import trustpilotLogo from "../../imgs/trustpilot_logo.png";
+import youtubeLogo from "../../imgs/youtube_logo.png";
+
 const Updates = ({ companyName }) => {
   const [lastComments, setLastComments] = useState({
     reddit: "",
@@ -29,7 +33,7 @@ const Updates = ({ companyName }) => {
       
       {/* Reddit */}
       <div className="update">
-        <img src="reddit-icon.png" alt="Reddit" />
+        <img src={redditLogo} alt="Reddit" />
         <div className="noti">
           <div style={{ marginBottom: "0.5rem" }}>
             <span>Reddit</span>
@@ -40,7 +44,7 @@ const Updates = ({ companyName }) => {
 
       {/* Trustpilot */}
       <div className="update">
-        <img src="trustpilot-icon.png" alt="Trustpilot" />
+        <img src={trustpilotLogo} alt="Trustpilot" />
         <div className="noti">
           <div style={{ marginBottom: "0.5rem" }}>
             <span>Trustpilot</span>
@@ -51,7 +55,7 @@ const Updates = ({ companyName }) => {
 
       {/* YouTube */}
       <div className="update">
-        <img src="youtube-icon.png" alt="YouTube" />
+        <img src={youtubeLogo} alt="YouTube" />
         <div className="noti">
           <div style={{ marginBottom: "0.5rem" }}>
             <span>YouTube</span>

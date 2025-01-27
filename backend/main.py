@@ -25,7 +25,7 @@ app.add_middleware(
 logger.debug("FastAPI app setup complete.")
 
 from routes import (aggregated_postgres, double_aggregated_postgres, companies,
-                    top_words, top_couples, top_triples, ask_summary, avg_sentiment,
+                    top_words, top_couples, top_triples, ask_summary, read_summary, avg_sentiment,
                     last_comment, interaction_number, reddit_data, trustpilot_data, youtube_data)
 
 
@@ -36,6 +36,7 @@ app.include_router(top_words.router)
 app.include_router(top_couples.router)
 app.include_router(top_triples.router)
 app.include_router(ask_summary.router)
+app.include_router(read_summary.router)
 app.include_router(avg_sentiment.router)
 app.include_router(last_comment.router)
 app.include_router(interaction_number.router)

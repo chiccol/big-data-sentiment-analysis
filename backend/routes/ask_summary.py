@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import socket
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from utils.database import mongo_db
 import json
 from utils.config import logger
@@ -13,7 +13,7 @@ RAG_SOCKET_HOST = os.getenv("RAG_SOCKET_HOST", "rag")
 RAG_SOCKET_PORT = int(os.getenv("RAG_SOCKET_PORT", "5000"))
 
 @router.get("/trigger_summary/{company}")
-def trigger_summary(company: str):
+def trigger_summary(company: str, start_date: Optional[str] = None, end_date: Optional[str] = None):
     """
     1. Connects via socket to the rag container.
     2. Sends the company name.
@@ -35,8 +35,8 @@ def trigger_summary(company: str):
     # prepare the json to send to the rag script
     company_data = {"company": company,
             "sources": ["trustpilot", "youtube", "reddit"],
-            "start_date": "2021-01-01",
-            "end_date": "2024-12-31"}
+            "start_date": start_date if start_date else "2024-01-01",
+            "end_date": end_date if end_date else "2025-01-01"}
     company_data = json.dumps(company_data)
 
     # 2. Send the company name to the socket
@@ -75,7 +75,7 @@ def trigger_summary(company: str):
         collection = mongo_db["rag"]  # Access the 'rag' collection
 
         # Fetch the document corresponding to the company
-        # Assuming each document has a field 'company_name' matching the company
+        # Assuming each document has a field 'company' matching the company
         # Adjust the field name as per your actual document structure
         document = collection.find_one({"company": company})
 

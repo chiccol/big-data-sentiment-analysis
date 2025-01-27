@@ -9,6 +9,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
 
 /**
  * Expects a prop: companyName (string)
@@ -35,13 +36,24 @@ export default function SummaryTable({ companyName }) {
   const [summaryData, setSummaryData] = useState({});
   const [error, setError] = useState("");
 
+  // NEW: State variables for date range
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   // Handler for the "Generate Summary" button
   const handleGenerateSummary = async () => {
     setError("");
     setSummaryData(null);
 
     try {
-      const res = await fetch(`http://localhost:8000/trigger_summary/${companyName}`);
+      // Pass the startDate and endDate as query parameters (or in a POST body if your backend expects that).
+      // For example, as GET parameters:
+      const res = await fetch(
+        `http://localhost:8000/trigger_summary/${companyName}?start_date=${encodeURIComponent(
+          startDate
+        )}&end_date=${encodeURIComponent(endDate)}`
+      );
+
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
@@ -58,7 +70,10 @@ export default function SummaryTable({ companyName }) {
     setSummaryData(null);
 
     try {
+      // If the "read_summary" endpoint also supports date filtering, you could do something similar.
+      // Otherwise, just call it as before:
       const res = await fetch(`http://localhost:8000/read_summary/${companyName}`);
+
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
@@ -132,6 +147,27 @@ export default function SummaryTable({ companyName }) {
       </div>
 
       <div className="summary-controls">
+        <TextField
+          label="Start Date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          style={{ marginRight: "1rem" }}
+        />
+        <TextField
+          label="End Date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          style={{ marginRight: "1rem" }}
+        />
+
         <Button
           variant="contained"
           onClick={handleGenerateSummary}
@@ -152,14 +188,16 @@ export default function SummaryTable({ companyName }) {
 
       {/* Only render the tables if we have summaryData */}
       {summaryData && Object.keys(summaryData).length > 0 && (
-        <div style={{ marginTop: "2rem" }}>
-          {renderTables()}
-        </div>
+        <div style={{ marginTop: "2rem" }}>{renderTables()}</div>
       )}
 
       {/* Show a "no data" message if summaryData is empty */}
       {summaryData && Object.keys(summaryData).length === 0 && (
-        <TableContainer component={Paper} className="table-container" style={{ marginTop: "1rem" }}>
+        <TableContainer
+          component={Paper}
+          className="table-container"
+          style={{ marginTop: "1rem" }}
+        >
           <Table>
             <TableBody>
               <TableRow>

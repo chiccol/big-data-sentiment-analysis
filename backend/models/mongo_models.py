@@ -60,6 +60,6 @@ class SummaryModel(BaseModel):
     
 
 class LastComment(BaseModel):
-    reddit: str
-    trustpilot: str
-    youtube: str
+    reddit: Optional[str] = None
+    trustpilot: Optional[str] = None
+    youtube: Optional[str] = None

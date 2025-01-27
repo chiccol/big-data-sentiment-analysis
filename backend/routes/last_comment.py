@@ -33,14 +33,22 @@ def get_last_comment(company: str):
         
         result = list(company_collection.aggregate(pipeline))
         last_comments_data = {}
+        logger.debug(f"Retrieved last comments for company '{company}'.")
 
         for r in result:
             source = r["_id"].lower()  # Convert source to lowercase to match model fields
             if source in ["reddit", "trustpilot", "youtube"]:  # Ensure the source matches the model
                 last_comments_data[source] = r["last_comment"]
+                logger.debug(f"Retrieved last comment for source '{source}'.")
 
-        last_comment = LastComment(**last_comments_data)
+        for source in ["reddit", "trustpilot", "youtube"]:
+            if source not in last_comments_data:
+                last_comments_data[source] = None
+                logger.debug(f"No last comment found for source '{source}'.")
         
+        last_comment = LastComment(**last_comments_data)
+        logger.info(f"Successfully fetched last comment for company '{company}'.")
+
         return last_comment
 
     except HTTPException as http_exc:

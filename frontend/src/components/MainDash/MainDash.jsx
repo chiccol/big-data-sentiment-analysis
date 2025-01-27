@@ -13,7 +13,7 @@ const MainDash = () => {
 
   return (
     <div className="MainDash">
-      <h1>Dashboard: {company || '... select a company ...'}</h1> {/* Just to visualize */}
+      <h1>Dashboard: {company || '... select a company on the left ...'}</h1> {/* Just to visualize */}
       {/* Pass the company param to the child components */}
       <Cards companyName={company} />
       <WordOccurrencesCards companyName={company} />

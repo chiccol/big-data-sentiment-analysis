@@ -112,6 +112,7 @@ def main():
             logger.info(f"Using RAG for company: {company}")
             # Get all reviews for the current company
             logger.info("Retrieving reviews from MongoDB...")
+            sleep(10)
             for sentiment in answers:
                 logger.info(f"Extracting info for Sentiment: {sentiment}")
                 for source in sources:
@@ -132,7 +133,7 @@ def main():
                         # retrieved_reviews = "\n".join(retrieved_reviews)
                         # summary = summarizer(retrieved_reviews, sentiment, topic, model, tokenizer, device)
                         # answers[sentiment][source][topic] = summary
-                        answers[sentiment][source][topic] = "Summary"+sentiment+source+topic
+                        answers[sentiment][source][topic] = "Summary"+sentiment+source+topic+" "+start_date+" "+end_date+" "+company
                         logger.info("Summary:", answers[sentiment][source][topic])
             rag_collection.update_one(
                 {"company": company}, 

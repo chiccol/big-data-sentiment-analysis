@@ -4,10 +4,11 @@ from bs4 import BeautifulSoup
 import pyarrow as pa
 import pyarrow.parquet as pq
 from io import BytesIO
+import json
 import pandas as pd
 
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 from datetime import datetime
 from time import sleep
 
@@ -83,8 +84,7 @@ def scrape_and_send_reviews(
     language = "www" if language == "en" else language
     url = f"https://{language}.trustpilot.com/review/{company}"
     for num_page in range(from_page, to_page + 1):
-        review_list = []
-        text = []
+        reviews_list = []
         logger.info(f"Scraping page {num_page} for {company}...")
         if num_page > 1:
             result = requests.get(url + f"?page={num_page}&sort=recency")
@@ -97,33 +97,14 @@ def scrape_and_send_reviews(
         
         soup = BeautifulSoup(result.content, 'html.parser')
 
-        locations = soup.find_all('div', {'class': 'typography_body-m__xgxZ_ typography_appearance-subtle__8_H2l styles_detailsIcon__Fo_ua'})
-        ratings = soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'})
-        dates_html = soup.find_all('div', {'class': 'styles_reviewHeader__iU9Px'})
-        dates = [dates_html[i].find("time")["datetime"] for i in range(len(dates_html))]
-
-        # Extracting titles and contents separately
-        review_containers = soup.find_all('div', {'class': 'styles_reviewContent__0Q2Tg'})
-        for review in review_containers:
-            # First part of the review is usually the title
-            title = review.find('h2').get_text() if review.find('h2') else "No Title"
-            content = review.find('p').get_text() if review.find('p') else "No Content"
-            review = title + " " + content
-            text.append(review)
-
-        for num_review in range(len(text)):
+        dict_reviews = soup.find_all("script")[-1].text
+        dict_reviews = json.loads(dict_reviews)["props"]["pageProps"]["reviews"]
+        
+        for num_review,review in enumerate(dict_reviews):
             full_review = dict()
-            full_review["source"] = "Trustpilot"
+            # Accept only reviews with a date and rating
             try:
-                full_review["tp_location"] = locations[num_review].get_text()
-            except:
-                full_review["tp_location"] = "N/A"
-            try:
-                full_review["text"] = text[num_review]
-                full_review["stars"] = int(ratings[num_review]["data-service-review-rating"])
-                full_review["date"] = dates[num_review]
-                full_review["company"] = company
-                # check if the review is older than the specified date
+                full_review["date"] = review["dates"]["publishedDate"]
                 if datetime.strptime(full_review["date"],date_format) < from_date:
                     logger.info(f"Reached reviews older than {from_date}. Stopping scraping for {company}.") 
                     if num_review == 0 and num_page == 1:
@@ -131,20 +112,30 @@ def scrape_and_send_reviews(
                         return 1
                     else:
                         logger.info(f"All reviews of {company} from date {from_date.strftime(date_format)} have been collected.")   
-                        num_reviews += len(review_list)
+                        num_reviews += len(reviews_list)
                         logger.info(f"Scraped {num_reviews} reviews for {company} so far.")
-                        review_list_serialized = encode_message_to_parquet(review_list)
+                        review_list_serialized = encode_message_to_parquet(reviews_list)
                         producer.produce(record = review_list_serialized, topic=company)
                         return 1
-                review_list.append(full_review) 
+                full_review["stars"] = int(review.get("rating"))
             except Exception as e:
                 error_message = "\n".join([f"Error while scraping review {num_review} on page {num_page} for {company}: {e}\n",
                         f"Length location: {len(locations)}, num_review: {num_review}"])
                 logger.error(error_message)
+            # Accept reviews without text because we have the rating (-> sentiment)
+            title = review.get("title", "")
+            text = review.get("text", "")
+            full_review["text"] = title + " " + text
 
-        num_reviews += len(review_list)
+            full_review["tp_location"] = review["consumer"].get("countryCode", "N/A") if "consumer" in review else "N/A"
+            full_review["source"] = "Trustpilot"
+            full_review["company"] = company
+            
+            reviews_list.append(full_review)
+
+        num_reviews += len(reviews_list)
         logger.info(f"Scraped {num_reviews} reviews for {company} so far.")
-        review_list_serialized = encode_message_to_parquet(review_list)
-        review_list.clear()
+        review_list_serialized = encode_message_to_parquet(reviews_list)
+        reviews_list.clear()
         producer.produce(record = review_list_serialized, topic=company)
         sleep(10)   # Sleep for a short time to avoid being blocked by Trustpilot

@@ -34,9 +34,9 @@ def trigger_summary(company: str, start_date: Optional[str] = None, end_date: Op
     
     # prepare the json to send to the rag script
     company_data = {"company": company,
-            "sources": ["Trustpilot", "youtube", "reddit"],
-            "start_date": start_date if start_date else "2024-01-01",
-            "end_date": end_date if end_date else "2025-01-01"}
+            "sources": ["trustpilot", "youtube", "reddit"],
+            "start_date": start_date if start_date else None,
+            "end_date": end_date if end_date else None}
     company_data = json.dumps(company_data)
 
     # 2. Send the company name to the socket

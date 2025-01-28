@@ -57,7 +57,7 @@ def data_gen(company: str, producer, num_entries: int = 100) -> None:
     fake = Faker()
     
     # List of potential sources
-    sources = ['Trustpilot', 'youtube', 'reddit']
+    sources = ['trustpilot', 'youtube', 'reddit']
     reviews = []
     logger.info(f"Generating {num_entries} datapoints for {company}")
     for _ in range(num_entries):
@@ -76,7 +76,7 @@ def data_gen(company: str, producer, num_entries: int = 100) -> None:
                 'like_count': random.randint(1, 5),
                 'youtube_reply_count': random.randint(1, 10000)
             }
-        elif source == "Trustpilot":
+        elif source == "trustpilot":
             entry = {
                 'source': source,
                 'date': fake.date_between(start_date='-1y', end_date='today').strftime('%Y-%m-%d'),

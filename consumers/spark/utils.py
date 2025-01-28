@@ -118,7 +118,7 @@ def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
 
     df_with_sentiment = df.withColumn(
         "sentiment_analysis", 
-        when(col("source") != "Trustpilot", get_sentiment_udf(col("text"))).otherwise(None)
+        when(col("source") != "trustpilot", get_sentiment_udf(col("text"))).otherwise(None)
     )
 
     # Create separate columns for sentiment probabilities and labels
@@ -126,7 +126,7 @@ def process_data(all_messages: List[Dict], spark: SparkSession) -> DataFrame:
     df_with_sentiment = df_with_sentiment \
         .withColumn("sentiment_probabilities", col("sentiment_analysis.probabilities")) \
         .withColumn("sentiment", 
-                    when(col("source") != "Trustpilot", col("sentiment_analysis.sentiment"))
+                    when(col("source") != "trustpilot", col("sentiment_analysis.sentiment"))
                     .otherwise(
                         when(col("stars") > 3, "positive")
                         .when(col("stars") == 3, "neutral")
@@ -188,7 +188,7 @@ def write_postgres(df_postgres: DataFrame, postgres_url: str, postgres_pwd: str,
     ])
     df_predictions.write.jdbc(url=postgres_url, table="predictions", mode="append", properties=postgres_properties)
     
-    df_trustpilot = df_postgres.filter(df_postgres.source == "Trustpilot").select([
+    df_trustpilot = df_postgres.filter(df_postgres.source == "trustpilot").select([
         "id", "stars", "location" 
     ])
     df_trustpilot.write.jdbc(url=postgres_url, table="trustpilot", mode="append", properties=postgres_properties)

@@ -128,7 +128,7 @@ def scrape_and_send_reviews(
             full_review["text"] = title + " " + text
 
             full_review["tp_location"] = review["consumer"].get("countryCode", "N/A") if "consumer" in review else "N/A"
-            full_review["source"] = "Trustpilot"
+            full_review["source"] = "trustpilot"
             full_review["company"] = company
             
             reviews_list.append(full_review)

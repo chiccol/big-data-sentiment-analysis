@@ -1,17 +1,54 @@
 import torch
 from datetime import datetime
 from pymongo.database import Database
-from typing import List
+from typing import List, Optional
 from langchain.text_splitter import CharacterTextSplitter
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+def build_query(
+    sentiment: str,
+    source: str,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None
+) -> dict:
+    """
+    Build a MongoDB query based on sentiment, source, and optional date range.
+    
+    Args:
+        sentiment: The sentiment to filter by
+        source: The source to filter by
+        from_date: Optional start date in YYYY-MM-DD format
+        to_date: Optional end date in YYYY-MM-DD format
+        
+    Returns:
+        dict: MongoDB query dictionary
+    """
+    query = {
+        "sentiment": sentiment,
+        "source": source
+    }
+    
+    if from_date or to_date:
+        date_filter = {}
+        
+        if from_date:
+            date_filter["$gte"] = datetime.strptime(from_date, "%Y-%m-%d")
+            
+        if to_date:
+            date_filter["$lte"] = datetime.strptime(to_date, "%Y-%m-%d")
+            
+        if date_filter:
+            query["date"] = date_filter
+    
+    return query
 
 def get_reviews(
         db: Database, 
         sentiment: str, 
         company: str, 
         source: str,
-        from_date: str,
-        to_date: str,
+        from_date: Optional[str],
+        to_date: Optional[str],
         chunk_size: int,
         chunk_overlap: int,
         separator: str = " "
@@ -23,8 +60,8 @@ def get_reviews(
         sentiment (str): The sentiment to filter reviews by (e.g., "positive", "neutral", "negative").
         company (str): The name of the company whose reviews are to be fetched.
         source (str): The source of the reviews (e.g., "Trustpilot", "Reddit", "YouTube").
-        from_date (str): The start date for filtering reviews.
-        to_date (str): The end date for filtering reviews.
+        from_date (str | None): The start date for filtering reviews.
+        to_date (str | None): The end date for filtering reviews.
         chunk_size (int): The maximum size of each chunk.
         chunk_overlap (int): The overlap between chunks.
         separator (str): The separator to use for splitting the text.
@@ -32,23 +69,10 @@ def get_reviews(
         List[str]: Preprocessed and chunked reviews.
     """
     sentiment = sentiment.lower()
-    print(type(from_date), flush=True)
-    print(type(to_date), flush=True)
-    from_date = datetime.strptime(from_date, "%Y-%m-%d")
-    to_date = datetime.strptime(to_date, "%Y-%m-%d")
-
-    # create a query to filter reviews by sentiment, source, and date
-    print(sentiment, source, from_date, to_date, flush=True)
-
-    query = {
-        "sentiment": sentiment,
-        "source": source,
-        "date": {"$gte": from_date, "$lte": to_date}
-    }
-    comapny_reviews = db[company]
-    reviews = comapny_reviews.find(query)
+    query = build_query(sentiment, source, from_date, to_date)
+    company_reviews = db[company]
+    reviews = company_reviews.find(query)
     reviews = [review["text"] for review in reviews]
-    print(f"Vettore pre trasformazione: {reviews}", flush=True)
 
     text_splitter = CharacterTextSplitter(
         separator=separator,   # Split by spaces
@@ -56,7 +80,6 @@ def get_reviews(
         chunk_overlap=chunk_overlap  # Overlap between chunks
         )
     splitted_reviews = [text_splitter.split_text(review)[0] for review in reviews]
-    print(f"Vettore2 {splitted_reviews}", flush=True)
     return splitted_reviews
 
 def summarizer(

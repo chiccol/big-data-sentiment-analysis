@@ -40,10 +40,12 @@ def get_top_words(company: str):
         if len(company_count) < 20:
             # take all words
             for word, count in company_count.items():
-                top_words.append(WordCount(word=word, count=count))
+                if word and word.strip():
+                    top_words.append(WordCount(word=word, count=count))
         else:
             for word, count in sorted(company_count.items(), key=lambda x: x[1], reverse=True)[:20]:
-                top_words.append(WordCount(word=word, count=count))
+                if word and word.strip():
+                    top_words.append(WordCount(word=word, count=count))
 
         return TopWordsResponse(company=company, top_words=top_words)
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from utils.database import mongo_db
 from models.mongo_models import TopBigramsResponse, BigramCount
 from utils.config import logger
+import re
 
 router = APIRouter()
 
@@ -39,10 +40,12 @@ def get_top_couples(company: str):
         if len(company_count) < 20:
             # take all bigrams
             for bigram, count in company_count.items():
-                top_bigrams.append(BigramCount(bigram=bigram, count=count))
+                if re.fullmatch(r"\w+ \w+", bigram):
+                    top_bigrams.append(BigramCount(bigram=bigram, count=count))
         else:
             for bigram, count in sorted(company_count.items(), key=lambda x: x[1], reverse=True)[:20]:
-                top_bigrams.append(BigramCount(bigram=bigram, count=count))
+                if re.fullmatch(r"\w+ \w+", bigram):
+                    top_bigrams.append(BigramCount(bigram=bigram, count=count))
 
         return TopBigramsResponse(company=company, top_bigrams=top_bigrams)
 

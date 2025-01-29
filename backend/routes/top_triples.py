@@ -3,6 +3,7 @@ from utils.database import mongo_db
 from models.mongo_models import TopTrigramsResponse, TrigramCount
 from utils.config import logger
 from pymongo import DESCENDING
+import re
 
 router = APIRouter()
 
@@ -40,10 +41,12 @@ def get_top_triples(company: str):
         if len(company_count) < 20:
             # take all trigrams
             for trigram, count in company_count.items():
-                top_trigrams.append(TrigramCount(trigram=trigram, count=count))
+                if re.fullmatch(r"\w+ \w+ \w+", trigram):
+                    top_trigrams.append(TrigramCount(trigram=trigram, count=count))
         else:
             for trigram, count in sorted(company_count.items(), key=lambda x: x[1], reverse=True)[:20]:
-                top_trigrams.append(TrigramCount(trigram=trigram, count=count))
+                if re.fullmatch(r"\w+ \w+ \w+", trigram):
+                    top_trigrams.append(TrigramCount(trigram=trigram, count=count))
 
         return TopTrigramsResponse(company=company, top_trigrams=top_trigrams)
 

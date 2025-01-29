@@ -60,7 +60,8 @@ def main():
             except:
                 raise AssertionError(f"The date '{companies_file[company]['last_scraping']}' does NOT match the format '{CONFIG['date_format']}'")
         
-            scrape_and_send_reviews(company=companies_file[company]["website"], 
+            scrape_and_send_reviews(company = company,
+                                    company_for_scraping=companies_file[company]["website"],
                                     from_date = from_date,
                                     date_format = CONFIG["date_format"],
                                     producer = producer,

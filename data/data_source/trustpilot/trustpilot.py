@@ -46,7 +46,8 @@ def encode_message_to_parquet(data: List[Dict[str, str]]) -> bytes:
     return buffer.getvalue()
 
 def scrape_and_send_reviews(
-    company: str,
+    company:str,
+    company_for_scraping: str,
     from_date: datetime,
     date_format: str,
     producer,
@@ -82,7 +83,7 @@ def scrape_and_send_reviews(
     dates = []
     num_reviews = 0
     language = "www" if language == "en" else language
-    url = f"https://{language}.trustpilot.com/review/{company}"
+    url = f"https://{language}.trustpilot.com/review/{company_for_scraping}"
     for num_page in range(from_page, to_page + 1):
         reviews_list = []
         logger.info(f"Scraping page {num_page} for {company}...")
@@ -90,7 +91,6 @@ def scrape_and_send_reviews(
             result = requests.get(url + f"?page={num_page}&sort=recency")
         else:
             result = requests.get(url + "?sort=recency")
-
         if result.status_code != 200:
             logger.error(f"Error {result.status_code} while scraping page {num_page} for {company}. If Error 404, robably no more reviews available.")
             return 0

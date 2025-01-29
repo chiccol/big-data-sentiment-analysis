@@ -59,6 +59,8 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
     depends_on:
       - kafka
+    volumes:
+      - ./data/companies.json:/app/companies.json
 
   trustpilot-producer:
     container_name: trustpilot-producer
@@ -69,6 +71,8 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
     depends_on:
       - kafka
+    volumes:
+      - ./data/companies.json:/app/companies.json
       
   reddit-producer:
     container_name: reddit-producer
@@ -77,6 +81,8 @@ services:
       dockerfile: reddit/reddit.Dockerfile
     depends_on:
       - kafka
+    volumes:
+      - ./data/companies.json:/app/companies.json
   
   spark-master:
     build:

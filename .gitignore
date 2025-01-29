@@ -13,3 +13,4 @@ comandipostgres.txt
 /training/trained_model
 **/reddit.env
 **/youtube.env
+mounted_data

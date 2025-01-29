@@ -150,6 +150,8 @@ services:
     container_name: mongo
     ports:
       - "27017:27017"
+    volumes:
+      - ./mounted_data/mongodb:/data/db
     healthcheck:
       test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })'"]
       interval: 10s
@@ -179,6 +181,8 @@ services:
       - POSTGRES_DB=warehouse
     ports:
       - "5432:5432"
+    volumes:
+      - ./mounted_data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d warehouse"]
       interval: 10s

@@ -40,26 +40,22 @@ export default function SummaryTable({ companyName }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Handle generate summary
-  const handleGenerateSummary = async (startDate, endDate) => {
+  // Handler for the "Generate Summary" button
+  const handleGenerateSummary = async () => {
     setError("");
     setSummaryData(null);
-  
+
     try {
-      // Construct query parameters dynamically
-      const queryParams = new URLSearchParams();
-      
-      if (startDate) queryParams.append("start_date", startDate);
-      if (endDate) queryParams.append("end_date", endDate);
-  
-      const url = `http://localhost:8000/trigger_summary/${companyName}?${queryParams.toString()}`;
-  
-      const res = await fetch(url);
-  
+      // Pass the startDate and endDate as query parameters (or in a POST body if your backend expects that).
+      const res = await fetch(
+        `http://localhost:8000/trigger_summary/${companyName}?start_date=${encodeURIComponent(
+          startDate
+        )}&end_date=${encodeURIComponent(endDate)}`
+      );
+
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
-  
       const data = await res.json();
       setSummaryData(data.summary || {});
     } catch (err) {

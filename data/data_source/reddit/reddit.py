@@ -10,6 +10,9 @@ import logging
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
+from typing import List, Dict, Tuple, Optional, Any
+from praw import Reddit
+from kafka_producer import KafkaProducer
 from io import BytesIO
 
 logging.basicConfig(
@@ -26,25 +29,37 @@ logger = logging.getLogger("reddit-producer")
 logger.info("Started logging")
 
 def getcomments_reddit(
-    submission_id,
-    reddit_client,
-    from_date,
-    company,
-    max_num_comments,
-    producer,
-    record_list=[],
-    save_submission=True):
+    submission_id: str,
+    reddit_client: Reddit,
+    from_date: str,
+    company: str,
+    max_num_comments: int,
+    producer: KafkaProducer,
+    record_list: Optional[List[Dict[str, Any]]] = None,
+    save_submission: bool = True
+) -> Tuple[Optional[str], List[Dict[str, Any]]]:
     """
-    Fetch comments from a Reddit submission and send them to a Kafka topic, with an option to save submission data.
-
-    Parameters:
-    - submission_id: str, the Reddit submission ID
-    - reddit_client: praw.Reddit, an authenticated Reddit client instance
-    - from_date: str, the date from which to start fetching comments (ISO 8601 format)
-    - company: str, the name of the company (used as the Kafka topic)
-    - max_num_comments: int, the maximum number of comments to fetch
-    - producer: KafkaProducer, the Kafka producer to send the comments to a Kafka topic
-    - save_submission: bool, whether to save the submission data (default is True)
+    Fetch comments from a Reddit submission and send them to a Kafka topic.
+    
+    Args:
+        submission_id (str): The Reddit submission ID.
+        reddit_client (Reddit): An authenticated Reddit client instance.
+        from_date (str): The starting date in ISO format ("YYYY-MM-DDTHH:MM:SSZ") to fetch comments.
+        company (str): The company associated with the submission.
+        max_num_comments (int): The maximum number of comments to fetch.
+        producer (KafkaProducer): The Kafka producer to send comments to a Kafka topic.
+        record_list (Optional[List[Dict[str, Any]]]): A list to accumulate comments before sending.
+        save_submission (bool): Whether to save submission data. Defaults to True.
+    
+    Returns:
+        Tuple[Optional[str], List[Dict[str, Any]]]:
+            - The last comment ID processed, or `None` if no comments were fetched.
+            - The updated record list containing processed comments.
+    
+    Notes:
+        - If `save_submission` is True, the submission's metadata is stored.
+        - Comments older than `from_date` are skipped.
+        - Records are sent to Kafka in batches of 100 comments.
     """
     
     # Retrieve the submission
@@ -161,20 +176,35 @@ def getcomments_reddit(
     return last_comment_id, record_list
 
 def search_posts(
-    query,
-    after_date,
-    comments_after_date,
-    reddit_client,
-    company,
-    max_posts,
-    subreddit_list=None
-):
+    query: str,
+    after_date: str,
+    comments_after_date: str,
+    reddit_client: Reddit,
+    company: str,
+    max_posts: int,
+    subreddit_list: Optional[List[str]] = None
+) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
     """
     Search for Reddit posts matching the query and return a list of submission details.
     
+    Args:
+        query (str): The search query string.
+        after_date (str): Date in ISO format ("YYYY-MM-DDTHH:MM:SSZ") to filter posts published after.
+        comments_after_date (str): Date in ISO format to filter comments.
+        reddit_client (Reddit): An authenticated Reddit client instance.
+        company (str): The company associated with the search.
+        max_posts (int): The maximum number of posts to fetch.
+        subreddit_list (Optional[List[str]]): A list of subreddits to search in. Defaults to `None`, which searches in 'all'.
+    
     Returns:
-    - new_posts: dict, mapping submission_id to its details ('from_date', 'max_num_comments')
-    - reddit_companies_posts: dict, updated posts data
+        Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
+            - A dictionary mapping submission IDs to their details ('from_date', 'max_num_comments').
+            - The updated Reddit companies posts dictionary.
+    
+    Notes:
+        - If the quota is exceeded, an error is logged.
+        - Posts that don't meet the criteria are skipped.
+        - The search results are saved and updated in `companies.json`.
     """
     num_posts = 0
     reddit_companies_posts_path = "companies.json"

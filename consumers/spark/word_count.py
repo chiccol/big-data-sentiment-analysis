@@ -7,12 +7,12 @@ from pymongo import MongoClient
 from pyspark.sql.functions import (
     col, explode, split, pandas_udf,
     expr, collect_list, struct, map_from_entries,
-    map_keys, map_values, map_entries, create_map, lit
+    create_map, lit, row_number
 )
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StringType
 from nltk.corpus import stopwords
 from pyspark.sql.window import Window
-from pyspark.sql.functions import row_number
 
 logger = logging.getLogger("spark-wordcount")
 
@@ -34,10 +34,19 @@ def preprocess_pandas_udf(text_series: pd.Series) -> pd.Series:
     return text_series.apply(clean_text)
 
 
-def write_company_word_counts(df, spark):
+
+def write_company_word_counts(df: DataFrame, spark: SparkSession) -> None:
     """
     Processes the given DataFrame to compute word counts per (company, word),
-    then writes them into multiple MongoDB collections under the 'word_count' database.
+    then writes them into multiple MongoDB collections under the 'reviews' database.
+    
+    Args:
+        df (DataFrame): The input Spark DataFrame containing 'company' and 'text' columns.
+        spark (SparkSession): The active Spark session.
+    
+    Notes:
+        - Words are extracted, cleaned, and stopwords are removed.
+        - Results are aggregated and saved in MongoDB under 'word_count', 'bigrams', and 'trigrams'.
     """
     logger.info("[WordCount] Entered write_company_word_counts.")
 

@@ -10,6 +10,6 @@ comandipostgres.txt
 /training/experiments/*/best_checkpoint.pth
 /training/final_experiments/*/best_checkpoint.pth
 /training/experiments_new_yt/*/best_checkpoint.pth
+/training/trained_model
 **/reddit.env
 **/youtube.env
-/training/trained_model

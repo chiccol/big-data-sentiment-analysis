@@ -60,6 +60,3 @@ RUN model_path="/app/model" && \
     
 # Switch back to regular bitnami user (principle of least privilege)
 USER 1001
-# I think it could be used to replace the command in the docker-compose file
-# Not tested though
-# ENTRYPOINT ["./run_spark_job.sh"]

@@ -56,15 +56,6 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(CONFIG["conv_model"])
     # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
     model = AutoModelForCausalLM.from_pretrained(CONFIG["conv_model"]).to(device)
-    conv_model = CONFIG["conv_model"]
-    logger.info("Generation model:", conv_model)
-    embeddings_model = CONFIG["embeddings_model"]
-    logger.info("Embeddings model:", embeddings_model )
-    logger.info("Retrieving by the following topics:", CONFIG["topics"])
-    rag_socket_host = CONFIG['RAG_SOCKET_HOST']
-    rag_socket_port = CONFIG['RAG_SOCKET_PORT']
-
-    logger.info(f"Starting server on {rag_socket_host}:{rag_socket_port}")
     
     for _ in range(CONFIG["connection_attempts"]): 
         try:

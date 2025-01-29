@@ -12,8 +12,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy the rest of the application files
+COPY config.py /app
 COPY main.py /app
 COPY utils.py /app 
-COPY config.py /app
 
 CMD ["python3", "main.py"]

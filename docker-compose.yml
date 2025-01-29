@@ -59,9 +59,6 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
     depends_on:
       - kafka
-    volumes: 
-      - ./data/data_source/youtube/main.py:/app/main.py 
-      - ./data/data_source/youtube/youtube.py:/app/youtube.py
 
   trustpilot-producer:
     container_name: trustpilot-producer
@@ -72,9 +69,6 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=kafka:9092
     depends_on:
       - kafka
-    volumes: 
-      - ./data/data_source/trustpilot/main.py:/app/main.py 
-      - ./data/data_source/trustpilot/trustpilot.py:/app/trustpilot.py 
       
   reddit-producer:
     container_name: reddit-producer
@@ -121,10 +115,6 @@ services:
        reservations:
         devices:
          - capabilities: [gpu] # allows access to GPU resources
-    volumes: 
-      - ./consumers/spark/main.py:/app/main.py 
-      - ./consumers/kafka_consumer.py:/app/kafka_consumer.py
-      - ./consumers/spark/utils.py:/app/utils.py
     depends_on:
       kafka:
         condition: service_healthy
@@ -179,7 +169,9 @@ services:
       - mongo
   
   postgres:
-    image: postgres:17.0
+    build:
+      context: warehouse
+      dockerfile: Dockerfile
     container_name: postgres
     environment:
       - POSTGRES_USER=admin
@@ -193,8 +185,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    volumes:
-      - ./warehouse/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -259,5 +249,3 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=0
       - MONGO_URI=mongodb://mongo:27017
-    volumes:
-      - ./rag/main.py:/app/main.py

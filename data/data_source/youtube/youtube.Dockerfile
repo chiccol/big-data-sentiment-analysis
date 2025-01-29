@@ -11,7 +11,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy the rest of the application files
-COPY youtube /app
+COPY youtube/config.py /app
+COPY youtube/main.py /app
+COPY youtube/youtube.py /app
+COPY youtube/wait.sh /app 
+COPY youtube/youtube.env /app 
 COPY kafka_producer.py /app
 COPY companies.json /app
 

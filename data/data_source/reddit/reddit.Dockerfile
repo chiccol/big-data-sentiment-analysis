@@ -11,7 +11,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy the rest of the application files
-COPY reddit /app
+COPY reddit/config.py /app
+COPY reddit/reddit.py /app
+COPY reddit/main.py /app
+COPY reddit/wait.sh /app 
+COPY reddit/reddit.env /app 
 COPY kafka_producer.py /app
 COPY companies.json /app
 

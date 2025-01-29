@@ -11,8 +11,12 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy the rest of the application files
-COPY trustpilot /app
+COPY trustpilot/config.py /app
+COPY trustpilot/main.py /app
+COPY trustpilot/trustpilot.py /app
+COPY trustpilot/wait.sh /app 
 COPY kafka_producer.py /app
+
 COPY companies.json /app
 
 # Set executable permissions in one layer

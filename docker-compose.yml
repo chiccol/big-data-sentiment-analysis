@@ -60,7 +60,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - ./data/companies.json:/app/companies.json
+      - ./data/data_source/companies.json:/app/companies.json
 
   trustpilot-producer:
     container_name: trustpilot-producer
@@ -72,7 +72,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - ./data/companies.json:/app/companies.json
+      - ./data/data_source/companies.json:/app/companies.json
       
   reddit-producer:
     container_name: reddit-producer
@@ -82,7 +82,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - ./data/companies.json:/app/companies.json
+      - ./data/data_source/companies.json:/app/companies.json
   
   spark-master:
     build:
@@ -259,3 +259,4 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=0
       - MONGO_URI=mongodb://mongo:27017
+

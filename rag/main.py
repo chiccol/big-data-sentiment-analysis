@@ -56,11 +56,16 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(CONFIG["conv_model"])
     # for multiple GPUs install accelerate and do `model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")`
     model = AutoModelForCausalLM.from_pretrained(CONFIG["conv_model"]).to(device)
-    logger.info("Generation model:", CONFIG["conv_model"])
-    logger.info("Embeddings model:", CONFIG["embeddings_model"])
+    conv_model = CONFIG["conv_model"]
+    logger.info("Generation model:", conv_model)
+    embeddings_model = CONFIG["embeddings_model"]
+    logger.info("Embeddings model:", embeddings_model )
     logger.info("Retrieving by the following topics:", CONFIG["topics"])
+    rag_socket_host = CONFIG['RAG_SOCKET_HOST']
+    rag_socket_port = CONFIG['RAG_SOCKET_PORT']
 
-    # logger.info(f"Starting server on {CONFIG['RAG_SOCKET_HOST']}:{CONFIG['RAG_SOCKET_PORT']}")
+    logger.info(f"Starting server on {rag_socket_host}:{rag_socket_port}")
+    
     for _ in range(CONFIG["connection_attempts"]): 
         try:
             rag_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -114,7 +119,6 @@ def main():
                     reviews = get_reviews(db_reviews, sentiment, company, source, start_date, end_date, 
                                           CONFIG["chunk_size"], CONFIG["chunk_overlap"], CONFIG["separator"])
                     # If no reviews are found, add a message to the answers
-                    print(reviews, flush=True)
                     if not reviews: 
                         for topic in CONFIG["topics"]:
                             answers[sentiment][source][topic] = "No reviews found"
@@ -127,7 +131,6 @@ def main():
                         retrieved_reviews = "\n".join(retrieved_reviews)
                         summary = summarizer(retrieved_reviews, sentiment, topic, model, tokenizer, device)
                         answers[sentiment][source][topic] = summary
-                        logger.info("Summary:", answers[sentiment][source][topic])
             rag_collection.update_one(
                 {"company": company}, 
                 {"$set": {"answers": answers}},

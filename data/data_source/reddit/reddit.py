@@ -182,7 +182,8 @@ def search_posts(
     reddit_client: Reddit,
     company: str,
     max_posts: int,
-    subreddit_list: Optional[List[str]] = None
+    subreddit_list: Optional[List[str]] = None,
+    reddit_companies_posts_path: str = "reddit_companies.json"
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
     """
     Search for Reddit posts matching the query and return a list of submission details.
@@ -207,7 +208,6 @@ def search_posts(
         - The search results are saved and updated in `companies.json`.
     """
     num_posts = 0
-    reddit_companies_posts_path = "companies.json"
     date_format = "%Y-%m-%dT%H:%M:%SZ"
     new_posts = {}
 
@@ -223,10 +223,7 @@ def search_posts(
     if company not in reddit_companies_posts:
         reddit_companies_posts[company] = {
             "posts": {},
-            "from_date": "2024-01-01T00:00:00Z",
-            "query": query,
-            "subreddits": subreddit_list if subreddit_list is not None else [company],
-            "max_posts": max_posts
+            "from_date": "2024-01-01T00:00:00Z"
         }
         logger.info(f"Initialized posts data for company '{company}'")
 

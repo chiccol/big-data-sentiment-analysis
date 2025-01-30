@@ -59,7 +59,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Load companies and scraping info
-    companies_path = CONFIG["companies_post_path"]
+    companies_path = CONFIG["companies_info_path"]
     try:
         with open(companies_path, 'r') as file:
             companies = json.load(file)
@@ -72,6 +72,27 @@ if __name__ == "__main__":
         companies = {}
 
     date_format = CONFIG["date_format"]
+    
+    # Create reddit_companies.json if it doesn't exist
+    companies_post_path = CONFIG["companies_post_path"]
+    try: 
+        with open(companies_post_path, 'r') as file:
+            reddit_companies = json.load(file)
+        logger.info(f"Loaded Reddit submissions data from {companies_post_path}")
+    except FileNotFoundError:
+        reddit_companies = {}
+        logger.info(f"{companies_post_path} not found. Starting with empty Reddit submissions data.")
+    
+    # if file is empty fill it with info
+    if not reddit_companies:
+        for company in companies.keys():
+            reddit_companies[company] = {"posts": {}, "search_from_date": companies[company]["search_from_date"]}
+        try:
+            with open(companies_post_path, 'w') as file:
+                json.dump(reddit_companies, file, indent=4)
+            logger.info(f"Initialized Reddit submissions data in {companies_post_path}")
+        except Exception as e:
+            logger.error(f"Error saving Reddit submissions data: {e}")
 
     while True:
         for company in companies.keys():
@@ -79,7 +100,7 @@ if __name__ == "__main__":
             try:
                 new_submissions, companies_submissions = search_posts(
                     query=companies[company].get("search_query", ""),
-                    after_date=companies[company].get("search_from_date", "2023-01-01T00:00:00Z"),
+                    after_date=reddit_companies[company].get("search_from_date", "2023-01-01T00:00:00Z"),
                     comments_after_date=companies[company].get("get_comments_from_date", "2023-01-01T00:00:00Z"),
                     reddit_client=reddit_scraper,
                     company=company,

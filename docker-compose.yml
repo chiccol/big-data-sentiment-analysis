@@ -60,7 +60,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - ./data/data_source/companies.json:/app/companies.json
+      - ./mounted_data/youtube_companies.json:/app/youtube_companies.json
 
   trustpilot-producer:
     container_name: trustpilot-producer
@@ -72,7 +72,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - ./data/data_source/companies.json:/app/companies.json
+      - ./data_mounted/trustpilot_companies.json:/app/trustpilot_companies.json
       
   reddit-producer:
     container_name: reddit-producer
@@ -82,7 +82,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - ./data/data_source/companies.json:/app/companies.json
+      - ./data_mounted/reddit_companies.json:/app/reddit_companies.json
   
   spark-master:
     build:

@@ -42,11 +42,31 @@ def main():
     logger.info(f"Kafka producer {CONFIG['client_id']} connected to {CONFIG['bootstrap_servers']} for trustpilot")
     
     # Load companies and dates of the last scraping
-    with open(CONFIG["companies_date_path"], 'r') as file:
-        companies_file = json.load(file)
-    logger.info(f"Companies and dates of the last scraping loaded from {CONFIG['companies_date_path']}")
+    with open(CONFIG["companies_info_path"], 'r') as file:
+        companies_info_file = json.load(file)
+    logger.info(f"Companies and dates loaded from {CONFIG['companies_info_path']}")
+    for company in companies_info_file.keys():
+        logger.info(f"Company: {company}, first scraping: {companies_info_file[company]['last_scraping']}")
+        
+    # Load companies and dates of the last scraping
+    try:
+        with open(CONFIG["companies_date_path"], 'r') as file:
+            companies_file = json.load(file)
+            logger.info(f"Companies and dates of the last scraping loaded from {CONFIG['companies_date_path']}")
+    except FileNotFoundError:
+        logger.info(f"File {CONFIG['companies_date_path']} not found. Creating a new one.")
+        companies_file = {}
+        
+    if not companies_file:
+        for company in companies_info_file.keys():
+            companies_file[company] = {"website": companies_info_file[company]["website"], "last_scraping": companies_info_file[company]["last_scraping"]}
+        with open(CONFIG["companies_date_path"], 'w') as file:
+            json.dump(companies_file, file)
+        
     for company in companies_file.keys():
-        logger.info(f"Company: {company}, Last scraping: {companies_file[company]['last_scraping']}")
+        logger.info(f"Company: {company}, last scraping: {companies_file[company]['last_scraping']}")
+        
+    
 
     # Sleeping time in hours, minutes, and seconds
     hours = CONFIG['sleep_time'] // 3600

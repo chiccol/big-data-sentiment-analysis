@@ -230,7 +230,7 @@ def search_videos(
     """
     num_videos = 0
     new_videos = []
-    youtube_comapanies_videos_path = "companies.json"
+    youtube_comapanies_videos_path = "youtube_companies.json"
     date_format = "%Y-%m-%dT%H:%M:%SZ"
 
     max_batch_videos = 50

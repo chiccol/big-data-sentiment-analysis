@@ -79,12 +79,30 @@ def main() -> None:
         )
     logger.info(f"Kafka producer {CONFIG['client_id']} connected to {CONFIG['bootstrap_servers']} for Youtube") 
     
+    # Load companies and their scraping details
+    with open(CONFIG['companies_info_path'], 'r') as file:
+        companies_info = json.load(file)
+    logger.info(f"Companies and their details loaded from {CONFIG['companies_info_path']}")
+    
     # Load companies and dates of the last scraping
-    with open(CONFIG['companies_videos_path'], 'r') as file:
-        companies_videos = json.load(file)
-    logger.info(f"Companies and videos of the last scraping loaded from {CONFIG['companies_videos_path']}")
-    for company in companies_videos.keys():
-        logger.info(f"Company: {company}, Last scraping: {companies_videos[company]}")
+    try:
+        with open(CONFIG['companies_videos_path'], 'r') as file:
+            companies_videos = json.load(file)
+        logger.info(f"Companies and videos of the last scraping loaded from {CONFIG['companies_videos_path']}")
+    except FileNotFoundError:
+        companies_videos = {}
+        logger.info(f"Companies and videos of the last scraping not found. Initializing empty dictionary.")
+        
+    if not companies_videos:
+        for company in companies_info.keys():
+            companies_videos[company] = {
+                "search_from_date": companies_info[company]["search_from_date"],
+                "videos": {},
+                "get_comments_from_date": companies_info[company]["get_comments_from_date"]
+            }
+        with open(CONFIG['companies_videos_path'], 'w') as file:
+            json.dump(companies_videos, file, indent=4)
+        logger.info(f"Companies and videos of the last scraping initialized.")
     
     while True:
         company_msg = dict()
@@ -95,16 +113,16 @@ def main() -> None:
             logger.info(f"Searching for new videos for {company}")
 
             new_videos, companies_videos, youtube_scraper = search_videos(
-                query = companies_videos[company]["query"],
+                query = companies_info[company]["query"],
                 publishedAfter = companies_videos[company]["search_from_date"],
                 youtube_scraper = youtube_scraper,
                 extra_keys = extra_keys,
                 company = company,
-                max_videos = companies_videos[company]["max_videos"],
-                relevanceLanguage = companies_videos[company]["relevance_language"],
-                min_duration = companies_videos[company]["min_duration"],
-                min_comment = companies_videos[company]["min_comment"],
-                min_view = companies_videos[company]["min_view"]
+                max_videos = companies_info[company]["max_videos"],
+                relevanceLanguage = companies_info[company]["relevance_language"],
+                min_duration = companies_info[company]["min_duration"],
+                min_comment = companies_info[company]["min_comment"],
+                min_view = companies_info[company]["min_view"]
                 )
             logger.info(f"Found {len(new_videos)} new videos for {company}")
 
@@ -121,7 +139,7 @@ def main() -> None:
                         extra_keys = extra_keys,
                         company = company,
                         producer = producer,
-                        max_num_comments = companies_videos[company]["max_num_comments_per_scraping"],
+                        max_num_comments = companies_info[company]["max_num_comments_per_scraping"],
                         next_page_token = companies_videos[company]["videos"][video]["next_page_token"],
                         from_date = companies_videos[company]["videos"][video]["date_last_scrape"]
                         )

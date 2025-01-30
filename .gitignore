@@ -10,3 +10,4 @@ consumers/spark/model/
 /training/experiments_new_yt/*/best_checkpoint.pth
 /training/trained_model
 **/*.env
+mounted_data

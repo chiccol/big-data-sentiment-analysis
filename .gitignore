@@ -1,7 +1,5 @@
 __pycache__/
 consumers/spark/model/
-appunti.txt
-comandipostgres.txt
 *.ipynb
 /data/make_dataset/trustpilot/*dataset*
 /data/make_dataset/youtube/*dataset*
@@ -11,6 +9,4 @@ comandipostgres.txt
 /training/final_experiments/*/best_checkpoint.pth
 /training/experiments_new_yt/*/best_checkpoint.pth
 /training/trained_model
-**/reddit.env
-**/youtube.env
-mounted_data/
+**/*.env

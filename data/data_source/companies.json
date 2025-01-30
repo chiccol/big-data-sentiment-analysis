@@ -1,6 +1,18 @@
 {
     "nordvpn": {
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
         "search_from_date": "2025-01-01T00:00:00Z",
+=======
+        "search_from_date": "2025-01-30T08:43:23Z",
+>>>>>>> Stashed changes
+=======
+        "search_from_date": "2025-01-30T08:43:23Z",
+>>>>>>> Stashed changes
+=======
+        "search_from_date": "2025-01-30T08:43:23Z",
+>>>>>>> Stashed changes
         "get_comments_from_date": "2025-01-01T00:00:00Z",
         "query": "NordVPN review",
         "max_videos": 5,
@@ -9,7 +21,19 @@
         "min_duration": 240,
         "min_comment": 10,
         "min_view": 1000,
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
+=======
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+        "videos": {},
+        "r_search_from_date": "2025-01-01T00:00:00Z",
+        "posts": {},
+>>>>>>> Stashed changes
         "search_query": "nordvpn",
         "subreddits": [
             "nordvpn",
@@ -17,12 +41,23 @@
             "tech"
         ],
         "max_submissions": 10,
-
         "website": "nordvpn.com",
         "last_scraping": "2025-01-01T00:00:00.000000Z"
     },
     "google": {
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
         "search_from_date": "2025-01-01T00:00:00Z",
+=======
+        "search_from_date": "2025-01-30T08:43:24Z",
+>>>>>>> Stashed changes
+=======
+        "search_from_date": "2025-01-30T08:43:24Z",
+>>>>>>> Stashed changes
+=======
+        "search_from_date": "2025-01-30T08:43:24Z",
+>>>>>>> Stashed changes
         "get_comments_from_date": "2025-01-01T00:00:00Z",
         "query": "Google review",
         "max_videos": 5,
@@ -31,9 +66,37 @@
         "min_duration": 240,
         "min_comment": 10,
         "min_view": 1000,
-        "videos": {},
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+
+=======
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+        "videos": {
+            "5VMckmQneCk": {
+                "date_last_scrape": "2025-01-01T00:00:00Z",
+                "next_page_token": "Z2V0X25ld2VzdF9maXJzdC0tQ2dnSWdBUVZGN2ZST0JJRkNJY2dHQUFTQlFpb0lCZ0FFZ1VJblNBWUFSSUZDSWdnR0FBU0JRaUpJQmdBSWcwS0N3alY0dXk4QmhEQTFfQkg=",
+                "region_code": "IT"
+            },
+            "u8go1JbhS_A": {
+                "date_last_scrape": "2025-01-01T00:00:00Z",
+                "next_page_token": "Z2V0X25ld2VzdF9maXJzdC0tQ2dnSWdBUVZGN2ZST0JJRkNLZ2dHQUFTQlFpSklCZ0FFZ1VJblNBWUFSSUZDSWdnR0FBU0JRaUhJQmdBSWc0S0RBaXF4Y1M4QmhENHJkWHRBZw==",
+                "region_code": "IT"
+            },
+            "YWW2wdxofbI": {
+                "date_last_scrape": "2025-01-30T08:43:26Z",
+                "next_page_token": null,
+                "region_code": "IT"
+            },
+            "G32M6mHTsuY": "too_short",
+            "dVHWghcGNP8": "currently_irrelevant"
+        },
         "r_search_from_date": "2025-01-01T00:00:00Z",
         "posts": {},
+>>>>>>> Stashed changes
         "search_query": "google",
         "subreddits": [
             "google",
@@ -42,7 +105,18 @@
             "business"
         ],
         "max_submissions": 10,
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+        
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
         "website": "google.com",
         "last_scraping": "2025-01-01T00:00:00.000000Z"
     }
 }
+

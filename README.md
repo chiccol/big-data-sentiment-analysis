@@ -2,16 +2,18 @@
 
 ## Table of Contents
 
-- [How it Works](#How-it-Works)
-- [How to Run](#How-to-Run)
-    - [Nvidia Runtime (Using GPU)](#Nvidia-Runtime-(Using-GPU))
-    - [Using CPU](#Using-CPU)
-    - [Youtube and Reddit API Keys](#Youtube-and-Reddit-Api-Keys)
-        - [How to Get the Keys](#How-to-Get-the-Keys)
-    - [UI Access](#UI-Access)
-- [Reproducibility](#reproducibility)
-    - [Training and Testing](#Training-and-Testing)
-    - [Create Dataset](#Create-Dataset)
+- [big-data-sentiment-analysis](#big-data-sentiment-analysis)
+  - [Table of Contents](#table-of-contents)
+  - [How it Works](#how-it-works)
+  - [How to run](#how-to-run)
+    - [Nvidia Runtime (Using GPU)](#nvidia-runtime-using-gpu)
+    - [Using CPU](#using-cpu)
+    - [Youtube and Reddit API Keys](#youtube-and-reddit-api-keys)
+      - [How to Get the Keys](#how-to-get-the-keys)
+    - [UI Access](#ui-access)
+  - [Reproducibility](#reproducibility)
+    - [Training and Testing](#training-and-testing)
+    - [Create Dataset](#create-dataset)
 
 ## How it Works 
 
@@ -26,6 +28,19 @@ Ensure you have docker installed, if you don't please follow this [guide](https:
 ```
 git clone https://github.com/giuseppecurci/big-data-sentiment-analysis/
 cd big-data-sentiment-analysis
+```
+
+Docker is mounting data on a separate folder, it is necessary to create it.
+
+```
+mkdir -p mounted_data
+mkdir -p mounted_data/mongodb
+mkdir -p mounted_data/postgres
+touch mounted_data/trustpilot_companies.json mounted_data/youtube_companies.json mounted_data/reddit_companies.json
+
+[ ! -s mounted_data/reddit_companies.json ] && echo "{}" > mounted_data/reddit_companies.json
+[ ! -s mounted_data/trustpilot_companies.json ] && echo "{}" > mounted_data/trustpilot_companies.json
+[ ! -s mounted_data/youtube_companies.json ] && echo "{}" > mounted_data/youtube_companies.json
 ```
 
 ### Nvidia Runtime (Using GPU)
@@ -117,6 +132,8 @@ data/data_source/reddit
 
 - **Any User**: Follow these guides for [youtube](https://www.youtube.com/watch?v=EPeDTRNKAVo) and [reddit](https://www.reddit.com/r/reddit.com/wiki/api/). When generating a Reddit API key, if prompted to provide an 'About URL,' you can simply use the link to this repository.
 - **Big Data Technologies (UNITN Course)**: We remind you that we sent you our credentials via email along with the report. If, for any reason, you can't find the above-mentioned files please readily contact us using any of the emails we provided or through any other available communication channel.
+
+
 
 ### UI Access
 
